@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "BlazeMates",
+    "slug": "blazemates",
+    "version": "1.0.0",
+    "scheme": "blazemates",
+    "orientation": "portrait",
+    "icon": "./app/assets/icon.png",
+    "splash": {
+      "image": "./app/assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#121212"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./app/assets/icon.png",
+        "backgroundColor": "#121212"
+      },
+      "package": "com.hawkc13.blazemates"
+       
+    },
+    "web": {
+      "favicon": "./app/assets/icon.png",
+      "output": "static"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "89aecb56-c6dd-4271-8f23-de709dddb2a0"
+      }
+    },
+    "owner": "hawkc13",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/89aecb56-c6dd-4271-8f23-de709dddb2a0"
+    }
+  }
+}
