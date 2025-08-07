@@ -141,7 +141,6 @@ const handleSwipeLeft = () => {
       {currentProfile && (
         <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
           <Image source={{ uri: currentProfile.image }} style={styles.image} />
-
           <View style={styles.row}>
             <Text style={styles.name}>
               {currentProfile.name}, {currentProfile.age}
