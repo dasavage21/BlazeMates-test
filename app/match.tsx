@@ -1,19 +1,49 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
+
+type UserProfile = {
+  id: string;
+  name: string;
+  image: string;
+};
 
 export default function MatchScreen() {
   const router = useRouter();
+  const { matchId } = useLocalSearchParams(); // from /match?matchId=abc
+  const [matchUser, setMatchUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const fetchMatchUser = async () => {
+      if (!matchId || typeof matchId !== 'string') return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, image')
+        .eq('id', matchId)
+        .single();
+
+      if (!error) setMatchUser(data);
+    };
+
+    fetchMatchUser();
+  }, [matchId]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.matchText}>🎉 It's a Match!</Text>
+      <Text style={styles.matchText}>🔥 It&apos;s a match!</Text>
+
       <Image
-        source={{ uri: 'https://via.placeholder.com/250' }}
+        source={{ uri: matchUser?.image || 'https://via.placeholder.com/250' }}
         style={styles.avatar}
       />
-      <Text style={styles.subText}>You and Jason like each other.</Text>
+
+      <Text style={styles.subText}>
+        You and {matchUser?.name || 'someone'} like each other.
+      </Text>
 
       <TouchableOpacity style={styles.chatBtn} onPress={() => router.push('/chat')}>
         <Text style={styles.chatText}>💬 Start Chatting</Text>

@@ -1,15 +1,18 @@
+// app/_layout.tsx
+
 // © 2025 Benjamin Hawk. All rights reserved.
 
-import { Slot, usePathname, useRouter } from 'expo-router';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+// eslint-disable-next-line import/no-duplicates
+import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator, StyleSheet, LogBox } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { ThemeProvider } from '../lib/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-
-import { LogBox } from 'react-native';
+import { ThemeProvider } from '../lib/ThemeContext';
+// eslint-disable-next-line import/no-duplicates
+import { usePathname, useRouter } from 'expo-router';
+import 'react-native-url-polyfill/auto';
 LogBox.ignoreLogs([
   'Warning: useInsertionEffect must not schedule updates',
 ]);
@@ -18,7 +21,6 @@ export default function Layout() {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
-  
 
   useEffect(() => {
     const checkAge = async () => {
@@ -37,7 +39,7 @@ export default function Layout() {
     };
 
     checkAge();
-  }, [pathname]);
+  }, [pathname, router]);
 
   if (loading) {
     return (
@@ -50,10 +52,19 @@ export default function Layout() {
   return (
     <ThemeProvider>
       <SafeAreaProvider>
-        <View style={styles.container}>
-          <Slot />
-          <StatusBar style="light" />
-        </View>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: '#121212' },
+            headerTintColor: '#00FF7F',
+            headerTitleStyle: { fontWeight: 'bold' },
+          }}
+        >
+          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+          <Stack.Screen name="swipe" options={{ headerShown: false }} />
+          
+
+        </Stack>
+        <StatusBar style="light" />
       </SafeAreaProvider>
     </ThemeProvider>
   );

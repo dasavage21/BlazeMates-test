@@ -3,7 +3,7 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import 'react-native-reanimated';
-
+import 'react-native-url-polyfill/auto';
 export default function WelcomeScreen() {
   const router = useRouter();
 

@@ -1,0 +1,4 @@
+-keep class com.facebook.react.** { *; }
+-keep class com.swmansion.gesturehandler.** { *; }
+-keep class com.swmansion.reanimated.** { *; }
+-dontwarn com.facebook.react.**
