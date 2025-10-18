@@ -133,7 +133,7 @@ export default function SettingsScreen() {
         <Text style={styles.buttonText}>🗑️ Delete Account</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() => Linking.openURL("https://your-privacy-url")}
+        onPress={() => Linking.openURL("https://dasavage21.github.io/BlazeMates-test/blazemates-privacy.html")}
       >
         <Text style={styles.buttonText}>🔒 Privacy Policy</Text>
       </TouchableOpacity>
