@@ -1,0 +1,37 @@
+/**
+ * InternalBytecode.js
+ * Utility functions for handling internal bytecode operations.
+ * Author: BlazeMates Team
+ */
+
+class InternalBytecode {
+    /**
+     * Encodes an array of numbers into a bytecode Buffer.
+     * @param {number[]} instructions - Array of instruction codes.
+     * @returns {Buffer}
+     */
+    static encode(instructions) {
+        return Buffer.from(instructions);
+    }
+
+    /**
+     * Decodes a bytecode Buffer into an array of numbers.
+     * @param {Buffer} buffer - Bytecode buffer.
+     * @returns {number[]}
+     */
+    static decode(buffer) {
+        return Array.from(buffer);
+    }
+
+    /**
+     * Validates if the given bytecode is in the expected format.
+     * @param {Buffer} buffer - Bytecode buffer.
+     * @returns {boolean}
+     */
+    static isValid(buffer) {
+        // Example: All instructions must be between 0 and 255
+        return buffer.every(byte => byte >= 0 && byte <= 255);
+    }
+}
+
+module.exports = InternalBytecode;

@@ -11,11 +11,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#121212"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
+    "plugins": ["expo-camera", "expo-maps", "expo-router"],
     "ios": {
-      "bundleIdentifier": "com.hawkc13.blazemates",     
+      "bundleIdentifier": "com.hawkc13.blazemates",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "We use the camera so you can take a profile photo.",
@@ -23,48 +22,35 @@
         "NSPhotoLibraryAddUsageDescription": "We save photos to your library when you choose to keep a copy."
       }
     },
-    "plugins": [
-      "expo-camera"
-      
-    ],
-  
     "android": {
+      "package": "com.hawkc13.blazemates",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/icon.png",
         "backgroundColor": "#121212"
-        
-      },
-      "expo": {
-        "android": {
-          "package": "com.hawkc13.blazemates",
-          "permissions": ["CAMERA"]
-        }
-      },
-      "package": "com.hawkc13.blazemates"
+      }
     },
+    "web": {
+      "favicon": "./app/assets/icon.png",
+      "output": "static"
+    },
+    "owner": "hawkc13",
     "extra": {
       "eas": {
         "projectId": "89aecb56-c6dd-4271-8f23-de709dddb2a0"
-      }
-    }
-  },
-  "web": {
-    "favicon": "./app/assets/icon.png",
-    "output": "static"
-  },
-  "extra": {
-    "uuid": {
-      "projectId": "4878e6fc-d7c3-425e-955b-887e2aa31e0f"
+      },
+      "EXPO_PUBLIC_SUPABASE_URL": "${EXPO_PUBLIC_SUPABASE_URL}",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "${EXPO_PUBLIC_SUPABASE_ANON_KEY}"
     },
-    "eas": {
-      "projectId": "89aecb56-c6dd-4271-8f23-de709dddb2a0"
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/89aecb56-c6dd-4271-8f23-de709dddb2a0"
     }
-  },
-  "owner": "hawkc13",
-  "runtimeVersion": {
-    "policy": "appVersion"
-  },
-  "updates": {
-    "url": "https://u.expo.dev/89aecb56-c6dd-4271-8f23-de709dddb2a0"
   }
 }

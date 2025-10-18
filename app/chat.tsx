@@ -1,10 +1,22 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useEffect, useState, useRef } from 'react';
-import { supabase } from '../supabaseClient';
-import uuid from 'react-native-uuid';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { supabase } from "../supabaseClient";
 
 type Message = {
   id: string;
@@ -14,221 +26,375 @@ type Message = {
   created_at: string;
 };
 
-type TypingMap = { [key: string]: boolean };
+type TypingMap = Record<string, boolean>;
 
-const ChatScreen = ({ threadId, userId }: { threadId: string; userId: string }) => {
+export default function ChatScreen() {
+  // /chat?threadId=...&userId=...
+  const params = useLocalSearchParams<{
+    threadId?: string | string[];
+  }>();
+  const rawThread = params.threadId;
+  const threadId = useMemo(() => {
+    if (!rawThread) return "global-chat";
+    if (Array.isArray(rawThread)) return rawThread[0] ?? "global-chat";
+    return rawThread;
+  }, [rawThread]);
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [threadReady, setThreadReady] = useState(false);
+
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [typingUsers, setTypingUsers] = useState<TypingMap>({});
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<FlatList<Message>>(null);
 
-  // 🟢 Load and subscribe to new messages
   useEffect(() => {
-    const fetchMessages = async () => {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('thread_id', threadId)
-        .order('created_at', { ascending: true });
-      setMessages(data || []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (!cancelled) {
+          setUserId(data?.user?.id ?? null);
+        }
+      } catch (e) {
+        console.warn("Failed to load auth user", e);
+        if (!cancelled) setUserId(null);
+      } finally {
+        if (!cancelled) setLoadingUser(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    fetchMessages();
+  // Ensure thread exists once we know the user
+  useEffect(() => {
+    let cancelled = false;
+    if (loadingUser) return;
+    if (!userId) {
+      setThreadReady(false);
+      return;
+    }
+    setThreadReady(false);
+    (async () => {
+      try {
+        await supabase
+          .from("threads")
+          .upsert({ id: threadId }, { onConflict: "id" });
+        if (!cancelled) setThreadReady(true);
+      } catch (e) {
+        console.warn("Failed to ensure thread", e);
+        if (!cancelled) {
+          setThreadReady(false);
+          Alert.alert(
+            "Chat unavailable",
+            "We couldn't open this chat. Please try again."
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [threadId, loadingUser, userId]);
+
+  // Initial load + realtime inserts
+  useEffect(() => {
+    if (!threadReady) return;
+    let active = true;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("thread_id", threadId)
+        .order("created_at", { ascending: true });
+
+      if (!error && active) setMessages(data ?? []);
+    })();
 
     const channel = supabase
       .channel(`messages-${threadId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `thread_id=eq.${threadId}`,
-      }, payload => {
-        setMessages(prev => [...prev, payload.new as Message]);
-
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        (payload) => setMessages((prev) => [...prev, payload.new as Message])
+      )
       .subscribe();
 
     return () => {
+      active = false;
       supabase.removeChannel(channel);
     };
-  }, [threadId]);
+  }, [threadId, threadReady]);
 
-  // 💬 Typing indicator
+  // Typing indicator subscription
   useEffect(() => {
+    if (!threadReady) return;
     const channel = supabase
       .channel(`typing-${threadId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'chat_threads',
-        filter: `id=eq.${threadId}`,
-      }, payload => {
-        const typingMap = payload.new.typing || {};
-        setTypingUsers(typingMap);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "threads",
+          filter: `id=eq.${threadId}`,
+        },
+        (payload) => {
+          const map = (payload.new as { typing?: TypingMap }).typing ?? {};
+          setTypingUsers(map);
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [threadId]);
+  }, [threadId, threadReady]);
 
-  const otherTyping = Object.entries(typingUsers).some(
-    ([id, isTyping]) => id !== userId && isTyping
+  const otherTyping = useMemo(
+    () =>
+      Object.entries(typingUsers).some(
+        ([id, isTyping]) => id !== userId && isTyping
+      ),
+    [typingUsers, userId]
   );
 
-  // 🟡 Update read receipts
+  // Mark read
   useEffect(() => {
-    const updateRead = async () => {
+    if (!threadReady || !userId) return;
+    (async () => {
+      try {
+        await supabase
+          .from("read_receipts")
+          .upsert(
+            [
+              {
+                thread_id: threadId,
+                user_id: userId,
+                read_at: new Date().toISOString(),
+              },
+            ],
+            {
+              onConflict: "thread_id,user_id",
+            }
+          );
+      } catch {
+        /* no-op */
+      }
+    })();
+  }, [threadId, threadReady, userId]);
+
+  const updateTyping = async (isTyping: boolean) => {
+    if (!userId) return;
+    try {
+      const { data } = await supabase
+        .from("threads")
+        .select("typing")
+        .eq("id", threadId)
+        .single();
+      const updated = { ...(data?.typing ?? {}), [userId]: isTyping };
       await supabase
-        .from('read_receipts')
-        .upsert(
-          [{ thread_id: threadId, user_id: userId, read_at: new Date().toISOString() }],
-          { onConflict: 'thread_id,user_id' }
-        );
-    };
-    updateRead();
-  }, [threadId, userId]);
+        .from("threads")
+        .update({ typing: updated })
+        .eq("id", threadId);
+    } catch {
+      /* no-op */
+    }
+  };
 
-  // 🟢 Send message
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    const text = input.trim();
+    if (!text) return;
+    if (!userId) {
+      Alert.alert("Sign in required", "Sign in before sending messages.");
+      return;
+    }
 
-    await supabase.from('messages').insert([
-      {
-        id: uuid.v4(),
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
         thread_id: threadId,
         sender_id: userId,
-        content: input.trim(),
-        created_at: new Date().toISOString(),
-      }
-    ]);
+        content: text,
+        // created_at can be DEFAULT now() in the DB; omit it here if so
+      })
+      .select()
+      .single();
 
-    setInput('');
+    if (!error && data) {
+      setMessages((prev) => [...prev, data as Message]); // optimistic update with server id
+    }
+    setInput("");
     await updateTyping(false);
   };
 
-  // 🟡 Typing status update
-  const updateTyping = async (isTyping: boolean) => {
-    const { data: thread } = await supabase
-      .from('chat_threads')
-      .select('typing')
-      .eq('id', threadId)
-      .single();
+  if (loadingUser) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#00FF7F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-    const updatedTyping = {
-      ...(thread?.typing || {}),
-      [userId]: isTyping,
-    };
+  if (!userId) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+        <View style={styles.locked}>
+          <Text style={styles.lockedText}>
+            Sign in to start chatting with other BlazeMates.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-    await supabase
-      .from('chat_threads')
-      .update({ typing: updatedTyping })
-      .eq('id', threadId);
-  };
+  if (!threadReady) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#00FF7F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-  <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-    >
-
-      <FlatList
-        ref={listRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const isMe = item.sender_id === userId;
-          return (
-            <View style={[styles.message, isMe ? styles.you : styles.them]}>
-              <Text style={styles.text}>{item.content}</Text>
-              <Text style={styles.meta}>
-                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            </View>
-          );
-        }}
-        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-        onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
-      />
-
-      {otherTyping && (
-        <Text style={{ color: '#00FF7F', marginBottom: 4 }}>💬 Typing…</Text>
-      )}
-
-      <View style={styles.inputRow}>
-        <TextInput
-          value={input}
-          onChangeText={(text) => {
-            setInput(text);
-            updateTyping(!!text);
+    <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={80}
+      >
+        <FlatList
+          ref={listRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const isMe = item.sender_id === userId;
+            return (
+              <View style={[styles.message, isMe ? styles.you : styles.them]}>
+                <Text style={styles.text}>{item.content}</Text>
+                <Text style={styles.meta}>
+                  {new Date(item.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+            );
           }}
-          placeholder="Type a message..."
-          placeholderTextColor="#888"
-          style={styles.input}
+          onContentSizeChange={() =>
+            listRef.current?.scrollToEnd({ animated: true })
+          }
+          onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+          ListEmptyComponent={
+            <Text style={styles.empty}>
+              Start the conversation by sending the first message.
+            </Text>
+          }
         />
-        <TouchableOpacity onPress={sendMessage} style={styles.sendBtn}>
-          <Text style={styles.sendText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
-  </SafeAreaView>
-);
-};
+
+        {otherTyping && (
+          <Text style={styles.typing}>💬 Typing…</Text>
+        )}
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            value={input}
+            onChangeText={(text) => {
+              setInput(text);
+              updateTyping(!!text);
+            }}
+            placeholder="Type a message..."
+            placeholderTextColor="#888"
+            style={styles.input}
+            returnKeyType="send"
+            onSubmitEditing={sendMessage}
+          />
+          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+            <Text style={styles.sendText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', padding: 10 },
+  container: { flex: 1, backgroundColor: "#121212", padding: 10 },
   message: {
     padding: 10,
     borderRadius: 10,
     marginVertical: 4,
-    maxWidth: '70%',
+    maxWidth: "70%",
   },
-  them: {
-    backgroundColor: '#1e1e1e',
-    alignSelf: 'flex-start',
+  them: { backgroundColor: "#1e1e1e", alignSelf: "flex-start" },
+  you: { backgroundColor: "#00FF7F", alignSelf: "flex-end" },
+  text: { color: "#fff" },
+  meta: { fontSize: 10, color: "#aaa", marginTop: 4 },
+  inputContainer: {
+    flexDirection: "row",
+    padding: 8,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderColor: "#eee",
   },
-  you: {
-    backgroundColor: '#00FF7F',
-    alignSelf: 'flex-end',
-  },
-  text: {
-    color: '#fff',
-  },
-  meta: {
-    fontSize: 10,
-    color: '#aaa',
-    marginTop: 4,
-  },
-  inputRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginTop: 10,
-  paddingBottom: Platform.OS === 'android' ? 10 : 0,
-  backgroundColor: '#121212',
-  paddingHorizontal: 10,
-},
-
   input: {
     flex: 1,
-    backgroundColor: '#1f1f1f',
-    color: '#fff',
     padding: 10,
     borderRadius: 20,
-    marginRight: 10,
+    backgroundColor: "#f2f2f2",
+    marginRight: 8,
   },
-  sendBtn: {
-    backgroundColor: '#00FF7F',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  sendButton: {
+    backgroundColor: "#00FF7F",
     borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   sendText: {
-    color: '#000',
-    fontWeight: 'bold',
+    color: "#121212",
+    fontWeight: "bold",
+  },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#121212",
+  },
+  locked: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    backgroundColor: "#121212",
+  },
+  lockedText: {
+    color: "#ccc",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  typing: {
+    color: "#00FF7F",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  empty: {
+    color: "#888",
+    textAlign: "center",
+    marginVertical: 16,
   },
 });
 
-export default ChatScreen;

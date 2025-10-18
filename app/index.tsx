@@ -1,46 +1,92 @@
-// © 2025 Benjamin Hawk. All rights reserved.
+// app/index.tsx
 
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import 'react-native-reanimated';
-import 'react-native-url-polyfill/auto';
-export default function WelcomeScreen() {
-  const router = useRouter();
+import { supabase } from '../supabaseClient';
 
-  return (
-    <View style={styles.container}>
-      <Image source={require('./assets/icon.png')} style={styles.logo} />
-      <Text style={styles.title}>BlazeMates</Text>
-      <Text style={styles.subtitle}>Find your 420 soulmate 🌿</Text>
+const AUTH_CACHE_KEYS = ['userProfile', 'userAge', 'pendingAvatarUri', 'avatarVersion', 'userId', 'theme'];
 
-      <TouchableOpacity style={styles.button} onPress={() => router.replace('/swipe')}>
-        <Text style={styles.buttonText}>Get Started</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => router.push('/profile')}>
-        <Text style={styles.link}>View Profile</Text>
-      </TouchableOpacity>
-    </View>
-  );
+async function clearCachedSessionData() {
+  try {
+    await AsyncStorage.multiRemove(AUTH_CACHE_KEYS);
+  } catch (err) {
+    console.warn('Failed clearing cached auth data', err);
+  }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#0f0f0f', padding: 20,
-  },
-  logo: { width: 120, height: 120, marginBottom: 30 },
-  title: {
-    fontSize: 40, fontWeight: 'bold',
-    color: '#00FF7F', marginBottom: 10,
-    textShadowColor: '#0f0', textShadowRadius: 10,
-  },
-  subtitle: { fontSize: 18, color: '#ccc', marginBottom: 40 },
-  button: {
-    backgroundColor: '#00FF7F', padding: 15,
-    borderRadius: 10, width: '100%', alignItems: 'center',
-  },
-  buttonText: { color: '#000', fontSize: 18, fontWeight: '600' },
-  link: { color: '#00FF7F', marginTop: 20, fontSize: 16 },
-});
+export default function IndexGate() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
 
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          throw error;
+        }
+
+        if (data.session?.user) {
+          await AsyncStorage.setItem('userId', data.session.user.id);
+          router.replace('/swipe');
+          return;
+        }
+
+        await clearCachedSessionData();
+        router.replace('/login');
+      } catch (err) {
+        console.warn('Initial session check failed', err);
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch (signOutErr) {
+          console.warn('Local sign out failed', signOutErr);
+        }
+        await clearCachedSessionData();
+        router.replace('/login');
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    // react to future auth changes as well
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const eventType = event as string;
+      if (session?.user) {
+        await AsyncStorage.setItem('userId', session.user.id);
+        router.replace('/swipe');
+        return;
+      }
+
+      if (eventType === 'TOKEN_REFRESH_FAILED') {
+        // local session is invalidated (another device signed in or timed out)
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+
+      if (
+        eventType === 'SIGNED_OUT' ||
+        eventType === 'TOKEN_REFRESH_FAILED' ||
+        eventType === 'USER_DELETED'
+      ) {
+        await clearCachedSessionData();
+      }
+
+      router.replace('/login');
+    });
+
+    run();
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, [router]);
+
+  if (checking) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#121212', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#00FF7F" />
+      </View>
+    );
+  }
+  return null;
+}

@@ -1,19 +1,18 @@
 {
-  "extends": "expo/tsconfig.base"
-
-,
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "module": "es2022",
-    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2020",
+    "lib": ["ES2020"],
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "paths": {
-      "@/*": ["./*"]
-    }
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,   
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "types": ["react", "react-native", "expo"]
   },
-  "include": [
-    "types",
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"]
 }
