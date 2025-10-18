@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-i need to add something here 
-=======
 // Edge Function: delete-user
 // Notes:
 // - Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (auto-injected).
@@ -86,15 +83,12 @@ export default async function handler(req: Request): Promise<Response> {
   // 1) Delete from Auth
   const { error: authError }: { error: { message: string } | null } = await supabase.auth.admin.deleteUser(targetUserId);
   if (authError && !authError.message?.toLowerCase().includes("user not found")) {
-    // If the user doesn't exist, you may choose to continue cleanup for idempotency
-    // For strictness, return error:
     return json({ error: `Auth delete failed: ${authError.message}` }, 500, true);
   }
 
   // 2) Delete from profiles (idempotent: ignore "not found")
   const { error: profileError }: { error: { message: string } | null } = await supabase.from("profiles").delete().eq("id", targetUserId);
   if (profileError && !profileError.message?.toLowerCase().includes("row level security")) {
-    // If this table has RLS and you're not using the service key, this can fail
     return json({ error: `Profiles delete failed: ${profileError.message}` }, 500, true);
   }
 
@@ -112,9 +106,5 @@ export default async function handler(req: Request): Promise<Response> {
     console.warn("Avatar cleanup warning:", storageError.message);
   }
 
-  // Add more cleanup deletes as needed, e.g.:
-  // await supabase.from('posts').delete().eq('user_id', userId)
-
   return json({ success: true }, 200, true);
 }
->>>>>>> c290e03 (WIP: local edits (privacy page, delete-user fn, supabase client))

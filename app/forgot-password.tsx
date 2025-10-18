@@ -44,7 +44,7 @@ export default function ForgotPasswordScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Forgot password</Text>
       <Text style={styles.subtitle}>
-        Enter the email address tied to your account. We'll send you a reset link.
+        Enter the email address tied to your account. We will send you a reset link.
       </Text>
       <TextInput
         style={styles.input}
@@ -56,7 +56,7 @@ export default function ForgotPasswordScreen() {
         onChangeText={setEmail}
       />
       <TouchableOpacity style={styles.btn} onPress={sendReset} disabled={busy}>
-        <Text style={styles.btnText}>{busy ? "Sending…" : "Send reset link"}</Text>
+        <Text style={styles.btnText}>{busy ? "Sending..." : "Send reset link"}</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.replace("/login")}>
         <Text style={styles.link}>Back to sign in</Text>
