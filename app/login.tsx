@@ -4,28 +4,44 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../supabaseClient';
+import { handleRefreshTokenError } from '../lib/authSession';
 import { mergeUserRow } from '../lib/userStore';
 
 async function syncPendingAvatarIfAuthed() {
-  const pending = await AsyncStorage.getItem('pendingAvatarUri');
-  if (!pending) return;
+  try {
+    const pending = await AsyncStorage.getItem('pendingAvatarUri');
+    if (!pending) return;
 
-  const { data: authData } = await supabase.auth.getUser();
-  const user = authData?.user;
-  if (!user) return;
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData?.user;
+    if (!user) return;
 
-  const file = { uri: pending, name: 'avatar.jpg', type: 'image/jpeg' } as any;
-  const path = `avatars/${user.id}/avatar.jpg`;
-  const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: 'image/jpeg' });
-  if (upErr) throw upErr;
+    const file = {
+      uri: pending,
+      name: 'avatar.jpg',
+      type: 'image/jpeg',
+    } as any;
+    const path = `avatars/${user.id}/avatar.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true, contentType: 'image/jpeg' });
+    if (upErr) throw upErr;
 
-  const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-  const publicUrl = pub.publicUrl;
-  await mergeUserRow(supabase, user.id, { image_url: publicUrl });
-  const existing = JSON.parse((await AsyncStorage.getItem('userProfile')) || '{}');
-  existing.profileImage = publicUrl;
-  await AsyncStorage.setItem('userProfile', JSON.stringify(existing));
-  await AsyncStorage.removeItem('pendingAvatarUri');
+    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+    const publicUrl = pub.publicUrl;
+    await mergeUserRow(supabase, user.id, { image_url: publicUrl });
+    const existing = JSON.parse(
+      (await AsyncStorage.getItem('userProfile')) || '{}'
+    );
+    existing.profileImage = publicUrl;
+    await AsyncStorage.setItem('userProfile', JSON.stringify(existing));
+    await AsyncStorage.removeItem('pendingAvatarUri');
+  } catch (error) {
+    const handled = await handleRefreshTokenError(error);
+    if (!handled) {
+      console.warn('syncPendingAvatarIfAuthed login failed', error);
+    }
+  }
 }
 
 export default function LoginScreen() {
@@ -33,7 +49,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [ageInput, setAgeInput] = useState('');
 
   const hydrateProfileCache = async () => {
     try {
@@ -95,7 +110,10 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('userAge', resolvedAge.toString());
       }
     } catch (e) {
-      console.warn('hydrateProfileCache failed', e);
+      const handled = await handleRefreshTokenError(e);
+      if (!handled) {
+        console.warn('hydrateProfileCache failed', e);
+      }
     }
   };
 
@@ -115,68 +133,20 @@ export default function LoginScreen() {
     }
   };
 
-  const signUp = async () => {
-    try {
-      const ageNum = parseInt(ageInput.trim(), 10);
-      if (Number.isNaN(ageNum)) {
-        Alert.alert('Enter your age', 'We need your age to create an account.');
-        return;
-      }
-      if (ageNum < 21) {
-        Alert.alert('Must be 21+', 'BlazeMates is only for 21 and older.');
-        return;
-      }
-
-      setBusy(true);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { age: ageNum } },
-      });
-      if (error) {
-        Alert.alert('Sign up failed', error.message);
-        return;
-      }
-
-      const userId = data?.user?.id;
-      if (userId) {
-        await mergeUserRow(supabase, userId, { age: ageNum });
-
-        await AsyncStorage.setItem('userAge', ageNum.toString());
-        const existingRaw = await AsyncStorage.getItem('userProfile');
-        const existing = existingRaw ? JSON.parse(existingRaw) : {};
-        await AsyncStorage.setItem(
-          'userProfile',
-          JSON.stringify({ ...existing, age: ageNum })
-        );
-      }
-
-      Alert.alert('Confirm your email', 'Check your inbox to verify your account, then sign in.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sign in</Text>
       <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#888" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail}/>
       <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#888" secureTextEntry value={password} onChangeText={setPassword}/>
-      <TextInput
-        style={styles.input}
-        placeholder="Age (21+)"
-        placeholderTextColor="#888"
-        keyboardType="number-pad"
-        value={ageInput}
-        onChangeText={setAgeInput}
-      />
       <TouchableOpacity onPress={() => router.push('/forgot-password')}>
         <Text style={styles.link}>Forgot password?</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.btn} onPress={signIn} disabled={busy}>
-        <Text style={styles.btnText}>{busy ? 'Please wait…' : 'Sign In'}</Text>
+        <Text style={styles.btnText}>{busy ? 'Signing in...' : 'Sign In'}</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={signUp}><Text style={styles.link}>Create account</Text></TouchableOpacity>
+      <TouchableOpacity disabled={busy} onPress={() => router.push('/create-account')}>
+        <Text style={styles.link}>Create account</Text>
+      </TouchableOpacity>
     </View>
   );
 }

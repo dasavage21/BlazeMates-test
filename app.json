@@ -12,7 +12,21 @@
       "backgroundColor": "#121212"
     },
     "assetBundlePatterns": ["**/*"],
-    "plugins": ["expo-camera", "expo-maps", "expo-router"],
+    "plugins": [
+      "expo-camera",
+      "expo-maps",
+      "expo-router",
+      ["react-native-edge-to-edge", { "enabled": true }]
+    ],
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "transparent",
+      "barStyle": "light-content"
+    },
+    "androidNavigationBar": {
+      "translucent": true,
+      "backgroundColor": "transparent"
+    },
     "ios": {
       "bundleIdentifier": "com.hawkc13.blazemates",
       "supportsTablet": true,

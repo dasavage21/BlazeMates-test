@@ -1,9 +1,8 @@
-// © 2025 Benjamin Hawk. All rights reserved.
+// Ac 2025 Benjamin Hawk. All rights reserved.
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import * as Updates from "expo-updates";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   Linking,
@@ -13,19 +12,29 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../lib/ThemeContext";
 import { supabase } from "../supabaseClient";
+
 // in settings.tsx
 
 export default function SettingsScreen() {
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const router = useRouter();
+  const showThemeToggle = false; // flip to true when exposing the theme switch
 
-  const toggleDarkMode = async () => {
-    setDarkMode((prev) => !prev);
-    await AsyncStorage.setItem("theme", darkMode ? "light" : "dark");
-    Updates.reloadAsync();
-  };
+  const handleToggleTheme = useCallback(async () => {
+    try {
+      await toggleTheme();
+    } catch (error) {
+      console.error("Failed to toggle theme", error);
+      Alert.alert("Theme Error", "Unable to change the app theme right now.");
+    }
+  }, [toggleTheme]);
+
+  const handleThemeSwitch = useCallback(() => {
+    void handleToggleTheme();
+  }, [handleToggleTheme]);
 
   const toggleNotifications = () => {
     setNotifications((prev) => !prev);
@@ -110,36 +119,45 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>⚙️ Settings</Text>
+      <Text style={styles.header}>Settings</Text>
+
+      {showThemeToggle && (
+        <View style={styles.row}>
+          <Text style={styles.label}>
+            {isDark ? "Dark Theme Enabled" : "Light Theme Enabled"}
+          </Text>
+          <Switch value={isDark} onValueChange={handleThemeSwitch} />
+        </View>
+      )}
 
       <View style={styles.row}>
-        <Text style={styles.label}>🌙 Dark Mode</Text>
-        <Switch value={darkMode} onValueChange={toggleDarkMode} />
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>🔔 Push Notifications</Text>
+        <Text style={styles.label}>Push Notifications</Text>
         <Switch value={notifications} onValueChange={toggleNotifications} />
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
-        <Text style={styles.buttonText}>🚪 Sign Out</Text>
+        <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.buttonDanger}
         onPress={handleDeleteAccount}
       >
-        <Text style={styles.buttonText}>🗑️ Delete Account</Text>
+        <Text style={styles.buttonText}>Delete Account</Text>
       </TouchableOpacity>
+
       <TouchableOpacity
-        onPress={() => Linking.openURL("https://dasavage21.github.io/BlazeMates-test/blazemates-privacy.html")}
+        onPress={() =>
+          Linking.openURL(
+            "https://dasavage21.github.io/BlazeMates-test/blazemates-privacy.html"
+          )
+        }
       >
-        <Text style={styles.buttonText}>🔒 Privacy Policy</Text>
+        <Text style={styles.buttonText}>Privacy Policy</Text>
       </TouchableOpacity>
 
       <Text style={styles.footer}>
-        BlazeMates v1.0.0 — © 2025 Benjamin Hawk
+        BlazeMates v1.0.0 (c) 2025 Benjamin Hawk
       </Text>
     </View>
   );

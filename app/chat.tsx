@@ -1,10 +1,10 @@
-// © 2025 Benjamin Hawk. All rights reserved.
+// Ac 2025 Benjamin Hawk. All rights reserved.
 
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -28,11 +28,14 @@ type Message = {
 
 type TypingMap = Record<string, boolean>;
 
+type ActiveUser = {
+  user_id: string;
+  last_seen: string;
+  display_name?: string | null;
+};
+
 export default function ChatScreen() {
-  // /chat?threadId=...&userId=...
-  const params = useLocalSearchParams<{
-    threadId?: string | string[];
-  }>();
+  const params = useLocalSearchParams<{ threadId?: string | string[] }>();
   const rawThread = params.threadId;
   const threadId = useMemo(() => {
     if (!rawThread) return "global-chat";
@@ -43,12 +46,32 @@ export default function ChatScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [threadReady, setThreadReady] = useState(false);
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [typingUsers, setTypingUsers] = useState<TypingMap>({});
+  const [readReceipts, setReadReceipts] = useState<Record<string, string>>({});
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+
   const listRef = useRef<FlatList<Message>>(null);
 
+  const formatInitials = useCallback((raw?: string | null) => {
+    if (!raw) return "??";
+    const cleaned = raw.trim();
+    if (!cleaned) return "??";
+    const tokens = cleaned
+      .replace(/[^A-Za-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+    if (tokens.length >= 2) {
+      return `${tokens[0][0]}${tokens[1][0]}`.toUpperCase();
+    }
+    const fallback = cleaned.replace(/[^A-Za-z0-9]/g, "");
+    if (fallback.length >= 2) return fallback.slice(0, 2).toUpperCase();
+    if (fallback.length === 1) return `${fallback}${fallback}`.toUpperCase();
+    return "??";
+  }, []);
+
+  // Load the signed-in user
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -57,8 +80,8 @@ export default function ChatScreen() {
         if (!cancelled) {
           setUserId(data?.user?.id ?? null);
         }
-      } catch (e) {
-        console.warn("Failed to load auth user", e);
+      } catch (error) {
+        console.warn("Failed to load auth user", error);
         if (!cancelled) setUserId(null);
       } finally {
         if (!cancelled) setLoadingUser(false);
@@ -69,7 +92,7 @@ export default function ChatScreen() {
     };
   }, []);
 
-  // Ensure thread exists once we know the user
+  // Ensure the thread exists
   useEffect(() => {
     let cancelled = false;
     if (loadingUser) return;
@@ -84,8 +107,8 @@ export default function ChatScreen() {
           .from("threads")
           .upsert({ id: threadId }, { onConflict: "id" });
         if (!cancelled) setThreadReady(true);
-      } catch (e) {
-        console.warn("Failed to ensure thread", e);
+      } catch (error) {
+        console.warn("Failed to ensure thread", error);
         if (!cancelled) {
           setThreadReady(false);
           Alert.alert(
@@ -100,7 +123,7 @@ export default function ChatScreen() {
     };
   }, [threadId, loadingUser, userId]);
 
-  // Initial load + realtime inserts
+  // Initial message load + realtime inserts
   useEffect(() => {
     if (!threadReady) return;
     let active = true;
@@ -125,21 +148,13 @@ export default function ChatScreen() {
           table: "messages",
           filter: `thread_id=eq.${threadId}`,
         },
-        (payload) => setMessages((prev) => [...prev, payload.new as Message])
+        (payload) =>
+          setMessages((prev) => [...prev, payload.new as Message])
       )
       .subscribe();
 
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [threadId, threadReady]);
-
-  // Typing indicator subscription
-  useEffect(() => {
-    if (!threadReady) return;
-    const channel = supabase
-      .channel(`typing-${threadId}`)
+    const typingChannel = supabase
+      .channel(`threads-${threadId}-typing`)
       .on(
         "postgres_changes",
         {
@@ -156,9 +171,276 @@ export default function ChatScreen() {
       .subscribe();
 
     return () => {
+      active = false;
+      supabase.removeChannel(channel);
+      supabase.removeChannel(typingChannel);
+    };
+  }, [threadId, threadReady]);
+
+  // Read receipts
+  useEffect(() => {
+    if (!threadReady) return;
+    let cancelled = false;
+
+    const toMap = (
+      rows: { user_id: string; read_at: string | null }[] | null | undefined
+    ) => {
+      const map: Record<string, string> = {};
+      (rows ?? []).forEach(({ user_id, read_at }) => {
+        if (user_id && read_at) map[user_id] = read_at;
+      });
+      return map;
+    };
+
+    const loadReceipts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("read_receipts")
+          .select("user_id, read_at")
+          .eq("thread_id", threadId);
+        if (!cancelled && !error) {
+          setReadReceipts(toMap(data));
+        }
+      } catch {
+        // ignore read receipt fetch errors
+      }
+    };
+
+    void loadReceipts();
+
+    const channel = supabase
+      .channel(`read-receipts-${threadId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "read_receipts",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        (payload) => {
+          const eventType = (payload as { eventType?: string }).eventType;
+          const record =
+            (payload.new as { user_id?: string; read_at?: string }) ??
+            (payload.old as { user_id?: string; read_at?: string }) ??
+            null;
+          if (!record?.user_id) return;
+          if (eventType === "DELETE") {
+            setReadReceipts((prev) => {
+              const next = { ...prev };
+              delete next[record.user_id as string];
+              return next;
+            });
+            return;
+          }
+          if (record.read_at) {
+            setReadReceipts((prev) => ({
+              ...prev,
+              [record.user_id as string]: record.read_at as string,
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
     };
   }, [threadId, threadReady]);
+
+  // Active user list
+  useEffect(() => {
+    let cancelled = false;
+
+    const normalizeTimestamp = (value: unknown) => {
+      if (!value) return new Date().toISOString();
+      if (typeof value === "string") {
+        const date = new Date(value);
+        return Number.isFinite(date.getTime())
+          ? date.toISOString()
+          : new Date().toISOString();
+      }
+      if (value instanceof Date) {
+        return Number.isFinite(value.getTime())
+          ? value.toISOString()
+          : new Date().toISOString();
+      }
+      const date = new Date(value as number);
+      return Number.isFinite(date.getTime())
+        ? date.toISOString()
+        : new Date().toISOString();
+    };
+
+    const mapActive = (rows: any[] | null | undefined): ActiveUser[] => {
+      const dedup = new Map<string, ActiveUser>();
+
+      (rows ?? []).forEach((row) => {
+        const profile =
+          row.profile ?? row.profiles ?? row.account ?? row.user ?? null;
+        const resolvedId =
+          row.user_id ??
+          row.id ??
+          row.uid ??
+          row.user ??
+          row.sender_id ??
+          profile?.id ??
+          undefined;
+
+        if (!resolvedId) return;
+
+        const rawSeen =
+          row.last_seen ??
+          row.last_active_at ??
+          row.updated_at ??
+          row.seen_at ??
+          row.last_event_at ??
+          row.activity_at ??
+          row.created_at ??
+          row.inserted_at ??
+          new Date().toISOString();
+
+        const activeRecord: ActiveUser = {
+          user_id: resolvedId,
+          last_seen: normalizeTimestamp(rawSeen),
+          display_name:
+            row.display_name ??
+            row.username ??
+            row.name ??
+            profile?.display_name ??
+            profile?.username ??
+            profile?.name ??
+            null,
+        };
+
+        const existing = dedup.get(resolvedId);
+        if (!existing) {
+          dedup.set(resolvedId, activeRecord);
+          return;
+        }
+
+        if (
+          new Date(activeRecord.last_seen).getTime() >
+          new Date(existing.last_seen).getTime()
+        ) {
+          dedup.set(resolvedId, activeRecord);
+        }
+      });
+
+      return Array.from(dedup.values());
+    };
+
+    const fetchFromRelation = async (relation: string) => {
+      const { data, error } = await supabase
+        .from(relation)
+        .select("*")
+        .limit(10);
+      if (error) throw error;
+      return mapActive(data);
+    };
+
+    const fetchFromUserSessions = async () => {
+      const { data, error } = await supabase
+        .from("user_sessions")
+        .select("*")
+        .order("last_seen", { ascending: false, nullsFirst: false })
+        .limit(10);
+      if (error) throw error;
+      return mapActive(data);
+    };
+
+    const fetchFromMessages = async () => {
+      const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      let query = supabase
+        .from("messages")
+        .select("sender_id, created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(120);
+
+      if (threadId) {
+        query = query.eq("thread_id", threadId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const mapped = mapActive(
+        (data ?? []).map((row) => ({
+          sender_id: row.sender_id,
+          created_at: row.created_at,
+        }))
+      );
+
+      if (mapped.length === 0) return mapped;
+
+      const ids = mapped.map((item) => item.user_id);
+      try {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name, username, full_name")
+          .in("id", ids);
+
+        if (profiles) {
+          const lookup = new Map(
+            profiles.map((profile) => [
+              profile.id,
+              profile.display_name ??
+                profile.username ??
+                profile.full_name ??
+                null,
+            ])
+          );
+          mapped.forEach((item) => {
+            const displayName = lookup.get(item.user_id);
+            if (displayName) {
+              item.display_name = displayName;
+            }
+          });
+        }
+      } catch {
+        // profiles table might not exist; ignore
+      }
+
+      return mapped.slice(0, 10);
+    };
+
+    const refreshActiveUsers = async () => {
+      const loaders: (() => Promise<ActiveUser[]>)[] = [
+        () => fetchFromRelation("active_users_15m"),
+        () => fetchFromRelation("active_users"),
+        () => fetchFromRelation("active_users_view"),
+        () => fetchFromRelation("active_users_1h"),
+        () => fetchFromRelation("active_users_15m_count"),
+        fetchFromUserSessions,
+        fetchFromMessages,
+      ];
+
+      for (const load of loaders) {
+        if (cancelled) return;
+        try {
+          const result = await load();
+          if (cancelled) return;
+          setActiveUsers(result);
+          return;
+        } catch {
+          // Try the next available source
+        }
+      }
+
+      if (!cancelled) {
+        setActiveUsers([]);
+      }
+    };
+
+    void refreshActiveUsers();
+    const intervalId = setInterval(refreshActiveUsers, 60_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [threadId]);
 
   const otherTyping = useMemo(
     () =>
@@ -168,10 +450,34 @@ export default function ChatScreen() {
     [typingUsers, userId]
   );
 
-  // Mark read
+  const activePreview = useMemo(() => activeUsers.slice(0, 3), [activeUsers]);
+  const activeOverflow = Math.max(activeUsers.length - activePreview.length, 0);
+  const activeSummary = activeUsers.length
+    ? `${activeUsers.length} active in last 15 minutes`
+    : "Nobody active recently";
+
+  const postHeartbeat = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "idle-logout/heartbeat",
+        {
+          body: { room_id: threadId },
+        }
+      );
+      if (error) {
+        console.warn("Heartbeat invoke failed", error.message, error.status);
+      }
+      void data;
+    } catch (error) {
+      console.warn("Failed to post idle heartbeat", error);
+    }
+  }, [threadId, userId]);
+
+  // Mark this thread as read for the current user
   useEffect(() => {
     if (!threadReady || !userId) return;
-    (async () => {
+    void (async () => {
       try {
         await supabase
           .from("read_receipts")
@@ -183,35 +489,56 @@ export default function ChatScreen() {
                 read_at: new Date().toISOString(),
               },
             ],
-            {
-              onConflict: "thread_id,user_id",
-            }
+            { onConflict: "thread_id,user_id" }
           );
+      } catch {
+        // best effort
+      }
+    })();
+  }, [threadId, threadReady, userId, messages]);
+
+  useEffect(() => {
+    if (!threadReady || !userId) return;
+    let cancelled = false;
+
+    const beat = async () => {
+      if (cancelled) return;
+      await postHeartbeat();
+    };
+
+    void beat();
+    const intervalId = setInterval(() => {
+      void beat();
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [postHeartbeat, threadReady, userId]);
+
+  const updateTyping = useCallback(
+    async (isTyping: boolean) => {
+      if (!userId) return;
+      try {
+        const { data } = await supabase
+          .from("threads")
+          .select("typing")
+          .eq("id", threadId)
+          .single();
+        const updated = { ...(data?.typing ?? {}), [userId]: isTyping };
+        await supabase
+          .from("threads")
+          .update({ typing: updated })
+          .eq("id", threadId);
       } catch {
         /* no-op */
       }
-    })();
-  }, [threadId, threadReady, userId]);
+    },
+    [threadId, userId]
+  );
 
-  const updateTyping = async (isTyping: boolean) => {
-    if (!userId) return;
-    try {
-      const { data } = await supabase
-        .from("threads")
-        .select("typing")
-        .eq("id", threadId)
-        .single();
-      const updated = { ...(data?.typing ?? {}), [userId]: isTyping };
-      await supabase
-        .from("threads")
-        .update({ typing: updated })
-        .eq("id", threadId);
-    } catch {
-      /* no-op */
-    }
-  };
-
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text) return;
     if (!userId) {
@@ -225,21 +552,21 @@ export default function ChatScreen() {
         thread_id: threadId,
         sender_id: userId,
         content: text,
-        // created_at can be DEFAULT now() in the DB; omit it here if so
       })
       .select()
       .single();
 
     if (!error && data) {
-      setMessages((prev) => [...prev, data as Message]); // optimistic update with server id
+      setMessages((prev) => [...prev, data as Message]);
     }
     setInput("");
     await updateTyping(false);
-  };
+    await postHeartbeat();
+  }, [input, postHeartbeat, threadId, updateTyping, userId]);
 
   if (loadingUser) {
     return (
-      <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+      <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
         <View style={styles.loading}>
           <ActivityIndicator size="large" color="#00FF7F" />
         </View>
@@ -249,7 +576,7 @@ export default function ChatScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+      <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
         <View style={styles.locked}>
           <Text style={styles.lockedText}>
             Sign in to start chatting with other BlazeMates.
@@ -261,7 +588,7 @@ export default function ChatScreen() {
 
   if (!threadReady) {
     return (
-      <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+      <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
         <View style={styles.loading}>
           <ActivityIndicator size="large" color="#00FF7F" />
         </View>
@@ -270,79 +597,246 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={80}
-      >
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const isMe = item.sender_id === userId;
-            return (
-              <View style={[styles.message, isMe ? styles.you : styles.them]}>
-                <Text style={styles.text}>{item.content}</Text>
-                <Text style={styles.meta}>
-                  {new Date(item.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+    <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
+      <View style={styles.wrapper}>
+        <View style={styles.headerBar}>
+          <View style={styles.headerTextGroup}>
+            <Text style={styles.headerTitle}>Messages</Text>
+            <Text style={styles.headerSubtitle}>{activeSummary}</Text>
+          </View>
+          <View style={styles.badgeRow}>
+            {activePreview.map((user) => (
+              <View key={user.user_id} style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {formatInitials(user.display_name ?? user.user_id)}
                 </Text>
               </View>
-            );
-          }}
-          onContentSizeChange={() =>
-            listRef.current?.scrollToEnd({ animated: true })
-          }
-          onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
-          ListEmptyComponent={
-            <Text style={styles.empty}>
-              Start the conversation by sending the first message.
-            </Text>
-          }
-        />
-
-        {otherTyping && (
-          <Text style={styles.typing}>💬 Typing…</Text>
-        )}
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            value={input}
-            onChangeText={(text) => {
-              setInput(text);
-              updateTyping(!!text);
-            }}
-            placeholder="Type a message..."
-            placeholderTextColor="#888"
-            style={styles.input}
-            returnKeyType="send"
-            onSubmitEditing={sendMessage}
-          />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Text style={styles.sendText}>Send</Text>
-          </TouchableOpacity>
+            ))}
+            {activeOverflow > 0 && (
+              <View style={[styles.badge, styles.badgeOverflow]}>
+                <Text style={styles.badgeText}>+{activeOverflow}</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </KeyboardAvoidingView>
+
+        <KeyboardAvoidingView
+          style={styles.chatBody}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={80}
+        >
+          <FlatList
+            ref={listRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.messageList}
+            renderItem={({ item }) => {
+              const isMe = item.sender_id === userId;
+              const otherReaders = Object.entries(readReceipts).filter(
+                ([id]) => id !== userId
+              );
+              const messageTime = new Date(item.created_at).getTime();
+              const seenCount = otherReaders.filter(([, readAt]) => {
+                if (!readAt) return false;
+                const readTime = new Date(readAt).getTime();
+                return Number.isFinite(readTime) && readTime >= messageTime;
+              }).length;
+
+              let receiptLabel: string | null = null;
+              if (isMe) {
+                if (seenCount > 0) {
+                  receiptLabel =
+                    otherReaders.length > 1
+                      ? `Seen by ${seenCount}`
+                      : "Seen";
+                } else if (otherReaders.length > 0) {
+                  receiptLabel = "Delivered";
+                }
+              }
+
+              return (
+                <View
+                  style={[
+                    styles.messageRow,
+                    isMe ? styles.rowReverse : styles.rowForward,
+                  ]}
+                >
+                  {!isMe && (
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>
+                        {formatInitials(item.sender_id)}
+                      </Text>
+                    </View>
+                  )}
+                  <View
+                    style={[
+                      styles.messageBubble,
+                      isMe ? styles.you : styles.them,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.text,
+                        isMe ? styles.textSelf : styles.textOther,
+                      ]}
+                    >
+                      {item.content}
+                    </Text>
+                    <View style={styles.metaRow}>
+                      <Text
+                        style={[
+                          styles.meta,
+                          isMe ? styles.metaSelf : styles.metaOther,
+                        ]}
+                      >
+                        {new Date(item.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+                      {isMe && receiptLabel && (
+                        <View style={styles.receiptRow}>
+                          <Text style={styles.receiptDot}>✓</Text>
+                          <Text style={styles.receiptText}>{receiptLabel}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              );
+            }}
+            onContentSizeChange={() =>
+              listRef.current?.scrollToEnd({ animated: true })
+            }
+            onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                Start the conversation by sending the first message.
+              </Text>
+            }
+          />
+
+          {otherTyping && <Text style={styles.typing}>Typing...</Text>}
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={input}
+              onChangeText={(text) => {
+                setInput(text);
+                updateTyping(!!text);
+              }}
+              placeholder="Type a message..."
+              placeholderTextColor="#888"
+              style={styles.input}
+              returnKeyType="send"
+              onSubmitEditing={sendMessage}
+            />
+            <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+              <Text style={styles.sendText}>Send</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212", padding: 10 },
-  message: {
-    padding: 10,
-    borderRadius: 10,
-    marginVertical: 4,
-    maxWidth: "70%",
+  safeArea: { flex: 1, backgroundColor: "#121212" },
+  wrapper: { flex: 1, paddingHorizontal: 16, paddingBottom: 12 },
+  headerBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
   },
-  them: { backgroundColor: "#1e1e1e", alignSelf: "flex-start" },
-  you: { backgroundColor: "#00FF7F", alignSelf: "flex-end" },
-  text: { color: "#fff" },
-  meta: { fontSize: 10, color: "#aaa", marginTop: 4 },
+  headerTextGroup: { flexShrink: 1 },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  headerSubtitle: {
+    color: "#9e9e9e",
+    marginTop: 4,
+    fontSize: 14,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  badge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#1f1f1f",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: "#2f2f2f",
+  },
+  badgeOverflow: {
+    backgroundColor: "rgba(0, 255, 127, 0.15)",
+    borderColor: "#00FF7F",
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  chatBody: { flex: 1 },
+  messageList: { paddingBottom: 12, paddingTop: 8 },
+  messageRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginVertical: 4,
+  },
+  rowForward: { justifyContent: "flex-start" },
+  rowReverse: { justifyContent: "flex-end" },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#1f1f1f",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#2f2f2f",
+  },
+  avatarText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  messageBubble: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    maxWidth: "80%",
+  },
+  them: { backgroundColor: "#1e1e1e" },
+  you: { backgroundColor: "#00FF7F" },
+  text: { fontSize: 15, lineHeight: 20 },
+  textOther: { color: "#fff" },
+  textSelf: { color: "#121212" },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  meta: { fontSize: 10 },
+  metaOther: { color: "#b5b5b5" },
+  metaSelf: { color: "#121212", opacity: 0.7 },
+  receiptRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(18, 18, 18, 0.08)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  receiptDot: { color: "#121212", fontSize: 10, marginRight: 4 },
+  receiptText: { color: "#121212", fontSize: 10, fontWeight: "600" },
   inputContainer: {
     flexDirection: "row",
     padding: 8,
@@ -397,4 +891,3 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
 });
-

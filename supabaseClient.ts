@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://zedfmjwqbikwynwqtylu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_secret_u5yP7adQhrGJ5YF9dGiDUw_p4MvjS5n';
+export const SUPABASE_PROJECT_REF = SUPABASE_URL.replace(/^https?:\/\//, '').split('.')[0];
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {

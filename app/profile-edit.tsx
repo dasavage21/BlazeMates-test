@@ -20,6 +20,7 @@ import {
 } from "react-native";
 
 import { supabase } from "../supabaseClient";
+import { handleRefreshTokenError } from "../lib/authSession";
 import { mergeUserRow } from "../lib/userStore";
 type Looking = "smoke" | "hookup" | "both";
 const PENDING_KEY = "pendingAvatarUri";
@@ -125,12 +126,20 @@ export default function ProfileEditScreen() {
         url: publicUrl,
         ts: Date.now(),
       });
-    } catch (e: any) {
-      console.warn("uploadAvatarAndSave error", e);
-      Alert.alert(
-        "Error",
-        e?.message ?? "Something went wrong uploading your photo."
-      );
+    } catch (error) {
+      const handled = await handleRefreshTokenError(error);
+      if (handled) {
+        Alert.alert(
+          "Session expired",
+          "Please sign in again to sync your photo."
+        );
+        return;
+      }
+      console.warn("uploadAvatarAndSave error", error);
+      const message =
+        (error as { message?: string })?.message ??
+        "Something went wrong uploading your photo.";
+      Alert.alert("Error", message);
     } finally {
       setUploading(false);
     }
@@ -148,7 +157,12 @@ export default function ProfileEditScreen() {
       setSyncing(true);
       await uploadAvatarAndSave(pending);
     } catch (e) {
-      console.warn("Pending avatar sync failed", e);
+      const handled = await handleRefreshTokenError(e);
+      if (!handled) {
+        console.warn("Pending avatar sync failed", e);
+      } else {
+        Alert.alert("Session expired", "Please sign in again to finish syncing.");
+      }
     } finally {
       setSyncing(false);
     }
@@ -210,7 +224,12 @@ export default function ProfileEditScreen() {
           }
         }
       } catch (e) {
-        console.warn("Failed to refresh age from Supabase", e);
+        const handled = await handleRefreshTokenError(e);
+        if (!handled) {
+          console.warn("Failed to refresh age from Supabase", e);
+        } else {
+          Alert.alert("Session expired", "Please sign in again to refresh data.");
+        }
       }
 
       try {
@@ -258,51 +277,73 @@ export default function ProfileEditScreen() {
 
     setSaving(true);
 
-    // Always store a local copy
-    const newProfile = {
-      name,
-      bio,
-      strain,
-      style,
-      lookingFor,
-      profileImage,
-      age,
-    };
-    await AsyncStorage.setItem("userProfile", JSON.stringify(newProfile));
-    if (age !== null) {
-      await AsyncStorage.setItem("userAge", age.toString());
-    }
-
-    // Update DB if authenticated
-    const { data: authData } = await supabase.auth.getUser();
-    const authedUser = authData?.user;
-
-    if (authedUser) {
-      const { error } = await mergeUserRow(supabase, authedUser.id, {
+    try {
+      // Always store a local copy
+      const newProfile = {
         name,
         bio,
         strain,
         style,
-        looking_for: lookingFor,
-        age: age ?? null,
-        image_url: profileImage ?? null,
-      });
-
-      if (error) {
-        console.error(error);
-        Alert.alert("Saved locally", "Online save failed (will retry later).");
-      } else {
-        Alert.alert("Saved!", "Your profile has been updated.");
+        lookingFor,
+        profileImage,
+        age,
+      };
+      await AsyncStorage.setItem("userProfile", JSON.stringify(newProfile));
+      if (age !== null) {
+        await AsyncStorage.setItem("userAge", age.toString());
       }
-    } else {
-      Alert.alert(
-        "Saved locally",
-        "Sign in to sync your profile to the cloud."
-      );
-    }
 
-    setSaving(false);
-    router.replace("/profile");
+      try {
+        const { data: authData, error: authErr } = await supabase.auth.getUser();
+        if (authErr) throw authErr;
+        const authedUser = authData?.user;
+
+        if (!authedUser) {
+          Alert.alert(
+            "Saved locally",
+            "Sign in to sync your profile to the cloud."
+          );
+        } else {
+          const { error } = await mergeUserRow(supabase, authedUser.id, {
+            name,
+            bio,
+            strain,
+            style,
+            looking_for: lookingFor,
+            age: age ?? null,
+            image_url: profileImage ?? null,
+          });
+
+          if (error) {
+            console.error(error);
+            Alert.alert(
+              "Saved locally",
+              "Online save failed (will retry later)."
+            );
+          } else {
+            Alert.alert("Saved!", "Your profile has been updated.");
+          }
+        }
+      } catch (error) {
+        const handled = await handleRefreshTokenError(error);
+        if (handled) {
+          Alert.alert(
+            "Session expired",
+            "Please sign in again to save online."
+          );
+        } else {
+          console.error(error);
+          Alert.alert(
+            "Saved locally",
+            "Online save failed (will retry later)."
+          );
+        }
+      }
+
+      router.replace("/profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
