@@ -1,6 +1,5 @@
 // Ac 2025 Benjamin Hawk. All rights reserved.
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -13,6 +12,10 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "../lib/ThemeContext";
+import {
+  clearLocalAuthSession,
+  handleRefreshTokenError,
+} from "../lib/authSession";
 import { supabase } from "../supabaseClient";
 
 // in settings.tsx
@@ -42,8 +45,7 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    await AsyncStorage.clear();
+    await clearLocalAuthSession();
     router.replace("/login");
   };
 
@@ -99,8 +101,7 @@ export default function SettingsScreen() {
                 return;
               }
 
-              await supabase.auth.signOut();
-              await AsyncStorage.clear();
+              await clearLocalAuthSession();
               Alert.alert("Account Deleted", "Your account was successfully removed.", [
                 {
                   text: "OK",
@@ -108,6 +109,15 @@ export default function SettingsScreen() {
                 },
               ]);
             } catch (err) {
+              const handled = await handleRefreshTokenError(err);
+              if (handled) {
+                Alert.alert(
+                  "Session expired",
+                  "Please sign in again to manage your account.",
+                  [{ text: "OK", onPress: () => router.replace("/login") }]
+                );
+                return;
+              }
               console.error(err);
               Alert.alert("Error", "Something went wrong.");
             }

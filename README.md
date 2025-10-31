@@ -1,61 +1,29 @@
-# Welcome to your Expo app 👋
+# BlazeMates
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+BlazeMates is an Expo/React Native social discovery app built around cannabis-friendly connections. The project uses [Expo Router](https://docs.expo.dev/router/introduction/) for navigation and Supabase for authentication and data access.
 
-## Get started
+## Development
 
-1. Install dependencies
+- Install dependencies: `npm install`
+- Start the local dev server: `npm run start`
+- Run the built-in lint task: `npm run lint`
 
-   ```bash
-   npm install
-   ```
+The app source lives inside the `app/` directory and follows Expo Router's file-based routing conventions.
 
-2. Start the app
+## Policy & Compliance
 
-   ```bash
-   npx expo start
-   ```
+BlazeMates includes matchmaking features and must comply with Google Play's **Age-Restricted Content and Functionality** policy. The codebase now enforces an in-app age gate (`app/age-check.tsx`) and blocks any account identified as underage (`app/underage-blocked.tsx`), but you must also finish the required steps in Play Console so distribution is limited to verified adults.
 
-In the output, you'll find options to open the app in a
+### Configure Google Play to block minors
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1. Sign in to the [Google Play Console](https://play.google.com/console) and select the BlazeMates application.
+2. Navigate to **Policy > App content > Age-restricted content and functionality** and complete the new declaration. Answer **Yes** for matchmaking functionality and select **Block users below the legal age**.
+3. Still within **App content**, open **Target audience and content**, choose **Adults only (18+)**, and add a note under **Age-restricted content details** that BlazeMates is restricted to users 21 and older in supported regions.
+4. Under **Store presence > Main store listing**, highlight the 21+ restriction so the storefront clearly communicates it to users.
+5. In **Publishing overview**, submit the updated declarations after Google Play confirms that the age-based block is enabled.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Document proof of compliance (screenshots or policy confirmation emails) alongside `child-safety.html` whenever you submit new builds.
 
-## Get a fresh project
+## Legal
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
-
-## © Copyright Notice
-
-This software and its source code is © 2025 Benjamin Hawk.  
-All rights reserved. No part of this project may be reproduced, distributed, or transmitted in any form without prior written permission
+This project is Copyright 2025 Benjamin Hawk. All rights reserved. See `LICENSE` for additional details.
