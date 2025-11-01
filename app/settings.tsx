@@ -167,7 +167,7 @@ export default function SettingsScreen() {
       </TouchableOpacity>
 
       <Text style={styles.footer}>
-        BlazeMates v1.0.0 (c) 2025 Benjamin Hawk
+        BlazeMates LLC v1.0.0 (c) 2025 BlazeMates LLC. All rights reserved.
       </Text>
     </View>
   );
