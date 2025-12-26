@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 
 const hotspots = [
   { id: '1', title: '420 Lounge',   lat: 37.78825, lon: -122.4324 },
@@ -29,6 +28,9 @@ function WebMapView() {
 }
 
 function NativeMapView() {
+  const MapView = require('react-native-maps').default;
+  const { Marker } = require('react-native-maps');
+
   return (
     <MapView
       style={styles.map}
