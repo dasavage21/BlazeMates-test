@@ -4,7 +4,18 @@ const { getDefaultConfig } = require('expo/metro-config');
 const config = getDefaultConfig(__dirname);
 
 // Ensure platform-specific extensions are resolved in the correct order
-config.resolver.sourceExts = ['tsx', 'ts', 'jsx', 'js', 'json'];
+config.resolver.sourceExts = ['tsx', 'ts', 'jsx', 'js', 'json', 'cjs', 'mjs'];
 config.resolver.platforms = ['ios', 'android', 'web'];
+
+// Add resolver to handle nanoid package
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'nanoid/non-secure') {
+    return {
+      filePath: require.resolve('nanoid/non-secure'),
+      type: 'sourceFile',
+    };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 module.exports = config;
