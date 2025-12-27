@@ -27,6 +27,8 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     const load = async () => {
+      let localAge: number | null = null;
+
       const stored = await AsyncStorage.getItem("userProfile");
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -34,6 +36,7 @@ export default function ProfileScreen() {
         if (parsed?.age !== null && parsed?.age !== undefined) {
           const parsedAge = Number(parsed.age);
           if (!Number.isNaN(parsedAge)) {
+            localAge = parsedAge;
             setAge(parsedAge);
           }
         }
@@ -41,7 +44,11 @@ export default function ProfileScreen() {
 
       const storedAge = await AsyncStorage.getItem("userAge");
       if (storedAge) {
-        setAge(parseInt(storedAge));
+        const parsedAge = parseInt(storedAge);
+        if (!Number.isNaN(parsedAge)) {
+          localAge = parsedAge;
+          setAge(parsedAge);
+        }
       }
 
       const { data: authData } = await supabase.auth.getUser();
@@ -57,7 +64,14 @@ export default function ProfileScreen() {
         if (!error && data) {
           if (data.age !== null && data.age !== undefined) {
             setAge(data.age);
+          } else if (localAge !== null) {
+            await supabase
+              .from("users")
+              .update({ age: localAge })
+              .eq("id", userId);
+            setAge(localAge);
           }
+
           setProfile({
             name: data.name || "",
             bio: data.bio || "",

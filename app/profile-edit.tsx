@@ -229,6 +229,11 @@ export default function ProfileEditScreen() {
               setAge(remoteAge);
               await AsyncStorage.setItem("userAge", remoteAge.toString());
             }
+          } else if (!error && (userRow?.age === null || userRow?.age === undefined) && age !== null) {
+            await supabase
+              .from("users")
+              .update({ age })
+              .eq("id", authedUser.id);
           }
         }
       } catch (e) {
