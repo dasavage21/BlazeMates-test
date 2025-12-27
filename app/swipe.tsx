@@ -454,29 +454,34 @@ export default function SwipeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.settingsContainer}>
-        <TouchableOpacity onPress={() => router.push("/settings")}>
-          <Text style={styles.settingsText}>⚙️ settings</Text>
-        </TouchableOpacity>
-      </View>
+      <View style={styles.navbar}>
+        <View style={styles.navLeft}>
+          <Text style={styles.logo}>🔥</Text>
+          <Text style={styles.brandName}>BlazeMates</Text>
+        </View>
 
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push("/profile")}>
-          <Image
-            key={profilePhoto}
-            source={{ uri: profilePhoto || PLACEHOLDER_50 }}
-            style={styles.profilePicLarge}
-          />
-        </TouchableOpacity>
-        <Text style={styles.title}>🔥 BlazeMates</Text>
-      </View>
+        <View style={styles.navCenter}>
+          <TouchableOpacity onPress={() => router.push("/profile")}>
+            <Image
+              key={profilePhoto}
+              source={{ uri: profilePhoto || PLACEHOLDER_50 }}
+              style={styles.navProfilePic}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/matches")}>
+            <Text style={styles.navLink}>💚 Matches</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/chat")}>
+            <Text style={styles.navLink}>💬 Chat</Text>
+          </TouchableOpacity>
+        </View>
 
-      <TouchableOpacity
-        style={styles.profileBtn}
-        onPress={() => router.push("/matches")}
-      >
-        <Text style={styles.profileBtnText}>💚 Your Matches</Text>
-      </TouchableOpacity>
+        <View style={styles.navRight}>
+          <TouchableOpacity onPress={() => router.push("/settings")}>
+            <Text style={styles.navLink}>⚙️ Settings</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={styles.cardContainer}>
         {visibleProfiles.length > 0 ? (
@@ -560,56 +565,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f0f0f",
+  },
+  navbar: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingTop: containerPaddingTop,
-    paddingHorizontal: containerPaddingHorizontal,
+    justifyContent: "space-between",
+    backgroundColor: "#1a1a1a",
+    paddingVertical: 12,
+    paddingHorizontal: isDesktop ? 40 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a2a",
   },
-  settingsContainer: {
-    alignSelf: "flex-start",
-    marginBottom: isDesktop ? 10 : 8,
+  navLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-  settingsText: {
-    color: "#00FF7F",
+  logo: {
+    fontSize: 28,
+  },
+  brandName: {
+    fontSize: 20,
     fontWeight: "bold",
-    fontSize: settingsFontSize,
+    color: "#00FF7F",
   },
-  header: {
+  navCenter: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: isDesktop ? 20 : 16,
-    marginTop: isDesktop ? 10 : 0,
+    gap: isDesktop ? 24 : 16,
   },
-  profilePicLarge: {
-    width: profilePicSize,
-    height: profilePicSize,
-    borderRadius: profilePicSize / 2,
+  navRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  navLink: {
+    color: "#fff",
+    fontSize: isDesktop ? 15 : 13,
+    fontWeight: "500",
+  },
+  navProfilePic: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderColor: "#00FF7F",
     borderWidth: 2,
-    marginBottom: isDesktop ? 8 : 6,
   },
-  title: {
-    fontSize: titleFontSize,
-    color: "#00FF7F",
-    fontWeight: "bold",
-  },
-  profileBtn: {
-    backgroundColor: "#1f1f1f",
-    borderRadius: isDesktop ? 25 : 20,
-    paddingVertical: isDesktop ? 10 : 8,
-    paddingHorizontal: isDesktop ? 20 : 16,
-    marginBottom: isDesktop ? 20 : 16,
-  },
-  profileBtnText: { color: "#fff", fontSize: buttonFontSize },
   cardContainer: {
-    width: cardWidth,
-    height: screenHeight * 0.5,
+    flex: 1,
+    width: "100%",
     justifyContent: "center",
     alignItems: "center",
+    paddingVertical: 20,
     position: "relative",
   },
   cardWrapper: {
-    width: "100%",
-    height: "100%",
+    width: cardWidth,
+    maxWidth: 440,
+    height: screenHeight * 0.55,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -743,7 +755,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   emptyState: {
-    marginTop: isDesktop ? 80 : 60,
     alignItems: "center",
     paddingHorizontal: 20,
   },
@@ -765,10 +776,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     color: "#777",
-    marginTop: 30,
+    paddingVertical: 20,
     fontSize: 12,
     textAlign: "center",
-    position: "absolute",
-    bottom: 20,
   },
 });
