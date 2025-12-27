@@ -16,6 +16,14 @@ import { supabase } from "../supabaseClient";
 
 const screenWidth = Dimensions.get("window").width;
 const cardWidth = Math.min(screenWidth * 0.9, 440);
+const isDesktop = screenWidth >= 768;
+const profilePicSize = isDesktop ? 90 : 70;
+const titleFontSize = isDesktop ? 26 : 22;
+const buttonFontSize = isDesktop ? 16 : 15;
+const settingsFontSize = isDesktop ? 16 : 14;
+const containerPaddingTop = isDesktop ? 60 : 48;
+const containerPaddingHorizontal = isDesktop ? 20 : 16;
+
 type Looking = "smoke" | "hookup" | "both";
 
 type Profile = {
@@ -413,45 +421,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f0f0f",
     alignItems: "center",
-    paddingTop: 48,
-    paddingHorizontal: 16,
+    paddingTop: containerPaddingTop,
+    paddingHorizontal: containerPaddingHorizontal,
   },
   settingsContainer: {
     alignSelf: "flex-start",
-    marginBottom: 8,
+    marginBottom: isDesktop ? 10 : 8,
   },
   settingsText: {
     color: "#00FF7F",
     fontWeight: "bold",
-    fontSize: 14,
+    fontSize: settingsFontSize,
   },
   header: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
-    marginTop: 0,
+    marginBottom: isDesktop ? 20 : 16,
+    marginTop: isDesktop ? 10 : 0,
   },
   profilePicLarge: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: profilePicSize,
+    height: profilePicSize,
+    borderRadius: profilePicSize / 2,
     borderColor: "#00FF7F",
     borderWidth: 2,
-    marginBottom: 6,
+    marginBottom: isDesktop ? 8 : 6,
   },
   title: {
-    fontSize: 22,
+    fontSize: titleFontSize,
     color: "#00FF7F",
     fontWeight: "bold",
   },
   profileBtn: {
     backgroundColor: "#1f1f1f",
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    borderRadius: isDesktop ? 25 : 20,
+    paddingVertical: isDesktop ? 10 : 8,
+    paddingHorizontal: isDesktop ? 20 : 16,
+    marginBottom: isDesktop ? 20 : 16,
   },
-  profileBtnText: { color: "#fff", fontSize: 15 },
+  profileBtnText: { color: "#fff", fontSize: buttonFontSize },
   card: {
     backgroundColor: "#1e1e1e",
     width: cardWidth,
@@ -511,8 +519,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     overflow: "hidden",
   },
-  emptyState: { marginTop: 60, alignItems: "center", paddingHorizontal: 20 },
-  emptyText: { color: "#aaa", fontSize: 15, textAlign: "center" },
+  emptyState: { marginTop: isDesktop ? 80 : 60, alignItems: "center", paddingHorizontal: 20 },
+  emptyText: { color: "#aaa", fontSize: isDesktop ? 16 : 15, textAlign: "center" },
   footer: {
     color: "#777",
     marginTop: 30,
