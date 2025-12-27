@@ -1,6 +1,6 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -57,6 +57,7 @@ export default function SwipeScreen() {
   // Removed unused avatarVer state
   const [skipCount, setSkipCount] = useState(0);
   const [cooldownActive, setCooldownActive] = useState(false);
+  const [shouldAdvance, setShouldAdvance] = useState(false);
 
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener(
@@ -128,6 +129,20 @@ export default function SwipeScreen() {
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
 
+      // Load existing likes from database
+      let alreadyLiked: string[] = [];
+      if (myUserId) {
+        const { data: likesData } = await supabase
+          .from("likes")
+          .select("liked_user_id")
+          .eq("user_id", myUserId);
+
+        if (likesData) {
+          alreadyLiked = likesData.map((like) => like.liked_user_id);
+          setLikedUsers(alreadyLiked);
+        }
+      }
+
       const { data, error } = await supabase
         .from("users")
         .select("id,name,age,bio,strain,style,looking_for,image_url");
@@ -166,6 +181,7 @@ export default function SwipeScreen() {
 
       const filtered = everyone
         .filter((p) => !myUserId || p.id !== myUserId)
+        .filter((p) => !alreadyLiked.includes(p.id))
         .filter(
           (p) =>
             userLookingFor === "both" ||
@@ -183,6 +199,19 @@ export default function SwipeScreen() {
   useEffect(() => {
     loadHeaderPhoto();
   }, [loadHeaderPhoto]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (shouldAdvance) {
+        setShouldAdvance(false);
+        if (index < profiles.length - 1) {
+          setIndex((i) => i + 1);
+        } else {
+          router.push({ pathname: "/chat", params: { threadId: "global-chat" } });
+        }
+      }
+    }, [shouldAdvance, index, profiles.length, router])
+  );
 
   useEffect(() => {
     if (skipCount > 0) {
@@ -206,17 +235,33 @@ export default function SwipeScreen() {
     else router.push({ pathname: "/chat", params: { threadId: "global-chat" } });
   };
 
-  const handleSwipeRight = () => {
+  const handleSwipeRight = async () => {
     const current = profiles[index];
     if (!current) return;
 
     if (!likedUsers.includes(current.id)) {
       setLikedUsers((prev) => [...prev, current.id]);
-      // demo "match" flow (replace with real mutual matching later)
+
+      // Save like to database
+      const { data: authData } = await supabase.auth.getUser();
+      const myUserId = authData?.user?.id;
+
+      if (myUserId) {
+        await supabase.from("likes").insert({
+          user_id: myUserId,
+          liked_user_id: current.id,
+        });
+      }
+
+      // Mark that we should advance when returning from match screen
+      setShouldAdvance(true);
+
+      // Show match screen
       router.push(`/match?matchId=${current.id}`);
       return;
     }
 
+    // This should not happen anymore, but keep as fallback
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 0,
