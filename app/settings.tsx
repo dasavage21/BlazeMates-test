@@ -78,9 +78,9 @@ export default function SettingsScreen() {
                 return;
               }
 
-              const FUNCTION_BASE =
-                "https://zedfmjwqbikwynwqtylu.functions.supabase.co";
-              const resp = await fetch(`${FUNCTION_BASE}/delete-user`, {
+              const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+              const functionUrl = supabaseUrl.replace('.supabase.co', '.functions.supabase.co');
+              const resp = await fetch(`${functionUrl}/delete-user`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
