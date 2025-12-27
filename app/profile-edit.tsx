@@ -11,6 +11,7 @@ import {
   Alert,
   DeviceEventEmitter,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -50,7 +51,7 @@ export default function ProfileEditScreen() {
 
   /** Upload a local file:// uri to Storage and update users.image_url. */
   const uploadAvatarAndSave = useCallback(async (localUri: string) => {
-    setProfileImage(localUri); // show the freshly captured image immediately
+    setProfileImage(localUri);
     setUploading(true);
     try {
       const { data: authData, error: authErr } = await supabase.auth.getUser();
@@ -75,11 +76,19 @@ export default function ProfileEditScreen() {
 
       const path = `${user.id}/avatar.jpg`;
 
-      // Use legacy API to read as base64
-      const base64 = await FileSystem.readAsStringAsync(localUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      let bytes: Uint8Array;
+
+      if (Platform.OS === "web") {
+        const response = await fetch(localUri);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        bytes = new Uint8Array(arrayBuffer);
+      } else {
+        const base64 = await FileSystem.readAsStringAsync(localUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      }
 
       let { error: uploadErr } = await supabase.storage
         .from("avatars")
@@ -89,7 +98,6 @@ export default function ProfileEditScreen() {
           contentType: "image/jpeg",
         });
 
-      // Fallback if resource exists and upsert is not honored by current SDK
       if (uploadErr?.message?.includes("The resource already exists")) {
         const { error: updateErr } = await supabase.storage
           .from("avatars")
@@ -233,8 +241,12 @@ export default function ProfileEditScreen() {
       }
 
       try {
-        const { status } = await Camera.requestCameraPermissionsAsync();
-        setHasCamPermission(status === "granted");
+        if (Platform.OS === "web") {
+          setHasCamPermission(true);
+        } else {
+          const { status } = await Camera.requestCameraPermissionsAsync();
+          setHasCamPermission(status === "granted");
+        }
       } catch {
         setHasCamPermission(false);
       }
@@ -375,7 +387,9 @@ export default function ProfileEditScreen() {
         style={[styles.button, styles.secondaryButton]}
         onPress={openCamera}
       >
-        <Text style={styles.buttonSecondaryText}>📷 Take / Update Photo</Text>
+        <Text style={styles.buttonSecondaryText}>
+          {Platform.OS === "web" ? "📷 Choose Photo" : "📷 Take / Update Photo"}
+        </Text>
       </TouchableOpacity>
 
       <TextInput

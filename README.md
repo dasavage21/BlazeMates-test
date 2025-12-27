@@ -2,11 +2,50 @@
 
 BlazeMates is an Expo/React Native social discovery app built around cannabis-friendly connections. The project uses [Expo Router](https://docs.expo.dev/router/introduction/) for navigation and Supabase for authentication and data access.
 
+## Platform Support
+
+BlazeMates works on:
+- **Web browsers** - Chrome, Firefox, Safari, Edge
+- **iOS** - iPhone and iPad (iOS 13.4+)
+- **Android** - Phones and tablets (API 21+)
+
+See [CROSS_PLATFORM.md](./CROSS_PLATFORM.md) for detailed compatibility information.
+
 ## Development
 
-- Install dependencies: `npm install`
-- Start the local dev server: `npm run start`
-- Run the built-in lint task: `npm run lint`
+### Install Dependencies
+```bash
+npm install
+```
+
+### Run on Different Platforms
+
+**Web Browser:**
+```bash
+npm run web
+```
+Opens at http://localhost:8081
+
+**iOS Simulator:**
+```bash
+npm run ios
+```
+Requires macOS with Xcode
+
+**Android Emulator:**
+```bash
+npm run android
+```
+Requires Android Studio
+
+**Choose Platform:**
+```bash
+npm start
+```
+Opens Expo Dev Tools
+
+### Additional Commands
+- Lint code: `npm run lint`
 
 The app source lives inside the `app/` directory and follows Expo Router's file-based routing conventions.
 

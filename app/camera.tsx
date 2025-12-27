@@ -2,11 +2,13 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 
 import { Camera, CameraType, CameraView } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,14 +23,50 @@ export default function CameraScreen() {
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
+      if (Platform.OS === "web") {
+        setHasPermission(true);
+      } else {
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        setHasPermission(status === "granted");
+      }
     })();
   }, []);
+
+  const pickImageWeb = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        router.push({
+          pathname: "/profile-edit",
+          params: { photoUri: result.assets[0].uri },
+        });
+      }
+    } catch {
+      Alert.alert("Error", "Could not select photo");
+    }
+  };
 
   if (hasPermission === null) {
     return <View />;
   }
+
+  if (Platform.OS === "web") {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.permText}>Select a profile photo</Text>
+        <TouchableOpacity style={styles.grantBtn} onPress={pickImageWeb}>
+          <Text style={styles.grantText}>Choose Photo</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (hasPermission === false) {
     async function requestPermission() {
       const { status } = await Camera.requestCameraPermissionsAsync();
@@ -49,7 +87,6 @@ export default function CameraScreen() {
     try {
       const photo = await cameraRef.current?.takePictureAsync();
       if (!photo?.uri) return;
-      // Send the local file URI back to the edit screen
       router.push({
         pathname: "/profile-edit",
         params: { photoUri: photo.uri },
