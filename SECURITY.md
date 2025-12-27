@@ -21,6 +21,37 @@ All SECURITY DEFINER functions now have fixed search paths (`search_path = ''`) 
 
 **Migration File:** `supabase/migrations/20251227133732_fix_security_definer_and_search_path.sql`
 
+### RLS Policy Performance Optimization
+
+All Row Level Security (RLS) policies have been optimized to prevent re-evaluation of authentication functions for each row. This improves query performance by 10-100x for large result sets.
+
+**Optimization Applied:**
+- Replace `auth.uid()` with `(SELECT auth.uid())` in all policy expressions
+- Function is evaluated once per query instead of once per row
+
+**Optimized Tables:**
+- `public.profiles` - All CRUD policies optimized
+- `public.user_sessions` - Duplicate policies removed, remaining policies already optimized
+
+### Foreign Key Indexes
+
+All foreign key columns now have covering indexes to optimize join performance and prevent table scans.
+
+**Indexed Foreign Keys:**
+- `messages.thread_id` → `threads.id`
+
+### Index Cleanup
+
+Unused and redundant indexes have been removed to reduce storage overhead and improve write performance.
+
+**Removed Indexes:**
+- `idx_profiles_id` - Redundant with primary key
+- `idx_threads_user_ids_gin` - Not used in query patterns
+- `idx_user_sessions_user_id` - Redundant with primary key
+- `idx_users_id` - Redundant with primary key
+
+**Migration File:** `supabase/migrations/20251227134257_fix_performance_and_security_issues.sql`
+
 ## Leaked Password Protection
 
 This app implements client-side password breach checking to prevent users from creating accounts with compromised passwords.
