@@ -546,15 +546,13 @@ export default function ChatScreen() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("messages")
       .insert({
         thread_id: threadId,
         sender_id: userId,
         content: text,
-      })
-      .select()
-      .single();
+      });
 
     if (error) {
       console.error("Failed to send message:", error);
@@ -562,9 +560,6 @@ export default function ChatScreen() {
       return;
     }
 
-    if (data) {
-      setMessages((prev) => [...prev, data as Message]);
-    }
     setInput("");
     await updateTyping(false);
     await postHeartbeat();
