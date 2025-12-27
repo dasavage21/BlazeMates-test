@@ -319,21 +319,13 @@ export default function SwipeScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.settingsContainer}>
+        <TouchableOpacity onPress={() => router.push("/settings")}>
+          <Text style={styles.settingsText}>⚙️ settings</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.header}>
-        <View style={{ position: "absolute", left: -100, top: 0, zIndex: 2 }}>
-          <TouchableOpacity onPress={() => router.push("/settings")}>
-            <Text
-              style={{
-                color: "#00FF7F",
-                fontWeight: "bold",
-                fontSize: 16,
-                margin: 10,
-              }}
-            >
-              ⚙️ settings
-            </Text>
-          </TouchableOpacity>
-        </View>
         <TouchableOpacity onPress={() => router.push("/profile")}>
           <Image
             key={profilePhoto}
@@ -421,36 +413,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f0f0f",
     alignItems: "center",
-    paddingTop: 60,
-    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingHorizontal: 16,
+  },
+  settingsContainer: {
+    alignSelf: "flex-start",
+    marginBottom: 8,
+  },
+  settingsText: {
+    color: "#00FF7F",
+    fontWeight: "bold",
+    fontSize: 14,
   },
   header: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
-    marginTop: 10,
+    marginBottom: 16,
+    marginTop: 0,
   },
   profilePicLarge: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     borderColor: "#00FF7F",
     borderWidth: 2,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     color: "#00FF7F",
     fontWeight: "bold",
   },
   profileBtn: {
     backgroundColor: "#1f1f1f",
-    borderRadius: 25,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
-  profileBtnText: { color: "#fff", fontSize: 16 },
+  profileBtnText: { color: "#fff", fontSize: 15 },
   card: {
     backgroundColor: "#1e1e1e",
     width: cardWidth,
@@ -510,8 +511,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     overflow: "hidden",
   },
-  emptyState: { marginTop: 80, alignItems: "center" },
-  emptyText: { color: "#aaa", fontSize: 16 },
+  emptyState: { marginTop: 60, alignItems: "center", paddingHorizontal: 20 },
+  emptyText: { color: "#aaa", fontSize: 15, textAlign: "center" },
   footer: {
     color: "#777",
     marginTop: 30,
