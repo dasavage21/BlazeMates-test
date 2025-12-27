@@ -51,88 +51,88 @@ export default function SettingsScreen() {
 
   const handleDeleteAccount = () => {
     console.log("Delete Account button clicked");
-    Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your BlazeMates account? This cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            console.log("Delete confirmed");
-            try {
-              const {
-                data: { user },
-                error: userError,
-              } = await supabase.auth.getUser();
-              if (userError || !user) {
-                console.error(userError);
-                Alert.alert("Error", "Failed to find user.");
-                return;
-              }
 
-              // Call Edge Function to delete the user from Auth + storage + tables
-              const { data: session } = await supabase.auth.getSession();
-              const accessToken = session?.session?.access_token;
-              if (!accessToken) {
-                Alert.alert("Error", "Missing session token. Please sign in again.");
-                return;
-              }
-
-              const functionUrl = `https://${SUPABASE_PROJECT_REF}.functions.supabase.co/delete-user`;
-              console.log("Calling delete function:", functionUrl);
-
-              const resp = await fetch(functionUrl, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ userId: user.id }),
-              });
-
-              console.log("Response status:", resp.status);
-
-              if (!resp.ok) {
-                const result = (await resp.json().catch(() => ({}))) as {
-                  error?: string;
-                };
-                console.error("Delete error:", result);
-                Alert.alert(
-                  "Error",
-                  result?.error ?? "Failed to delete user account."
-                );
-                return;
-              }
-
-              const result = await resp.json();
-              console.log("Delete success:", result);
-
-              await clearLocalAuthSession();
-              Alert.alert("Account Deleted", "Your account was successfully removed.", [
-                {
-                  text: "OK",
-                  onPress: () => router.replace("/login"),
-                },
-              ]);
-            } catch (err) {
-              const handled = await handleRefreshTokenError(err);
-              if (handled) {
-                Alert.alert(
-                  "Session expired",
-                  "Please sign in again to manage your account.",
-                  [{ text: "OK", onPress: () => router.replace("/login") }]
-                );
-                return;
-              }
-              console.error(err);
-              Alert.alert("Error", "Something went wrong.");
-            }
-          },
-        },
-      ]
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete your BlazeMates account? This cannot be undone."
     );
+
+    if (!confirmDelete) {
+      console.log("Delete cancelled");
+      return;
+    }
+
+    console.log("Delete confirmed");
+
+    (async () => {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+        if (userError || !user) {
+          console.error(userError);
+          Alert.alert("Error", "Failed to find user.");
+          return;
+        }
+
+        // Call Edge Function to delete the user from Auth + storage + tables
+        const { data: session } = await supabase.auth.getSession();
+        const accessToken = session?.session?.access_token;
+        if (!accessToken) {
+          Alert.alert("Error", "Missing session token. Please sign in again.");
+          return;
+        }
+
+        const functionUrl = `https://${SUPABASE_PROJECT_REF}.functions.supabase.co/delete-user`;
+        console.log("Calling delete function:", functionUrl);
+
+        const resp = await fetch(functionUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ userId: user.id }),
+        });
+
+        console.log("Response status:", resp.status);
+
+        if (!resp.ok) {
+          const result = (await resp.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          console.error("Delete error:", result);
+          Alert.alert(
+            "Error",
+            result?.error ?? "Failed to delete user account."
+          );
+          return;
+        }
+
+        const result = await resp.json();
+        console.log("Delete success:", result);
+
+        await clearLocalAuthSession();
+        Alert.alert("Account Deleted", "Your account was successfully removed.", [
+          {
+            text: "OK",
+            onPress: () => router.replace("/login"),
+          },
+        ]);
+      } catch (err) {
+        const handled = await handleRefreshTokenError(err);
+        if (handled) {
+          Alert.alert(
+            "Session expired",
+            "Please sign in again to manage your account.",
+            [{ text: "OK", onPress: () => router.replace("/login") }]
+          );
+          return;
+        }
+        console.error(err);
+        Alert.alert("Error", "Something went wrong.");
+      }
+    })();
   };
 
   return (
