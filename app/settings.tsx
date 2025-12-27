@@ -16,7 +16,7 @@ import {
   clearLocalAuthSession,
   handleRefreshTokenError,
 } from "../lib/authSession";
-import { supabase } from "../supabaseClient";
+import { supabase, SUPABASE_PROJECT_REF } from "../supabaseClient";
 
 // in settings.tsx
 
@@ -78,9 +78,10 @@ export default function SettingsScreen() {
                 return;
               }
 
-              const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
-              const functionUrl = supabaseUrl.replace('.supabase.co', '.functions.supabase.co');
-              const resp = await fetch(`${functionUrl}/delete-user`, {
+              const functionUrl = `https://${SUPABASE_PROJECT_REF}.functions.supabase.co/delete-user`;
+              console.log("Calling delete function:", functionUrl);
+
+              const resp = await fetch(functionUrl, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -89,17 +90,22 @@ export default function SettingsScreen() {
                 body: JSON.stringify({ userId: user.id }),
               });
 
+              console.log("Response status:", resp.status);
+
               if (!resp.ok) {
                 const result = (await resp.json().catch(() => ({}))) as {
                   error?: string;
                 };
-                console.error(result);
+                console.error("Delete error:", result);
                 Alert.alert(
                   "Error",
                   result?.error ?? "Failed to delete user account."
                 );
                 return;
               }
+
+              const result = await resp.json();
+              console.log("Delete success:", result);
 
               await clearLocalAuthSession();
               Alert.alert("Account Deleted", "Your account was successfully removed.", [

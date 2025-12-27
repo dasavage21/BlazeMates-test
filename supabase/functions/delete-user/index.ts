@@ -107,19 +107,19 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { error: authError } = await supabase.auth.admin.deleteUser(targetUserId);
-    if (authError && !authError.message?.toLowerCase().includes("user not found")) {
-      return new Response(
-        JSON.stringify({ error: `Auth delete failed: ${authError.message}` }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    console.log("Starting deletion for user:", targetUserId);
+
+    await supabase.from("likes").delete().eq("user_id", targetUserId);
+    await supabase.from("likes").delete().eq("liked_user_id", targetUserId);
+    console.log("Deleted likes");
+
+    await supabase.from("threads").delete().eq("user1_id", targetUserId);
+    await supabase.from("threads").delete().eq("user2_id", targetUserId);
+    console.log("Deleted threads (messages cascade)");
 
     const { error: userRowError } = await supabase.from("users").delete().eq("id", targetUserId);
     if (userRowError) {
+      console.error("Users delete failed:", userRowError);
       return new Response(
         JSON.stringify({ error: `Users delete failed: ${userRowError.message}` }),
         {
@@ -128,6 +128,20 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+    console.log("Deleted user row");
+
+    const { error: authError } = await supabase.auth.admin.deleteUser(targetUserId);
+    if (authError && !authError.message?.toLowerCase().includes("user not found")) {
+      console.error("Auth delete failed:", authError);
+      return new Response(
+        JSON.stringify({ error: `Auth delete failed: ${authError.message}` }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    console.log("Deleted auth user");
 
     const storagePaths = [
       `${targetUserId}/avatar.jpg`,
@@ -137,6 +151,7 @@ Deno.serve(async (req: Request) => {
     if (storageError && !storageError.message?.toLowerCase().includes("not found")) {
       console.warn("Avatar cleanup warning:", storageError.message);
     }
+    console.log("Cleaned up storage");
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -148,7 +163,7 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("Delete user error:", err);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", details: String(err) }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
