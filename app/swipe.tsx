@@ -408,6 +408,10 @@ export default function SwipeScreen() {
           </Text>
         </View>
       )}
+
+      <Text style={styles.footer}>
+        BlazeMates LLC v1.0.0 (c) 2025 BlazeMates LLC. All rights reserved.
+      </Text>
     </View>
   );
 }
@@ -508,5 +512,13 @@ const styles = StyleSheet.create({
   },
   emptyState: { marginTop: 80, alignItems: "center" },
   emptyText: { color: "#aaa", fontSize: 16 },
+  footer: {
+    color: "#777",
+    marginTop: 30,
+    fontSize: 12,
+    textAlign: "center",
+    position: "absolute",
+    bottom: 20,
+  },
 });
 
