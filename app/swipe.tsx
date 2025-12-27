@@ -207,7 +207,7 @@ export default function SwipeScreen() {
         if (index < profiles.length - 1) {
           setIndex((i) => i + 1);
         } else {
-          router.push({ pathname: "/chat", params: { threadId: "global-chat" } });
+          router.push("/matches");
         }
       }
     }, [shouldAdvance, index, profiles.length, router])
@@ -232,7 +232,7 @@ export default function SwipeScreen() {
 
   const handleNext = () => {
     if (index < profiles.length - 1) setIndex((i) => i + 1);
-    else router.push({ pathname: "/chat", params: { threadId: "global-chat" } });
+    else router.push("/matches");
   };
 
   const handleSwipeRight = async () => {
@@ -346,9 +346,9 @@ export default function SwipeScreen() {
 
       <TouchableOpacity
         style={styles.profileBtn}
-        onPress={() => router.push({ pathname: "/chat", params: { threadId: "global-chat" } })}
+        onPress={() => router.push("/matches")}
       >
-        <Text style={styles.profileBtnText}>💬 Chat</Text>
+        <Text style={styles.profileBtnText}>💚 Your Matches</Text>
       </TouchableOpacity>
 
       {currentProfile ? (

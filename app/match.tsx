@@ -42,11 +42,11 @@ export default function MatchScreen() {
 
   const handleStartChat = useCallback(async () => {
     if (!matchId || typeof matchId !== 'string' || !myUserId) {
-      router.push('/chat');
+      router.back();
       return;
     }
     const [a, b] = [matchId, myUserId].sort();
-    const threadId = `thread-${a}-${b}`;
+    const threadId = `dm_${a}_${b}`;
     try {
       await supabase.from('threads').upsert({ id: threadId }, { onConflict: 'id' });
     } catch (e: any) {
@@ -79,7 +79,7 @@ export default function MatchScreen() {
         <Text style={styles.chatText}>💬 Start Chatting</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.replace('/swipe')}>
+      <TouchableOpacity onPress={() => router.back()}>
         <Text style={styles.skipText}>⬅️ Keep Swiping</Text>
       </TouchableOpacity>
     </View>

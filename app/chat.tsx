@@ -1,6 +1,6 @@
 // Ac 2025 Benjamin Hawk. All rights reserved.
 
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -35,6 +35,7 @@ type ActiveUser = {
 };
 
 export default function ChatScreen() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ threadId?: string | string[] }>();
   const rawThread = params.threadId;
   const threadId = useMemo(() => {
@@ -51,6 +52,7 @@ export default function ChatScreen() {
   const [typingUsers, setTypingUsers] = useState<TypingMap>({});
   const [readReceipts, setReadReceipts] = useState<Record<string, string>>({});
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  const [otherUserName, setOtherUserName] = useState<string | null>(null);
 
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -91,6 +93,40 @@ export default function ChatScreen() {
       cancelled = true;
     };
   }, []);
+
+  // Load other user's name if this is a DM
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId || !threadId.startsWith("dm_")) {
+      setOtherUserName(null);
+      return;
+    }
+
+    (async () => {
+      try {
+        const parts = threadId.split("_");
+        if (parts.length !== 3) return;
+
+        const otherUserId = parts[1] === userId ? parts[2] : parts[1];
+
+        const { data, error } = await supabase
+          .from("users")
+          .select("name")
+          .eq("id", otherUserId)
+          .maybeSingle();
+
+        if (!cancelled && !error && data) {
+          setOtherUserName(data.name || "User");
+        }
+      } catch (error) {
+        console.warn("Failed to load other user name", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, threadId]);
 
   // Ensure the thread exists
   useEffect(() => {
@@ -601,24 +637,33 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
       <View style={styles.wrapper}>
         <View style={styles.headerBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={styles.backBtnText}>←</Text>
+          </TouchableOpacity>
           <View style={styles.headerTextGroup}>
-            <Text style={styles.headerTitle}>Messages</Text>
-            <Text style={styles.headerSubtitle}>{activeSummary}</Text>
-          </View>
-          <View style={styles.badgeRow}>
-            {activePreview.map((user) => (
-              <View key={user.user_id} style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {formatInitials(user.display_name ?? user.user_id)}
-                </Text>
-              </View>
-            ))}
-            {activeOverflow > 0 && (
-              <View style={[styles.badge, styles.badgeOverflow]}>
-                <Text style={styles.badgeText}>+{activeOverflow}</Text>
-              </View>
+            <Text style={styles.headerTitle}>
+              {otherUserName ? `Chat with ${otherUserName}` : "Messages"}
+            </Text>
+            {!otherUserName && (
+              <Text style={styles.headerSubtitle}>{activeSummary}</Text>
             )}
           </View>
+          {!otherUserName && (
+            <View style={styles.badgeRow}>
+              {activePreview.map((user) => (
+                <View key={user.user_id} style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {formatInitials(user.display_name ?? user.user_id)}
+                  </Text>
+                </View>
+              ))}
+              {activeOverflow > 0 && (
+                <View style={[styles.badge, styles.badgeOverflow]}>
+                  <Text style={styles.badgeText}>+{activeOverflow}</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         <KeyboardAvoidingView
@@ -751,10 +796,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
   },
-  headerTextGroup: { flexShrink: 1 },
+  backBtn: {
+    padding: 8,
+    marginRight: 8,
+  },
+  backBtnText: {
+    color: "#00FF7F",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  headerTextGroup: { flexShrink: 1, flex: 1 },
   headerTitle: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
   },
   headerSubtitle: {
