@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 
 import { supabase } from "../supabaseClient";
+import { validatePassword } from "../lib/passwordSecurity";
 
 type RecoveryTokens = {
   access_token: string;
@@ -105,6 +106,12 @@ export default function ResetPasswordScreen() {
 
     try {
       setBusy(true);
+      const passwordValidation = await validatePassword(password.trim());
+      if (!passwordValidation.isValid) {
+        Alert.alert("Weak Password", passwordValidation.errors.join("\n"));
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: password.trim(),
       });

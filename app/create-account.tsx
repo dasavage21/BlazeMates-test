@@ -14,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { supabase } from "../supabaseClient";
 import { mergeUserRow } from "../lib/userStore";
+import { validatePassword } from "../lib/passwordSecurity";
 
 export default function CreateAccountScreen() {
   const router = useRouter();
@@ -44,6 +45,13 @@ export default function CreateAccountScreen() {
 
     setBusy(true);
     try {
+      const passwordValidation = await validatePassword(trimmedPassword);
+      if (!passwordValidation.isValid) {
+        Alert.alert("Weak Password", passwordValidation.errors.join("\n"));
+        setBusy(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
         password: trimmedPassword,
