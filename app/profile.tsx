@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { supabase } from "../supabaseClient";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -37,16 +38,40 @@ export default function ProfileScreen() {
           }
         }
       }
+
+      const storedAge = await AsyncStorage.getItem("userAge");
+      if (storedAge) {
+        setAge(parseInt(storedAge));
+      }
+
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+
+      if (userId) {
+        const { data, error } = await supabase
+          .from("users")
+          .select("age, name, bio, strain, style, looking_for, image_url")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (!error && data) {
+          if (data.age !== null && data.age !== undefined) {
+            setAge(data.age);
+          }
+          setProfile({
+            name: data.name || "",
+            bio: data.bio || "",
+            strain: data.strain || "",
+            style: data.style || "",
+            lookingFor: data.looking_for || "",
+          });
+          if (data.image_url) {
+            setProfileImage(data.image_url);
+          }
+        }
+      }
     };
     load();
-  }, []);
-
-  useEffect(() => {
-    const loadAge = async () => {
-      const storedAge = await AsyncStorage.getItem("userAge");
-      if (storedAge) setAge(parseInt(storedAge));
-    };
-    loadAge();
   }, []);
 
   useFocusEffect(
