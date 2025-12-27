@@ -3,9 +3,6 @@ const { getDefaultConfig } = require('expo/metro-config');
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-// Platform-specific extensions will be handled automatically by Expo's default config
-// No need to override sourceExts as it breaks platform resolution
-
 // Add resolver to handle nanoid package
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName === 'nanoid/non-secure') {
