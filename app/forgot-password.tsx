@@ -30,7 +30,7 @@ export default function ForgotPasswordScreen() {
       }
       Alert.alert(
         "Check your inbox",
-        "We sent a password reset link to your email address."
+        "We sent a password reset link to your email. It may take a few minutes to arrive. Check your spam folder if you don't see it."
       );
       router.replace("/login");
     } catch (err: any) {
