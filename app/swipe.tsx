@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   DeviceEventEmitter,
   Dimensions,
@@ -62,7 +63,7 @@ export default function SwipeScreen() {
   const [profilePhoto, setProfilePhoto] = useState(
     "https://via.placeholder.com/50"
   );
-  // Removed unused avatarVer state
+  const [loading, setLoading] = useState(true);
   const [skipCount, setSkipCount] = useState(0);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
@@ -159,6 +160,7 @@ export default function SwipeScreen() {
         console.error("Failed to fetch users:", error);
         setProfiles([]);
         setIndex(0);
+        setLoading(false);
         return;
       }
 
@@ -199,6 +201,7 @@ export default function SwipeScreen() {
 
       setProfiles(filtered);
       setIndex(0);
+      setLoading(false);
     };
 
     init();
@@ -324,6 +327,17 @@ export default function SwipeScreen() {
       );
     return <Text style={styles.lookingForTag}>🌿+🍑 Both</Text>;
   };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#00FF7F" />
+          <Text style={styles.loadingText}>Loading profiles...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -521,6 +535,17 @@ const styles = StyleSheet.create({
   },
   emptyState: { marginTop: isDesktop ? 80 : 60, alignItems: "center", paddingHorizontal: 20 },
   emptyText: { color: "#aaa", fontSize: isDesktop ? 16 : 15, textAlign: "center" },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#00FF7F",
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+  },
   footer: {
     color: "#777",
     marginTop: 30,
