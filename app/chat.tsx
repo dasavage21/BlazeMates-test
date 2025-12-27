@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -53,6 +54,7 @@ export default function ChatScreen() {
   const [readReceipts, setReadReceipts] = useState<Record<string, string>>({});
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [otherUserName, setOtherUserName] = useState<string | null>(null);
+  const [userImages, setUserImages] = useState<Record<string, string>>({});
 
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -212,6 +214,35 @@ export default function ChatScreen() {
       supabase.removeChannel(typingChannel);
     };
   }, [threadId, threadReady]);
+
+  // Fetch user images for message senders
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    const senderIds = [...new Set(messages.map((m) => m.sender_id))];
+    const fetchUserImages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("id, image_url")
+          .in("id", senderIds);
+
+        if (!error && data) {
+          const imageMap: Record<string, string> = {};
+          data.forEach((user) => {
+            if (user.image_url) {
+              imageMap[user.id] = user.image_url;
+            }
+          });
+          setUserImages(imageMap);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch user images", error);
+      }
+    };
+
+    void fetchUserImages();
+  }, [messages]);
 
   // Read receipts
   useEffect(() => {
@@ -700,6 +731,8 @@ export default function ChatScreen() {
                 }
               }
 
+              const senderImage = userImages[item.sender_id];
+
               return (
                 <View
                   style={[
@@ -709,9 +742,16 @@ export default function ChatScreen() {
                 >
                   {!isMe && (
                     <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>
-                        {formatInitials(item.sender_id)}
-                      </Text>
+                      {senderImage ? (
+                        <Image
+                          source={{ uri: senderImage }}
+                          style={styles.avatarImage}
+                        />
+                      ) : (
+                        <Text style={styles.avatarText}>
+                          {formatInitials(item.sender_id)}
+                        </Text>
+                      )}
                     </View>
                   )}
                   <View
@@ -859,6 +899,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
     borderColor: "#2f2f2f",
+  },
+  avatarImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   avatarText: { color: "#fff", fontSize: 12, fontWeight: "600" },
   messageBubble: {
