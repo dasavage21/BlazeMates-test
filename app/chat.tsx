@@ -556,7 +556,13 @@ export default function ChatScreen() {
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error("Failed to send message:", error);
+      Alert.alert("Error", `Failed to send message: ${error.message}`);
+      return;
+    }
+
+    if (data) {
       setMessages((prev) => [...prev, data as Message]);
     }
     setInput("");
