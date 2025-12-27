@@ -5,12 +5,6 @@
     "version": "1.0.0",
     "scheme": "blazemates",
     "orientation": "portrait",
-    "icon": "./app/assets/icon.png",
-    "splash": {
-      "image": "./app/assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#121212"
-    },
     "assetBundlePatterns": ["**/*"],
     "plugins": [
       "expo-camera",
@@ -42,14 +36,9 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ],
-      "adaptiveIcon": {
-        "foregroundImage": "./app/assets/icon.png",
-        "backgroundColor": "#121212"
-      }
+      ]
     },
     "web": {
-      "favicon": "./app/assets/icon.png",
       "output": "static"
     },
     "owner": "hawkc13",
