@@ -129,7 +129,12 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Settings</Text>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.header}>Settings</Text>
+      </View>
 
       {showThemeToggle && (
         <View style={styles.row}>
@@ -175,11 +180,23 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212", padding: 20 },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  backText: {
+    color: "#00FF7F",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   header: {
     fontSize: 26,
     color: "#00FF7F",
     fontWeight: "bold",
-    marginBottom: 20,
   },
   row: {
     flexDirection: "row",
