@@ -67,16 +67,7 @@ export default function CreateAccountScreen() {
         JSON.stringify({ ...existing, age: ageNum })
       );
 
-      Alert.alert(
-        "Confirm your email",
-        "Check your inbox to verify your account, then sign in.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/login"),
-          },
-        ]
-      );
+      router.replace("/profile");
     } catch (error) {
       console.warn("Sign up failed", error);
       Alert.alert(
