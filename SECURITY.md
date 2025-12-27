@@ -2,13 +2,20 @@
 
 ## Database Security
 
-### Security Definer Views
+### Security Invoker Views
 
-All database views have been configured without the SECURITY DEFINER property to prevent privilege escalation vulnerabilities. Views run with the privileges of the executing user, not the view owner.
+All database views have been configured with `security_invoker=true` to ensure they run with the caller's permissions rather than the owner's. This prevents privilege escalation and ensures Row Level Security policies are properly enforced.
 
-**Fixed Views:**
-- `public.active_users_15m`
-- `public.active_users_15m_count`
+**PostgreSQL 15+ Feature:**
+- Views are SECURITY DEFINER by default (run with owner permissions)
+- Setting `security_invoker=true` makes them SECURITY INVOKER (run with caller permissions)
+- This is the secure option for multi-tenant applications with RLS
+
+**Protected Views:**
+- `public.active_users_15m` - Uses security_invoker=true
+- `public.active_users_15m_count` - Uses security_invoker=true
+
+**Migration File:** `supabase/migrations/20251227134551_fix_view_security_invoker.sql`
 
 ### Function Search Path Protection
 
@@ -38,7 +45,10 @@ All Row Level Security (RLS) policies have been optimized to prevent re-evaluati
 All foreign key columns now have covering indexes to optimize join performance and prevent table scans.
 
 **Indexed Foreign Keys:**
-- `messages.thread_id` → `threads.id`
+- `messages.thread_id` → `threads.id` (idx_messages_thread_id)
+  - Required for CASCADE delete operations from threads table
+  - Improves performance when joining messages to threads
+  - May show as "unused" initially until queries access it
 
 ### Index Cleanup
 
@@ -51,6 +61,28 @@ Unused and redundant indexes have been removed to reduce storage overhead and im
 - `idx_users_id` - Redundant with primary key
 
 **Migration File:** `supabase/migrations/20251227134257_fix_performance_and_security_issues.sql`
+
+## Configuration Recommendations
+
+### Auth Database Connection Strategy
+
+**Current Status:** The Auth server is configured to use a fixed number of connections (10).
+
+**Recommendation:** Switch to percentage-based connection allocation in your Supabase Dashboard:
+
+1. Navigate to **Database Settings** → **Connection Pooling Configuration**
+2. Change Auth server connections from fixed number to percentage-based
+3. Recommended allocation:
+   - If using PostgREST API heavily: Keep pooler under 40% of total connections
+   - Otherwise: You can use up to 80% for pooler, leaving room for Auth and other services
+
+**Why This Matters:**
+- Fixed connection allocation doesn't scale with instance upgrades
+- Percentage-based allocation automatically adjusts when you upgrade database size
+- Prevents connection starvation for Auth server during high load
+- Balances connections between Auth, PostgREST, Storage, and other services
+
+**Reference:** See [Supabase Connection Management Documentation](https://supabase.com/docs/guides/database/connection-management) for detailed guidance.
 
 ## Leaked Password Protection
 
