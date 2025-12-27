@@ -3,9 +3,8 @@ const { getDefaultConfig } = require('expo/metro-config');
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-// Ensure platform-specific extensions are resolved in the correct order
-config.resolver.sourceExts = ['tsx', 'ts', 'jsx', 'js', 'json', 'cjs', 'mjs'];
-config.resolver.platforms = ['ios', 'android', 'web'];
+// Platform-specific extensions will be handled automatically by Expo's default config
+// No need to override sourceExts as it breaks platform resolution
 
 // Add resolver to handle nanoid package
 config.resolver.resolveRequest = (context, moduleName, platform) => {
