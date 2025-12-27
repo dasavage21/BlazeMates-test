@@ -1,10 +1,9 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   DeviceEventEmitter,
   Dimensions,
   Image,
@@ -13,9 +12,20 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolate,
+} from "react-native-reanimated";
 import { supabase } from "../supabaseClient";
 
 const screenWidth = Dimensions.get("window").width;
+const screenHeight = Dimensions.get("window").height;
 const cardWidth = Math.min(screenWidth * 0.9, 440);
 const isDesktop = screenWidth >= 768;
 const profilePicSize = isDesktop ? 90 : 70;
@@ -24,6 +34,8 @@ const buttonFontSize = isDesktop ? 16 : 15;
 const settingsFontSize = isDesktop ? 16 : 14;
 const containerPaddingTop = isDesktop ? 60 : 48;
 const containerPaddingHorizontal = isDesktop ? 20 : 16;
+
+const SWIPE_THRESHOLD = 120;
 
 type Looking = "smoke" | "hookup" | "both";
 
@@ -49,12 +61,153 @@ type SupaUser = {
   image_url: string | null;
 };
 
+function SwipeCard({
+  profile,
+  userAge,
+  isTop,
+  onSwipeLeft,
+  onSwipeRight,
+}: {
+  profile: Profile;
+  userAge: number | null;
+  isTop: boolean;
+  onSwipeLeft: () => void;
+  onSwipeRight: () => void;
+}) {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const PLACEHOLDER_300 = "https://via.placeholder.com/300";
+
+  const gesture = Gesture.Pan()
+    .enabled(isTop)
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd((event) => {
+      if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
+        const direction = event.translationX > 0 ? 1 : -1;
+        translateX.value = withSpring(
+          direction * screenWidth * 1.5,
+          { velocity: event.velocityX },
+          () => {
+            if (direction > 0) {
+              runOnJS(onSwipeRight)();
+            } else {
+              runOnJS(onSwipeLeft)();
+            }
+          }
+        );
+        translateY.value = withSpring(event.translationY + event.velocityY * 0.1);
+      } else {
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const rotate = interpolate(
+      translateX.value,
+      [-screenWidth / 2, 0, screenWidth / 2],
+      [-15, 0, 15],
+      Extrapolate.CLAMP
+    );
+
+    const opacity = interpolate(
+      Math.abs(translateX.value),
+      [0, SWIPE_THRESHOLD],
+      [0, 1],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { rotate: `${rotate}deg` },
+      ],
+      opacity: isTop ? 1 : 0.8,
+    };
+  });
+
+  const likeOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateX.value,
+      [0, SWIPE_THRESHOLD],
+      [0, 1],
+      Extrapolate.CLAMP
+    ),
+  }));
+
+  const nopeOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateX.value,
+      [-SWIPE_THRESHOLD, 0],
+      [1, 0],
+      Extrapolate.CLAMP
+    ),
+  }));
+
+  const renderLookingForTag = (type: Looking) => {
+    if (type === "smoke")
+      return <Text style={styles.lookingForTag}>🌿 Just Wanna Smoke</Text>;
+    if (type === "hookup")
+      return (
+        <Text style={styles.lookingForTag}>🍑 Just Looking to Hook Up</Text>
+      );
+    return <Text style={styles.lookingForTag}>🌿+🍑 Both</Text>;
+  };
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={[styles.card, animatedStyle]}>
+        <Image
+          key={profile?.id ?? "card"}
+          source={{
+            uri:
+              profile?.image && profile.image.trim().length > 10
+                ? profile.image
+                : PLACEHOLDER_300,
+          }}
+          style={styles.image}
+        />
+
+        <Animated.View style={[styles.likeStamp, likeOpacity]}>
+          <Text style={styles.likeText}>LIKE</Text>
+        </Animated.View>
+
+        <Animated.View style={[styles.nopeStamp, nopeOpacity]}>
+          <Text style={styles.nopeText}>NOPE</Text>
+        </Animated.View>
+
+        <View style={styles.cardInfo}>
+          <View style={styles.row}>
+            <Text style={styles.name}>
+              {profile.name}, {profile.age}
+              {userAge && userAge >= 21 && (
+                <Text style={styles.verified}> ✅</Text>
+              )}
+            </Text>
+          </View>
+
+          {renderLookingForTag(profile.lookingFor)}
+
+          <Text style={styles.bio} numberOfLines={2}>
+            {profile.bio}
+          </Text>
+          <Text style={styles.meta}>
+            {profile.strain} • {profile.style}
+          </Text>
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
 export default function SwipeScreen() {
   const router = useRouter();
   const PLACEHOLDER_50 = "https://via.placeholder.com/50";
   const PLACEHOLDER_300 = "https://via.placeholder.com/300";
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const cooldownAnim = useRef(new Animated.Value(0)).current;
 
   const [index, setIndex] = useState(0);
   const [userAge, setUserAge] = useState<number | null>(null);
@@ -72,16 +225,14 @@ export default function SwipeScreen() {
     const sub = DeviceEventEmitter.addListener(
       "avatar-updated",
       ({ url, ts }) => {
-        setProfilePhoto(`${url}?t=${ts}`); // cache-bust
+        setProfilePhoto(`${url}?t=${ts}`);
       }
     );
     return () => sub.remove();
   }, []);
 
-  // Load header photo on focus or mount (keeps your existing logic)
   const loadHeaderPhoto = useCallback(async () => {
     try {
-      // 1) authed user's image_url
       const { data: auth } = await supabase.auth.getUser();
       const authedUser = auth?.user;
 
@@ -99,7 +250,6 @@ export default function SwipeScreen() {
         }
       }
 
-      // 2) local cache from AsyncStorage
       const stored = await AsyncStorage.getItem("userProfile");
       const parsed = stored ? JSON.parse(stored) : null;
       if (parsed?.profileImage) {
@@ -110,10 +260,9 @@ export default function SwipeScreen() {
         return;
       }
 
-      // 3) pending local file:// (not signed in yet)
       const pending = await AsyncStorage.getItem("pendingAvatarUri");
       if (pending) {
-        setProfilePhoto(pending || PLACEHOLDER_50); // file:// shows fine in the circle
+        setProfilePhoto(pending || PLACEHOLDER_50);
         return;
       }
 
@@ -122,6 +271,7 @@ export default function SwipeScreen() {
       setProfilePhoto(PLACEHOLDER_50);
     }
   }, [PLACEHOLDER_50]);
+
   useEffect(() => {
     const init = async () => {
       const ageStored = await AsyncStorage.getItem("userAge");
@@ -138,7 +288,6 @@ export default function SwipeScreen() {
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
 
-      // Load existing likes from database
       let alreadyLiked: string[] = [];
       if (myUserId) {
         const { data: likesData } = await supabase
@@ -231,21 +380,6 @@ export default function SwipeScreen() {
     }
   }, [skipCount]);
 
-  useEffect(() => {
-    Animated.timing(cooldownAnim, {
-      toValue: cooldownActive ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [cooldownActive, cooldownAnim]);
-
-  const currentProfile = useMemo(() => profiles[index], [profiles, index]);
-
-  const handleNext = () => {
-    if (index < profiles.length - 1) setIndex((i) => i + 1);
-    else router.push("/matches");
-  };
-
   const handleSwipeRight = async () => {
     const current = profiles[index];
     if (!current) return;
@@ -253,7 +387,6 @@ export default function SwipeScreen() {
     if (!likedUsers.includes(current.id)) {
       setLikedUsers((prev) => [...prev, current.id]);
 
-      // Save like to database
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
 
@@ -264,27 +397,12 @@ export default function SwipeScreen() {
         });
       }
 
-      // Mark that we should advance when returning from match screen
       setShouldAdvance(true);
-
-      // Show match screen
       router.push(`/match?matchId=${current.id}`);
       return;
     }
 
-    // This should not happen anymore, but keep as fallback
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(handleNext);
+    handleNext();
   };
 
   const handleSwipeLeft = () => {
@@ -302,31 +420,26 @@ export default function SwipeScreen() {
       return;
     }
 
+    handleNext();
+  };
+
+  const handleNext = () => {
     if (index < profiles.length - 1) {
-      Animated.sequence([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setIndex((i) => i + 1));
+      setIndex((i) => i + 1);
+    } else {
+      router.push("/matches");
     }
   };
 
-  const renderLookingForTag = (type: Looking) => {
-    if (type === "smoke")
-      return <Text style={styles.lookingForTag}>🌿 Just Wanna Smoke</Text>;
-    if (type === "hookup")
-      return (
-        <Text style={styles.lookingForTag}>🍑 Just Looking to Hook Up</Text>
-      );
-    return <Text style={styles.lookingForTag}>🌿+🍑 Both</Text>;
+  const handleButtonSwipeRight = () => {
+    handleSwipeRight();
   };
+
+  const handleButtonSwipeLeft = () => {
+    handleSwipeLeft();
+  };
+
+  const visibleProfiles = profiles.slice(index, index + 3);
 
   if (loading) {
     return (
@@ -365,60 +478,73 @@ export default function SwipeScreen() {
         <Text style={styles.profileBtnText}>💚 Your Matches</Text>
       </TouchableOpacity>
 
-      {currentProfile ? (
-        <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
-          <Image
-            key={currentProfile?.id ?? "card"} // re-mount per person
-            source={{
-              uri:
-                currentProfile?.image && currentProfile.image.trim().length > 10
-                  ? currentProfile.image
-                  : PLACEHOLDER_300,
-            }}
-            style={styles.image}
-          />
-
-          <View style={styles.row}>
-            <Text style={styles.name}>
-              {currentProfile.name}, {currentProfile.age}
-              {userAge && userAge >= 21 && (
-                <Text style={styles.verified}> ✅</Text>
-              )}
+      <View style={styles.cardContainer}>
+        {visibleProfiles.length > 0 ? (
+          <>
+            {visibleProfiles
+              .slice()
+              .reverse()
+              .map((profile, idx) => {
+                const isTop = idx === visibleProfiles.length - 1;
+                return (
+                  <View
+                    key={profile.id}
+                    style={[
+                      styles.cardWrapper,
+                      !isTop && {
+                        position: "absolute",
+                        top: -idx * 4,
+                        transform: [{ scale: 1 - idx * 0.03 }],
+                      },
+                    ]}
+                  >
+                    <SwipeCard
+                      profile={profile}
+                      userAge={userAge}
+                      isTop={isTop}
+                      onSwipeLeft={handleSwipeLeft}
+                      onSwipeRight={handleSwipeRight}
+                    />
+                  </View>
+                );
+              })}
+          </>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>
+              😕 No users found yet. Check back soon!
             </Text>
-            {renderLookingForTag(currentProfile.lookingFor)}
           </View>
+        )}
+      </View>
 
-          <Text style={styles.bio}>{currentProfile.bio}</Text>
-          <Text style={styles.meta}>
-            Strain: {currentProfile.strain} • Style: {currentProfile.style}
-          </Text>
+      {visibleProfiles.length > 0 && (
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.nopeButton,
+              cooldownActive && { backgroundColor: "#555", opacity: 0.5 },
+            ]}
+            onPress={handleButtonSwipeLeft}
+            disabled={cooldownActive}
+          >
+            <Text style={styles.buttonIcon}>✕</Text>
+          </TouchableOpacity>
 
-          <View style={styles.row}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                cooldownActive && { backgroundColor: "#555" },
-              ]}
-              onPress={handleSwipeLeft}
-              disabled={cooldownActive}
-            >
-              <Text style={styles.buttonText}>❌</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={handleSwipeRight}>
-              <Text style={styles.buttonText}>✔️</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.likeButton]}
+            onPress={handleButtonSwipeRight}
+          >
+            <Text style={styles.buttonIcon}>♥</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-          <Animated.View style={{ opacity: cooldownAnim, marginTop: 10 }}>
-            <Text style={{ color: "#ff5555" }}>
-              ⏳ Slow down! You&apos;re swiping too fast.
-            </Text>
-          </Animated.View>
-        </Animated.View>
-      ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>
-            😕 No users found yet. Check back soon!
+      {cooldownActive && (
+        <View style={styles.cooldownBanner}>
+          <Text style={styles.cooldownText}>
+            ⏳ Slow down! You're swiping too fast.
           </Text>
         </View>
       )}
@@ -474,13 +600,25 @@ const styles = StyleSheet.create({
     marginBottom: isDesktop ? 20 : 16,
   },
   profileBtnText: { color: "#fff", fontSize: buttonFontSize },
+  cardContainer: {
+    width: cardWidth,
+    height: screenHeight * 0.5,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  cardWrapper: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   card: {
     backgroundColor: "#1e1e1e",
     width: cardWidth,
     maxWidth: 440,
     borderRadius: 20,
-    padding: 16,
-    alignItems: "center",
+    overflow: "hidden",
     shadowColor: "#00FF7F",
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 5 },
@@ -488,10 +626,18 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   image: {
-    width: Math.min(200, cardWidth * 0.6),
-    height: Math.min(200, cardWidth * 0.6),
-    borderRadius: 16,
-    marginBottom: 12,
+    width: "100%",
+    height: screenHeight * 0.35,
+    resizeMode: "cover",
+  },
+  cardInfo: {
+    padding: 16,
+    backgroundColor: "#1e1e1e",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
   },
   name: {
     fontSize: 22,
@@ -504,37 +650,108 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#ccc",
     marginVertical: 8,
-    textAlign: "center",
   },
   meta: {
     fontSize: 13,
     color: "#aaa",
-    marginBottom: 12,
+    marginTop: 4,
   },
-  row: {
-    flexDirection: "row",
-    marginTop: 8,
-    alignItems: "center",
-  },
-  button: {
-    backgroundColor: "#00FF7F",
-    padding: 14,
-    borderRadius: 50,
-    marginHorizontal: 20,
-  },
-  buttonText: { fontSize: 20 },
   lookingForTag: {
     backgroundColor: "#2e2e2e",
     color: "#00FF7F",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    fontSize: 13,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    fontSize: 12,
     fontWeight: "600",
     overflow: "hidden",
   },
-  emptyState: { marginTop: isDesktop ? 80 : 60, alignItems: "center", paddingHorizontal: 20 },
-  emptyText: { color: "#aaa", fontSize: isDesktop ? 16 : 15, textAlign: "center" },
+  likeStamp: {
+    position: "absolute",
+    top: 50,
+    left: 30,
+    borderWidth: 4,
+    borderColor: "#00FF7F",
+    borderRadius: 8,
+    padding: 8,
+    transform: [{ rotate: "-20deg" }],
+    zIndex: 10,
+  },
+  likeText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#00FF7F",
+    letterSpacing: 2,
+  },
+  nopeStamp: {
+    position: "absolute",
+    top: 50,
+    right: 30,
+    borderWidth: 4,
+    borderColor: "#FF3B5C",
+    borderRadius: 8,
+    padding: 8,
+    transform: [{ rotate: "20deg" }],
+    zIndex: 10,
+  },
+  nopeText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#FF3B5C",
+    letterSpacing: 2,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 24,
+    gap: 40,
+  },
+  actionButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  nopeButton: {
+    backgroundColor: "#FF3B5C",
+  },
+  likeButton: {
+    backgroundColor: "#00FF7F",
+  },
+  buttonIcon: {
+    fontSize: 28,
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  cooldownBanner: {
+    marginTop: 16,
+    backgroundColor: "#2e2e2e",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  cooldownText: {
+    color: "#FF3B5C",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  emptyState: {
+    marginTop: isDesktop ? 80 : 60,
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    color: "#aaa",
+    fontSize: isDesktop ? 16 : 15,
+    textAlign: "center",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -555,4 +772,3 @@ const styles = StyleSheet.create({
     bottom: 20,
   },
 });
-
