@@ -50,6 +50,7 @@ export default function SettingsScreen() {
   };
 
   const handleDeleteAccount = () => {
+    console.log("Delete Account button clicked");
     Alert.alert(
       "Delete Account",
       "Are you sure you want to delete your BlazeMates account? This cannot be undone.",
@@ -59,6 +60,7 @@ export default function SettingsScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
+            console.log("Delete confirmed");
             try {
               const {
                 data: { user },
