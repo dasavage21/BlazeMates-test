@@ -114,7 +114,6 @@ export default function SwipeScreen() {
   }, [PLACEHOLDER_50]);
   useEffect(() => {
     const init = async () => {
-      // local state
       const ageStored = await AsyncStorage.getItem("userAge");
       if (ageStored) setUserAge(parseInt(ageStored));
 
@@ -126,9 +125,9 @@ export default function SwipeScreen() {
         if (parsed.profileImage) setProfilePhoto(parsed.profileImage);
       }
 
-      const myUserId = await AsyncStorage.getItem("userId");
+      const { data: authData } = await supabase.auth.getUser();
+      const myUserId = authData?.user?.id;
 
-      // fetch users
       const { data, error } = await supabase
         .from("users")
         .select("id,name,age,bio,strain,style,looking_for,image_url");
