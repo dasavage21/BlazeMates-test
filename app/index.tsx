@@ -96,6 +96,14 @@ export default function IndexGate() {
         return true;
       } catch (err) {
         console.warn("Age gate check failed", err);
+
+        // Check if we have a valid age in storage before clearing everything
+        const storedAge = parseStoredAge(await AsyncStorage.getItem("userAge"));
+        if (storedAge !== null && storedAge >= MIN_AGE) {
+          // Age is valid, don't redirect to age-check
+          return false;
+        }
+
         await clearCachedSessionData(true);
         underageBlockRef.current = false;
         router.replace("/age-check");
