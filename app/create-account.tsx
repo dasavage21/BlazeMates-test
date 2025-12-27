@@ -58,13 +58,25 @@ export default function CreateAccountScreen() {
         options: { data: { age: ageNum } },
       });
       if (error) {
+        console.error("Sign up error:", error);
         Alert.alert("Sign up failed", error.message);
+        setBusy(false);
         return;
       }
 
       const userId = data?.user?.id;
-      if (userId) {
-        await mergeUserRow(supabase, userId, { age: ageNum });
+      if (!userId) {
+        Alert.alert("Error", "Failed to create account. Please try again.");
+        setBusy(false);
+        return;
+      }
+
+      const mergeResult = await mergeUserRow(supabase, userId, { age: ageNum });
+      if (mergeResult.error) {
+        console.error("Failed to create user profile:", mergeResult.error);
+        Alert.alert("Error", "Account created but profile setup failed. Please try logging in.");
+        setBusy(false);
+        return;
       }
 
       await AsyncStorage.setItem("userAge", ageNum.toString());
@@ -77,7 +89,7 @@ export default function CreateAccountScreen() {
 
       router.replace("/profile");
     } catch (error) {
-      console.warn("Sign up failed", error);
+      console.error("Sign up exception:", error);
       Alert.alert(
         "Sign up failed",
         (error as { message?: string })?.message ??
@@ -108,6 +120,9 @@ export default function CreateAccountScreen() {
         value={password}
         onChangeText={setPassword}
       />
+      <Text style={styles.hint}>
+        Password must have 8+ characters, uppercase, lowercase, and a number
+      </Text>
       <TextInput
         style={styles.input}
         placeholder="Age (21+)"
@@ -178,5 +193,11 @@ const styles = StyleSheet.create({
   link: {
     color: "#00FF7F",
     textAlign: "center",
+  },
+  hint: {
+    color: "#888",
+    fontSize: 12,
+    marginBottom: 12,
+    marginTop: -8,
   },
 });

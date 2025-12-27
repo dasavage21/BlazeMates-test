@@ -94,13 +94,17 @@ export async function validatePassword(password: string): Promise<{
     return strengthCheck;
   }
 
-  const isBreached = await checkPasswordBreach(password);
+  try {
+    const isBreached = await checkPasswordBreach(password);
 
-  if (isBreached) {
-    return {
-      isValid: false,
-      errors: ['This password has been exposed in a data breach. Please choose a different password.'],
-    };
+    if (isBreached) {
+      return {
+        isValid: false,
+        errors: ['This password has been exposed in a data breach. Please choose a different password.'],
+      };
+    }
+  } catch (error) {
+    console.warn('Password breach check failed, allowing password:', error);
   }
 
   return {
