@@ -22,12 +22,19 @@ export async function mergeUserRow(
     .maybeSingle();
 
   if (fetchError) {
+    console.error("Error checking existing user:", fetchError);
     return { error: fetchError };
   }
 
   if (existing) {
-    return supabase.from("users").update(values).eq("id", userId);
+    console.log("Updating existing user:", userId);
+    const result = await supabase.from("users").update(values).eq("id", userId);
+    console.log("Update result:", result);
+    return result;
   }
 
-  return supabase.from("users").insert([{ id: userId, ...values }]);
+  console.log("Inserting new user:", userId, values);
+  const result = await supabase.from("users").insert([{ id: userId, ...values }]);
+  console.log("Insert result:", result);
+  return result;
 }

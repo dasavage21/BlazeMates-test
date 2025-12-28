@@ -52,11 +52,13 @@ export default function CreateAccountScreen() {
         return;
       }
 
+      console.log("Starting signup for:", trimmedEmail);
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
         password: trimmedPassword,
         options: { data: { age: ageNum } },
       });
+
       if (error) {
         console.error("Sign up error:", error);
         Alert.alert("Sign up failed", error.message);
@@ -66,27 +68,35 @@ export default function CreateAccountScreen() {
 
       const userId = data?.user?.id;
       if (!userId) {
+        console.error("No user ID returned from signup");
         Alert.alert("Error", "Failed to create account. Please try again.");
         setBusy(false);
         return;
       }
 
+      console.log("User created with ID:", userId);
+
       const session = data?.session;
       if (!session) {
+        console.log("No session returned - email confirmation required");
         Alert.alert("Email Confirmation Required", "Please check your email and confirm your account before logging in.");
         setBusy(false);
         router.replace("/login");
         return;
       }
 
+      console.log("Session established, creating profile");
       const mergeResult = await mergeUserRow(supabase, userId, { age: ageNum });
+
       if (mergeResult.error) {
-        console.error("Failed to create user profile:", mergeResult.error);
-        Alert.alert("Error", `Profile setup failed: ${mergeResult.error.message}. Please try logging in.`);
+        console.error("Profile creation error:", mergeResult.error);
+        const errorMsg = mergeResult.error.message || JSON.stringify(mergeResult.error);
+        Alert.alert("Profile Setup Failed", `Error: ${errorMsg}\n\nYour account was created but the profile setup failed. Please try logging in.`);
         setBusy(false);
         return;
       }
 
+      console.log("Profile created successfully");
       await AsyncStorage.setItem("userAge", ageNum.toString());
       const existingRaw = await AsyncStorage.getItem("userProfile");
       const existing = existingRaw ? JSON.parse(existingRaw) : {};
@@ -98,11 +108,8 @@ export default function CreateAccountScreen() {
       router.replace("/profile");
     } catch (error) {
       console.error("Sign up exception:", error);
-      Alert.alert(
-        "Sign up failed",
-        (error as { message?: string })?.message ??
-          "Something went wrong. Please try again."
-      );
+      const errorMsg = (error as { message?: string })?.message ?? String(error);
+      Alert.alert("Sign up failed", errorMsg);
     } finally {
       setBusy(false);
     }
