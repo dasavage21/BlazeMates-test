@@ -158,6 +158,13 @@ export default function SettingsScreen() {
         <Switch value={notifications} onValueChange={toggleNotifications} />
       </View>
 
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/admin-reports")}
+      >
+        <Text style={styles.buttonText}>View Reports</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>
