@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../supabaseClient";
 import { mergeUserRow } from "../lib/userStore";
 import { validatePassword } from "../lib/passwordSecurity";
+import { clearLocalAuthSession } from "../lib/authSession";
 
 export default function CreateAccountScreen() {
   const router = useRouter();
@@ -45,6 +46,8 @@ export default function CreateAccountScreen() {
 
     setBusy(true);
     try {
+      await clearLocalAuthSession();
+
       const passwordValidation = await validatePassword(trimmedPassword);
       if (!passwordValidation.isValid) {
         Alert.alert("Weak Password", passwordValidation.errors.join("\n"));
@@ -98,11 +101,9 @@ export default function CreateAccountScreen() {
 
       console.log("Profile created successfully");
       await AsyncStorage.setItem("userAge", ageNum.toString());
-      const existingRaw = await AsyncStorage.getItem("userProfile");
-      const existing = existingRaw ? JSON.parse(existingRaw) : {};
       await AsyncStorage.setItem(
         "userProfile",
-        JSON.stringify({ ...existing, age: ageNum })
+        JSON.stringify({ age: ageNum })
       );
 
       router.replace("/profile");
