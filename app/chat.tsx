@@ -683,127 +683,132 @@ export default function ChatScreen() {
   }, [input, postHeartbeat, threadId, updateTyping, userId, isBlocked]);
 
   const handleBlock = useCallback(async () => {
-    if (!userId || !otherUserId) return;
+    if (!userId || !otherUserId) {
+      console.log("Cannot block: missing userId or otherUserId", { userId, otherUserId });
+      return;
+    }
 
-    Alert.alert(
-      "Block User",
-      `Are you sure you want to block ${otherUserName || "this user"}? You won't be able to message each other.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Block",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from("blocks")
-                .insert({
-                  blocker_id: userId,
-                  blocked_id: otherUserId,
-                });
+    const confirmBlock = Platform.OS === 'web'
+      ? window.confirm(`Are you sure you want to block ${otherUserName || "this user"}? You won't be able to message each other.`)
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            "Block User",
+            `Are you sure you want to block ${otherUserName || "this user"}? You won't be able to message each other.`,
+            [
+              { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+              { text: "Block", style: "destructive", onPress: () => resolve(true) },
+            ]
+          );
+        });
 
-              if (error) {
-                Alert.alert("Error", "Failed to block user. Please try again.");
-                return;
-              }
+    if (!confirmBlock) return;
 
-              setIsBlocked(true);
-              Alert.alert("User Blocked", "You have blocked this user.");
-            } catch (error) {
-              console.error("Failed to block user:", error);
-              Alert.alert("Error", "Something went wrong. Please try again.");
-            }
-          },
-        },
-      ]
-    );
+    try {
+      const { error } = await supabase
+        .from("blocks")
+        .insert({
+          blocker_id: userId,
+          blocked_id: otherUserId,
+        });
+
+      if (error) {
+        console.error("Block error:", error);
+        if (Platform.OS === 'web') {
+          window.alert("Failed to block user. Please try again.");
+        } else {
+          Alert.alert("Error", "Failed to block user. Please try again.");
+        }
+        return;
+      }
+
+      setIsBlocked(true);
+      if (Platform.OS === 'web') {
+        window.alert("You have blocked this user.");
+      } else {
+        Alert.alert("User Blocked", "You have blocked this user.");
+      }
+    } catch (error) {
+      console.error("Failed to block user:", error);
+      if (Platform.OS === 'web') {
+        window.alert("Something went wrong. Please try again.");
+      } else {
+        Alert.alert("Error", "Something went wrong. Please try again.");
+      }
+    }
   }, [userId, otherUserId, otherUserName]);
 
   const handleReport = useCallback(async () => {
-    if (!userId || !otherUserId) return;
+    if (!userId || !otherUserId) {
+      console.log("Cannot report: missing userId or otherUserId", { userId, otherUserId });
+      return;
+    }
 
-    Alert.alert(
-      "Report User",
-      "Why are you reporting this user?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Harassment",
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from("reports")
-                .insert({
-                  reporter_id: userId,
-                  reported_id: otherUserId,
-                  reason: "harassment",
-                  context: `Reported from chat thread: ${threadId}`,
-                });
+    let reason: string | null = null;
 
-              if (error) {
-                Alert.alert("Error", "Failed to submit report. Please try again.");
-                return;
-              }
+    if (Platform.OS === 'web') {
+      const choice = window.prompt(
+        "Why are you reporting this user?\n\n1 - Harassment\n2 - Spam\n3 - Inappropriate Content\n\nEnter the number (1-3):"
+      );
 
-              Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
-            } catch (error) {
-              console.error("Failed to report user:", error);
-              Alert.alert("Error", "Something went wrong. Please try again.");
-            }
-          },
-        },
-        {
-          text: "Spam",
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from("reports")
-                .insert({
-                  reporter_id: userId,
-                  reported_id: otherUserId,
-                  reason: "spam",
-                  context: `Reported from chat thread: ${threadId}`,
-                });
+      if (!choice) return;
 
-              if (error) {
-                Alert.alert("Error", "Failed to submit report. Please try again.");
-                return;
-              }
+      if (choice === '1') reason = 'harassment';
+      else if (choice === '2') reason = 'spam';
+      else if (choice === '3') reason = 'inappropriate_content';
+      else {
+        window.alert("Invalid choice. Please try again.");
+        return;
+      }
+    } else {
+      reason = await new Promise<string | null>((resolve) => {
+        Alert.alert(
+          "Report User",
+          "Why are you reporting this user?",
+          [
+            { text: "Cancel", style: "cancel", onPress: () => resolve(null) },
+            { text: "Harassment", onPress: () => resolve("harassment") },
+            { text: "Spam", onPress: () => resolve("spam") },
+            { text: "Inappropriate Content", onPress: () => resolve("inappropriate_content") },
+          ]
+        );
+      });
+    }
 
-              Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
-            } catch (error) {
-              console.error("Failed to report user:", error);
-              Alert.alert("Error", "Something went wrong. Please try again.");
-            }
-          },
-        },
-        {
-          text: "Inappropriate Content",
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from("reports")
-                .insert({
-                  reporter_id: userId,
-                  reported_id: otherUserId,
-                  reason: "inappropriate_content",
-                  context: `Reported from chat thread: ${threadId}`,
-                });
+    if (!reason) return;
 
-              if (error) {
-                Alert.alert("Error", "Failed to submit report. Please try again.");
-                return;
-              }
+    try {
+      const { error } = await supabase
+        .from("reports")
+        .insert({
+          reporter_id: userId,
+          reported_id: otherUserId,
+          reason: reason,
+          context: `Reported from chat thread: ${threadId}`,
+        });
 
-              Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
-            } catch (error) {
-              console.error("Failed to report user:", error);
-              Alert.alert("Error", "Something went wrong. Please try again.");
-            }
-          },
-        },
-      ]
-    );
+      if (error) {
+        console.error("Report error:", error);
+        if (Platform.OS === 'web') {
+          window.alert("Failed to submit report. Please try again.");
+        } else {
+          Alert.alert("Error", "Failed to submit report. Please try again.");
+        }
+        return;
+      }
+
+      if (Platform.OS === 'web') {
+        window.alert("Thank you for helping keep BlazeMates safe.");
+      } else {
+        Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
+      }
+    } catch (error) {
+      console.error("Failed to report user:", error);
+      if (Platform.OS === 'web') {
+        window.alert("Something went wrong. Please try again.");
+      } else {
+        Alert.alert("Error", "Something went wrong. Please try again.");
+      }
+    }
   }, [userId, otherUserId, threadId]);
 
   if (loadingUser) {
