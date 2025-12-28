@@ -23,12 +23,20 @@ export default function CreateAccountScreen() {
   const [ageInput, setAgeInput] = useState("");
   const [busy, setBusy] = useState(false);
 
+  console.log("CreateAccountScreen mounted, supabase client:", supabase ? "initialized" : "NOT initialized");
+
   const handleSignUp = async () => {
+    console.log("=== SIGNUP BUTTON CLICKED ===");
+    console.log("Email:", email);
+    console.log("Password length:", password.length);
+    console.log("Age:", ageInput);
+
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password.trim();
     const trimmedAge = ageInput.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
+      console.log("Missing email or password");
       Alert.alert("Missing details", "Enter an email and password to continue.");
       return;
     }
@@ -149,7 +157,10 @@ export default function CreateAccountScreen() {
 
       <TouchableOpacity
         style={[styles.btn, busy && styles.btnDisabled]}
-        onPress={handleSignUp}
+        onPress={() => {
+          console.log("Button onPress triggered");
+          handleSignUp();
+        }}
         disabled={busy}
       >
         <Text style={styles.btnText}>{busy ? "Creating..." : "Sign Up"}</Text>
