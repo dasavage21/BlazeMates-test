@@ -46,20 +46,10 @@ export default function AdminReportsScreen() {
         return;
       }
 
-      const { data: authUser, error } = await supabase
-        .from("auth.users")
-        .select("is_super_admin")
-        .eq("id", user.id)
-        .maybeSingle();
+      const isSuperAdmin = user.user_metadata?.is_super_admin === true;
+      setIsAdmin(isSuperAdmin);
 
-      if (error) {
-        console.error("Error checking admin status:", error);
-        setIsAdmin(false);
-      } else {
-        setIsAdmin(authUser?.is_super_admin === true);
-      }
-
-      if (authUser?.is_super_admin === true) {
+      if (isSuperAdmin) {
         await loadReports();
       } else {
         setLoading(false);
