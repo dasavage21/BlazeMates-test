@@ -37,15 +37,9 @@ export default function SettingsScreen() {
           return;
         }
 
-        const { data: authUser, error } = await supabase
-          .from("auth.users")
-          .select("is_super_admin")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (!error && authUser?.is_super_admin === true) {
-          setIsAdmin(true);
-        }
+        // Check if user is super admin via raw_user_meta_data
+        const isSuperAdmin = user.user_metadata?.is_super_admin === true;
+        setIsAdmin(isSuperAdmin);
       } catch (error) {
         console.error("Failed to check admin status:", error);
       }
