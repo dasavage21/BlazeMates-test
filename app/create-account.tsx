@@ -71,10 +71,18 @@ export default function CreateAccountScreen() {
         return;
       }
 
+      const session = data?.session;
+      if (!session) {
+        Alert.alert("Email Confirmation Required", "Please check your email and confirm your account before logging in.");
+        setBusy(false);
+        router.replace("/login");
+        return;
+      }
+
       const mergeResult = await mergeUserRow(supabase, userId, { age: ageNum });
       if (mergeResult.error) {
         console.error("Failed to create user profile:", mergeResult.error);
-        Alert.alert("Error", "Account created but profile setup failed. Please try logging in.");
+        Alert.alert("Error", `Profile setup failed: ${mergeResult.error.message}. Please try logging in.`);
         setBusy(false);
         return;
       }
