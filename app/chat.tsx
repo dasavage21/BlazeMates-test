@@ -777,14 +777,16 @@ export default function ChatScreen() {
     if (!reason) return;
 
     try {
-      const { error } = await supabase
+      const { data: reportData, error } = await supabase
         .from("reports")
         .insert({
           reporter_id: userId,
           reported_id: otherUserId,
           reason: reason,
           context: `Reported from chat thread: ${threadId}`,
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error("Report error:", error);
@@ -794,6 +796,30 @@ export default function ChatScreen() {
           Alert.alert("Error", "Failed to submit report. Please try again.");
         }
         return;
+      }
+
+      if (reportData) {
+        try {
+          const apiUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/notify-admin-report`;
+          const { data: { session } } = await supabase.auth.getSession();
+
+          await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session?.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              report_id: reportData.id,
+              reporter_id: userId,
+              reported_id: otherUserId,
+              reason: reason,
+              context: `Reported from chat thread: ${threadId}`,
+            }),
+          });
+        } catch (notifyError) {
+          console.warn("Failed to send admin notification:", notifyError);
+        }
       }
 
       if (Platform.OS === 'web') {
