@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "../supabaseClient";
+import { showChatNotification, requestNotificationPermission } from "../lib/notificationHelper";
 
 type Message = {
   id: string;
@@ -55,6 +56,8 @@ export default function ChatScreen() {
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [otherUserName, setOtherUserName] = useState<string | null>(null);
   const [userImages, setUserImages] = useState<Record<string, string>>({});
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [otherUserId, setOtherUserId] = useState<string | null>(null);
 
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -75,7 +78,7 @@ export default function ChatScreen() {
     return "??";
   }, []);
 
-  // Load the signed-in user
+  // Load the signed-in user and request notification permission
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -84,6 +87,8 @@ export default function ChatScreen() {
         if (!cancelled) {
           setUserId(data?.user?.id ?? null);
         }
+
+        await requestNotificationPermission();
       } catch (error) {
         console.warn("Failed to load auth user", error);
         if (!cancelled) setUserId(null);
@@ -101,6 +106,7 @@ export default function ChatScreen() {
     let cancelled = false;
     if (!userId || !threadId.startsWith("dm_")) {
       setOtherUserName(null);
+      setOtherUserId(null);
       return;
     }
 
@@ -109,12 +115,15 @@ export default function ChatScreen() {
         const parts = threadId.split("_");
         if (parts.length !== 3) return;
 
-        const otherUserId = parts[1] === userId ? parts[2] : parts[1];
+        const otherUser = parts[1] === userId ? parts[2] : parts[1];
+        if (!cancelled) {
+          setOtherUserId(otherUser);
+        }
 
         const { data, error } = await supabase
           .from("users")
           .select("name")
-          .eq("id", otherUserId)
+          .eq("id", otherUser)
           .maybeSingle();
 
         if (!cancelled && !error && data) {
@@ -129,6 +138,35 @@ export default function ChatScreen() {
       cancelled = true;
     };
   }, [userId, threadId]);
+
+  // Check if user is blocked
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId || !otherUserId) {
+      setIsBlocked(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("blocks")
+          .select("id")
+          .or(`and(blocker_id.eq.${userId},blocked_id.eq.${otherUserId}),and(blocker_id.eq.${otherUserId},blocked_id.eq.${userId})`)
+          .maybeSingle();
+
+        if (!cancelled) {
+          setIsBlocked(!!data);
+        }
+      } catch (error) {
+        console.warn("Failed to check block status", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, otherUserId]);
 
   // Ensure the thread exists
   useEffect(() => {
@@ -186,8 +224,15 @@ export default function ChatScreen() {
           table: "messages",
           filter: `thread_id=eq.${threadId}`,
         },
-        (payload) =>
-          setMessages((prev) => [...prev, payload.new as Message])
+        (payload) => {
+          const newMessage = payload.new as Message;
+          setMessages((prev) => [...prev, newMessage]);
+
+          if (newMessage.sender_id !== userId) {
+            const senderName = otherUserName || "Someone";
+            showChatNotification(senderName, newMessage.content);
+          }
+        }
       )
       .subscribe();
 
@@ -613,6 +658,11 @@ export default function ChatScreen() {
       return;
     }
 
+    if (isBlocked) {
+      Alert.alert("Cannot send message", "You cannot message this user.");
+      return;
+    }
+
     const { error } = await supabase
       .from("messages")
       .insert({
@@ -630,7 +680,131 @@ export default function ChatScreen() {
     setInput("");
     await updateTyping(false);
     await postHeartbeat();
-  }, [input, postHeartbeat, threadId, updateTyping, userId]);
+  }, [input, postHeartbeat, threadId, updateTyping, userId, isBlocked]);
+
+  const handleBlock = useCallback(async () => {
+    if (!userId || !otherUserId) return;
+
+    Alert.alert(
+      "Block User",
+      `Are you sure you want to block ${otherUserName || "this user"}? You won't be able to message each other.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("blocks")
+                .insert({
+                  blocker_id: userId,
+                  blocked_id: otherUserId,
+                });
+
+              if (error) {
+                Alert.alert("Error", "Failed to block user. Please try again.");
+                return;
+              }
+
+              setIsBlocked(true);
+              Alert.alert("User Blocked", "You have blocked this user.");
+            } catch (error) {
+              console.error("Failed to block user:", error);
+              Alert.alert("Error", "Something went wrong. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  }, [userId, otherUserId, otherUserName]);
+
+  const handleReport = useCallback(async () => {
+    if (!userId || !otherUserId) return;
+
+    Alert.alert(
+      "Report User",
+      "Why are you reporting this user?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Harassment",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("reports")
+                .insert({
+                  reporter_id: userId,
+                  reported_id: otherUserId,
+                  reason: "harassment",
+                  context: `Reported from chat thread: ${threadId}`,
+                });
+
+              if (error) {
+                Alert.alert("Error", "Failed to submit report. Please try again.");
+                return;
+              }
+
+              Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
+            } catch (error) {
+              console.error("Failed to report user:", error);
+              Alert.alert("Error", "Something went wrong. Please try again.");
+            }
+          },
+        },
+        {
+          text: "Spam",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("reports")
+                .insert({
+                  reporter_id: userId,
+                  reported_id: otherUserId,
+                  reason: "spam",
+                  context: `Reported from chat thread: ${threadId}`,
+                });
+
+              if (error) {
+                Alert.alert("Error", "Failed to submit report. Please try again.");
+                return;
+              }
+
+              Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
+            } catch (error) {
+              console.error("Failed to report user:", error);
+              Alert.alert("Error", "Something went wrong. Please try again.");
+            }
+          },
+        },
+        {
+          text: "Inappropriate Content",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("reports")
+                .insert({
+                  reporter_id: userId,
+                  reported_id: otherUserId,
+                  reason: "inappropriate_content",
+                  context: `Reported from chat thread: ${threadId}`,
+                });
+
+              if (error) {
+                Alert.alert("Error", "Failed to submit report. Please try again.");
+                return;
+              }
+
+              Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
+            } catch (error) {
+              console.error("Failed to report user:", error);
+              Alert.alert("Error", "Something went wrong. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  }, [userId, otherUserId, threadId]);
 
   if (loadingUser) {
     return (
@@ -679,6 +853,16 @@ export default function ChatScreen() {
               <Text style={styles.headerSubtitle}>{activeSummary}</Text>
             )}
           </View>
+          {otherUserName && (
+            <View style={styles.actionButtonsRow}>
+              <TouchableOpacity onPress={handleReport} style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>⚠️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleBlock} style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>🚫</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {!otherUserName && (
             <View style={styles.badgeRow}>
               {activePreview.map((user) => (
@@ -879,6 +1063,24 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
+  },
+  actionButtonsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1f1f1f",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#2f2f2f",
+  },
+  actionButtonText: {
+    fontSize: 18,
   },
   chatBody: { flex: 1 },
   messageList: { paddingBottom: 12, paddingTop: 8 },
