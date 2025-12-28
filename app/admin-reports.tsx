@@ -30,10 +30,46 @@ export default function AdminReportsScreen() {
   const router = useRouter();
   const [reports, setReports] = useState<ReportWithUsers[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    loadReports();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      const { data: authUser, error } = await supabase
+        .from("auth.users")
+        .select("is_super_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(authUser?.is_super_admin === true);
+      }
+
+      if (authUser?.is_super_admin === true) {
+        await loadReports();
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Failed to check admin status:", error);
+      setIsAdmin(false);
+      setLoading(false);
+    }
+  };
 
   const loadReports = async () => {
     try {
@@ -163,6 +199,25 @@ export default function AdminReportsScreen() {
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#00FF7F" />
+        </View>
+      </View>
+    );
+  }
+
+  if (isAdmin === false) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.header}>Admin Reports</Text>
+        </View>
+        <View style={styles.accessDeniedContainer}>
+          <Text style={styles.accessDeniedText}>Access Denied</Text>
+          <Text style={styles.accessDeniedSubtext}>
+            You do not have permission to view this page.
+          </Text>
         </View>
       </View>
     );
@@ -314,5 +369,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginTop: 40,
+  },
+  accessDeniedContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  accessDeniedText: {
+    color: "#ff5555",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  accessDeniedSubtext: {
+    color: "#888",
+    fontSize: 16,
+    textAlign: "center",
   },
 });

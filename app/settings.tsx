@@ -1,7 +1,7 @@
 // Ac 2025 Benjamin Hawk. All rights reserved.
 
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -23,8 +23,36 @@ import { supabase, SUPABASE_PROJECT_REF } from "../supabaseClient";
 export default function SettingsScreen() {
   const { isDark, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const showThemeToggle = false; // flip to true when exposing the theme switch
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          setIsAdmin(false);
+          return;
+        }
+
+        const { data: authUser, error } = await supabase
+          .from("auth.users")
+          .select("is_super_admin")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!error && authUser?.is_super_admin === true) {
+          setIsAdmin(true);
+        }
+      } catch (error) {
+        console.error("Failed to check admin status:", error);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
 
   const handleToggleTheme = useCallback(async () => {
     try {
@@ -158,12 +186,14 @@ export default function SettingsScreen() {
         <Switch value={notifications} onValueChange={toggleNotifications} />
       </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("/admin-reports")}
-      >
-        <Text style={styles.buttonText}>View Reports</Text>
-      </TouchableOpacity>
+      {isAdmin && (
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push("/admin-reports")}
+        >
+          <Text style={styles.buttonText}>View Reports</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
         <Text style={styles.buttonText}>Sign Out</Text>
