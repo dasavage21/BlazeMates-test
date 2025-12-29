@@ -124,13 +124,19 @@ export default function SettingsScreen() {
         const result = await resp.json();
         console.log("Delete success:", result);
 
+        await supabase.auth.signOut();
         await clearLocalAuthSession();
-        Alert.alert("Account Deleted", "Your account was successfully removed.", [
-          {
-            text: "OK",
-            onPress: () => router.replace("/login"),
-          },
-        ]);
+
+        if (Platform.OS === "web") {
+          router.replace("/login");
+        } else {
+          Alert.alert("Account Deleted", "Your account was successfully removed.", [
+            {
+              text: "OK",
+              onPress: () => router.replace("/login"),
+            },
+          ]);
+        }
       } catch (err) {
         const handled = await handleRefreshTokenError(err);
         if (handled) {
