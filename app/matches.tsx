@@ -1,5 +1,5 @@
 // © 2025 Benjamin Hawk. All rights reserved.
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -77,9 +77,11 @@ export default function MatchesScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadMatches();
-  }, [loadMatches]);
+  useFocusEffect(
+    useCallback(() => {
+      loadMatches();
+    }, [loadMatches])
+  );
 
   const createThreadId = useCallback((userId1: string, userId2: string) => {
     const sorted = [userId1, userId2].sort();
