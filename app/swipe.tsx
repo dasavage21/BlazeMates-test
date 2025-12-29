@@ -391,6 +391,41 @@ export default function SwipeScreen() {
             }
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "users",
+          },
+          (payload) => {
+            const updatedUser = payload.new as SupaUser;
+
+            if (myUserId && updatedUser.id === myUserId) return;
+
+            setProfiles((prev) =>
+              prev.map((profile) => {
+                if (profile.id === updatedUser.id) {
+                  return {
+                    id: updatedUser.id,
+                    name: updatedUser.name ?? "—",
+                    age: updatedUser.age ?? 0,
+                    strain: updatedUser.strain ?? "—",
+                    style: updatedUser.style ?? "—",
+                    bio: updatedUser.bio ?? "",
+                    lookingFor: (updatedUser.looking_for ?? "both") as Looking,
+                    image:
+                      updatedUser.image_url &&
+                      updatedUser.image_url.trim().length > 0
+                        ? updatedUser.image_url
+                        : PLACEHOLDER_300,
+                  };
+                }
+                return profile;
+              })
+            );
+          }
+        )
         .subscribe();
 
       return () => {
