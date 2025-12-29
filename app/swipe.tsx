@@ -229,6 +229,16 @@ export default function SwipeScreen() {
   }, [likedUsers]);
 
   useEffect(() => {
+    setProfiles((prev) => prev.filter((p) => !likedUsers.includes(p.id)));
+  }, [likedUsers]);
+
+  useEffect(() => {
+    if (!loading && profiles.length === 0) {
+      router.push("/matches");
+    }
+  }, [loading, profiles.length, router]);
+
+  useEffect(() => {
     const sub = DeviceEventEmitter.addListener(
       "avatar-updated",
       ({ url, ts }) => {
