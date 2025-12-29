@@ -1,7 +1,7 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   ActivityIndicator,
   DeviceEventEmitter,
@@ -221,6 +221,13 @@ export default function SwipeScreen() {
   const [cooldownActive, setCooldownActive] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
 
+  const likedUsersRef = useRef<string[]>([]);
+  const myUserIdRef = useRef<string | undefined>();
+
+  useEffect(() => {
+    likedUsersRef.current = likedUsers;
+  }, [likedUsers]);
+
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener(
       "avatar-updated",
@@ -275,7 +282,7 @@ export default function SwipeScreen() {
   useEffect(() => {
     const init = async () => {
       const ageStored = await AsyncStorage.getItem("userAge");
-      if (ageStored) setUserAge(parseInt(ageStored));
+      if (ageStored) setUserAge(parseInt(ageStored, 10));
 
       const profileData = await AsyncStorage.getItem("userProfile");
       let userLookingFor: Looking = "both";
@@ -287,6 +294,7 @@ export default function SwipeScreen() {
 
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
+      myUserIdRef.current = myUserId;
 
       let alreadyLiked: string[] = [];
       if (myUserId) {
@@ -298,6 +306,7 @@ export default function SwipeScreen() {
         if (likesData) {
           alreadyLiked = likesData.map((like) => like.liked_user_id);
           setLikedUsers(alreadyLiked);
+          likedUsersRef.current = alreadyLiked;
         }
       }
 
@@ -364,8 +373,8 @@ export default function SwipeScreen() {
           (payload) => {
             const newUser = payload.new as SupaUser;
 
-            if (myUserId && newUser.id === myUserId) return;
-            if (alreadyLiked.includes(newUser.id)) return;
+            if (myUserIdRef.current && newUser.id === myUserIdRef.current) return;
+            if (likedUsersRef.current.includes(newUser.id)) return;
 
             const newProfile: Profile = {
               id: newUser.id,
@@ -401,7 +410,7 @@ export default function SwipeScreen() {
           (payload) => {
             const updatedUser = payload.new as SupaUser;
 
-            if (myUserId && updatedUser.id === myUserId) return;
+            if (myUserIdRef.current && updatedUser.id === myUserIdRef.current) return;
 
             setProfiles((prev) =>
               prev.map((profile) => {
@@ -433,7 +442,11 @@ export default function SwipeScreen() {
       };
     };
 
-    init();
+    init().catch((err) => {
+      console.error("Failed to initialize swipe screen:", err);
+      setLoading(false);
+      setProfiles([]);
+    });
   }, []);
 
   useEffect(() => {

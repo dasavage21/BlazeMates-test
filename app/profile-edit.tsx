@@ -402,6 +402,7 @@ export default function ProfileEditScreen() {
         placeholderTextColor="#888"
         value={name}
         onChangeText={setName}
+        maxLength={50}
         style={styles.input}
       />
       <TextInput
@@ -409,6 +410,7 @@ export default function ProfileEditScreen() {
         placeholderTextColor="#888"
         value={bio}
         onChangeText={setBio}
+        maxLength={500}
         style={[styles.input, { height: 80 }]}
         multiline
       />
@@ -417,6 +419,7 @@ export default function ProfileEditScreen() {
         placeholderTextColor="#888"
         value={strain}
         onChangeText={setStrain}
+        maxLength={50}
         style={styles.input}
       />
       <TextInput
@@ -424,6 +427,7 @@ export default function ProfileEditScreen() {
         placeholderTextColor="#888"
         value={style}
         onChangeText={setStyle}
+        maxLength={50}
         style={styles.input}
       />
 

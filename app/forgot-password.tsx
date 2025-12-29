@@ -17,6 +17,11 @@ export default function ForgotPasswordScreen() {
       Alert.alert("Enter your email", "We need your email address to send a reset link.");
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      Alert.alert("Invalid email", "Please enter a valid email address.");
+      return;
+    }
 
     try {
       setBusy(true);

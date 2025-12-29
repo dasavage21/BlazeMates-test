@@ -60,8 +60,9 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !serviceKey) {
+      console.error("Missing environment variables");
       return new Response(
-        JSON.stringify({ error: "Server configuration missing" }),
+        JSON.stringify({ error: "Internal server error" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

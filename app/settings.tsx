@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
+  Platform,
   StyleSheet,
   Switch,
   Text,
@@ -74,18 +75,7 @@ export default function SettingsScreen() {
   const handleDeleteAccount = () => {
     console.log("Delete Account button clicked");
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete your BlazeMates account? This cannot be undone."
-    );
-
-    if (!confirmDelete) {
-      console.log("Delete cancelled");
-      return;
-    }
-
-    console.log("Delete confirmed");
-
-    (async () => {
+    const executeDelete = async () => {
       try {
         const {
           data: { user },
@@ -154,7 +144,25 @@ export default function SettingsScreen() {
         console.error(err);
         Alert.alert("Error", "Something went wrong.");
       }
-    })();
+    };
+
+    if (Platform.OS === "web") {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete your BlazeMates account? This cannot be undone."
+      );
+      if (confirmDelete) {
+        void executeDelete();
+      }
+    } else {
+      Alert.alert(
+        "Delete Account",
+        "Are you sure you want to delete your BlazeMates account? This cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: () => void executeDelete() },
+        ]
+      );
+    }
   };
 
   return (

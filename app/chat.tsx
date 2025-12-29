@@ -652,7 +652,11 @@ export default function ChatScreen() {
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || text.length === 0) return;
+    if (text.length > 2000) {
+      Alert.alert("Message too long", "Messages must be 2000 characters or less.");
+      return;
+    }
     if (!userId) {
       Alert.alert("Sign in required", "Sign in before sending messages.");
       return;

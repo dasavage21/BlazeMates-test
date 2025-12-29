@@ -69,8 +69,12 @@ export default function CameraScreen() {
 
   if (hasPermission === false) {
     async function requestPermission() {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
+      try {
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        setHasPermission(status === "granted");
+      } catch (error) {
+        console.error("Failed to request camera permission:", error);
+      }
     }
 
     return (

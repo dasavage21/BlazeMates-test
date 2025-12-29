@@ -13,41 +13,35 @@ async function sha1(message: string): Promise<string> {
  * Uses k-anonymity model - only sends first 5 chars of SHA-1 hash
  */
 export async function checkPasswordBreach(password: string): Promise<boolean> {
-  try {
-    const hash = (await sha1(password)).toUpperCase();
-    const prefix = hash.substring(0, 5);
-    const suffix = hash.substring(5);
+  const hash = (await sha1(password)).toUpperCase();
+  const prefix = hash.substring(0, 5);
+  const suffix = hash.substring(5);
 
-    const response = await fetch(
-      `https://api.pwnedpasswords.com/range/${prefix}`,
-      {
-        method: 'GET',
-        headers: {
-          'Add-Padding': 'true',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      console.error('Failed to check password breach status');
-      return false;
+  const response = await fetch(
+    `https://api.pwnedpasswords.com/range/${prefix}`,
+    {
+      method: 'GET',
+      headers: {
+        'Add-Padding': 'true',
+      },
     }
+  );
 
-    const text = await response.text();
-    const hashes = text.split('\n');
-
-    for (const line of hashes) {
-      const [hashSuffix] = line.split(':');
-      if (hashSuffix === suffix) {
-        return true;
-      }
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Error checking password breach:', error);
-    return false;
+  if (!response.ok) {
+    throw new Error('Failed to check password breach status');
   }
+
+  const text = await response.text();
+  const hashes = text.split('\n');
+
+  for (const line of hashes) {
+    const [hashSuffix] = line.split(':');
+    if (hashSuffix === suffix) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -103,12 +97,16 @@ export async function validatePassword(password: string): Promise<{
         errors: ['This password has been exposed in a data breach. Please choose a different password.'],
       };
     }
-  } catch (error) {
-    console.warn('Password breach check failed, allowing password:', error);
-  }
 
-  return {
-    isValid: true,
-    errors: [],
-  };
+    return {
+      isValid: true,
+      errors: [],
+    };
+  } catch (error) {
+    console.error('Password breach check failed:', error);
+    return {
+      isValid: false,
+      errors: ['Unable to verify password security. Please try again or choose a different password.'],
+    };
+  }
 }

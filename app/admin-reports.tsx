@@ -68,7 +68,8 @@ export default function AdminReportsScreen() {
       const { data: reportsData, error: reportsError } = await supabase
         .from("reports")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
 
       if (reportsError) {
         console.error("Error loading reports:", reportsError);
