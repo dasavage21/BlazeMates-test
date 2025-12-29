@@ -351,6 +351,51 @@ export default function SwipeScreen() {
       setProfiles(filtered);
       setIndex(0);
       setLoading(false);
+
+      const channel = supabase
+        .channel("users-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "users",
+          },
+          (payload) => {
+            const newUser = payload.new as SupaUser;
+
+            if (myUserId && newUser.id === myUserId) return;
+            if (alreadyLiked.includes(newUser.id)) return;
+
+            const newProfile: Profile = {
+              id: newUser.id,
+              name: newUser.name ?? "—",
+              age: newUser.age ?? 0,
+              strain: newUser.strain ?? "—",
+              style: newUser.style ?? "—",
+              bio: newUser.bio ?? "",
+              lookingFor: (newUser.looking_for ?? "both") as Looking,
+              image:
+                newUser.image_url && newUser.image_url.trim().length > 0
+                  ? newUser.image_url
+                  : PLACEHOLDER_300,
+            };
+
+            const lookingForMatches =
+              userLookingFor === "both" ||
+              newProfile.lookingFor === userLookingFor ||
+              newProfile.lookingFor === "both";
+
+            if (lookingForMatches) {
+              setProfiles((prev) => [...prev, newProfile]);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     };
 
     init();
