@@ -519,11 +519,20 @@ export default function SwipeScreen() {
           user_id: myUserId,
           liked_user_id: current.id,
         });
-      }
 
-      setShouldAdvance(true);
-      router.push(`/match?matchId=${current.id}`);
-      return;
+        const { data: theirLike } = await supabase
+          .from("likes")
+          .select("id")
+          .eq("user_id", current.id)
+          .eq("liked_user_id", myUserId)
+          .maybeSingle();
+
+        if (theirLike) {
+          setShouldAdvance(true);
+          router.push(`/match?matchId=${current.id}`);
+          return;
+        }
+      }
     }
 
     handleNext();

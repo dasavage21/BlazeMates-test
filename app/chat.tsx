@@ -637,7 +637,7 @@ export default function ChatScreen() {
           .from("threads")
           .select("typing")
           .eq("id", threadId)
-          .single();
+          .maybeSingle();
         const updated = { ...(data?.typing ?? {}), [userId]: isTyping };
         await supabase
           .from("threads")
@@ -790,7 +790,7 @@ export default function ChatScreen() {
           context: `Reported from chat thread: ${threadId}`,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Report error:", error);

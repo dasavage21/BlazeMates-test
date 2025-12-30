@@ -25,9 +25,9 @@ export default function MatchScreen() {
         .from('users')
         .select('id, name, image_url')
         .eq('id', matchId)
-        .single();
+        .maybeSingle();
 
-      if (!error) setMatchUser(data);
+      if (!error && data) setMatchUser(data);
     };
 
     fetchMatchUser();
