@@ -122,12 +122,7 @@ export default function ResetPasswordScreen() {
         Alert.alert("Could not update password", error.message);
         return;
       }
-      Alert.alert("Password updated", "You can sign in with the new password.", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/login"),
-        },
-      ]);
+      router.replace("/login");
     } catch (err: any) {
       Alert.alert(
         "Could not update password",
