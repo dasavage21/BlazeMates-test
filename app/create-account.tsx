@@ -14,7 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { supabase } from "../supabaseClient";
 import { mergeUserRow } from "../lib/userStore";
-import { validatePassword } from "../lib/passwordSecurity";
+import { validatePassword, calculatePasswordStrength } from "../lib/passwordSecurity";
 import { clearLocalAuthSession } from "../lib/authSession";
 
 export default function CreateAccountScreen() {
@@ -23,6 +23,27 @@ export default function CreateAccountScreen() {
   const [password, setPassword] = useState("");
   const [ageInput, setAgeInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<{
+    level: 'weak' | 'medium' | 'strong';
+    checks: {
+      minLength: boolean;
+      hasUppercase: boolean;
+      hasLowercase: boolean;
+      hasNumber: boolean;
+      hasSpecialChar: boolean;
+      isLongEnough: boolean;
+    };
+  } | null>(null);
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (text.length > 0) {
+      const strength = calculatePasswordStrength(text);
+      setPasswordStrength({ level: strength.level, checks: strength.checks });
+    } else {
+      setPasswordStrength(null);
+    }
+  };
 
   const handleSignUp = async () => {
     const trimmedEmail = email.trim().toLowerCase();
@@ -134,11 +155,62 @@ export default function CreateAccountScreen() {
         placeholderTextColor="#888"
         secureTextEntry
         value={password}
-        onChangeText={setPassword}
+        onChangeText={handlePasswordChange}
       />
-      <Text style={styles.hint}>
-        Password must have 8+ characters, uppercase, lowercase, and a number
-      </Text>
+
+      {passwordStrength && (
+        <View style={styles.strengthContainer}>
+          <View style={styles.strengthBar}>
+            <View
+              style={[
+                styles.strengthFill,
+                passwordStrength.level === 'weak' && styles.strengthWeak,
+                passwordStrength.level === 'medium' && styles.strengthMedium,
+                passwordStrength.level === 'strong' && styles.strengthStrong,
+              ]}
+            />
+          </View>
+          <Text
+            style={[
+              styles.strengthText,
+              passwordStrength.level === 'weak' && styles.strengthTextWeak,
+              passwordStrength.level === 'medium' && styles.strengthTextMedium,
+              passwordStrength.level === 'strong' && styles.strengthTextStrong,
+            ]}
+          >
+            {passwordStrength.level === 'weak' && 'Weak Password'}
+            {passwordStrength.level === 'medium' && 'Medium Password'}
+            {passwordStrength.level === 'strong' && 'Strong Password'}
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.requirementsContainer}>
+        <Text style={[
+          styles.requirement,
+          passwordStrength?.checks.minLength && styles.requirementMet
+        ]}>
+          {passwordStrength?.checks.minLength ? '✓' : '○'} At least 8 characters
+        </Text>
+        <Text style={[
+          styles.requirement,
+          passwordStrength?.checks.hasUppercase && styles.requirementMet
+        ]}>
+          {passwordStrength?.checks.hasUppercase ? '✓' : '○'} One uppercase letter
+        </Text>
+        <Text style={[
+          styles.requirement,
+          passwordStrength?.checks.hasLowercase && styles.requirementMet
+        ]}>
+          {passwordStrength?.checks.hasLowercase ? '✓' : '○'} One lowercase letter
+        </Text>
+        <Text style={[
+          styles.requirement,
+          passwordStrength?.checks.hasNumber && styles.requirementMet
+        ]}>
+          {passwordStrength?.checks.hasNumber ? '✓' : '○'} One number
+        </Text>
+      </View>
       <TextInput
         style={styles.input}
         placeholder="Age (21+)"
@@ -215,5 +287,57 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 12,
     marginTop: -8,
+  },
+  strengthContainer: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  strengthBar: {
+    height: 6,
+    backgroundColor: "#1f1f1f",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: 6,
+  },
+  strengthFill: {
+    height: "100%",
+    borderRadius: 3,
+    transition: "width 0.3s ease",
+  },
+  strengthWeak: {
+    width: "33%",
+    backgroundColor: "#FF3B5C",
+  },
+  strengthMedium: {
+    width: "66%",
+    backgroundColor: "#FFA500",
+  },
+  strengthStrong: {
+    width: "100%",
+    backgroundColor: "#00FF7F",
+  },
+  strengthText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  strengthTextWeak: {
+    color: "#FF3B5C",
+  },
+  strengthTextMedium: {
+    color: "#FFA500",
+  },
+  strengthTextStrong: {
+    color: "#00FF7F",
+  },
+  requirementsContainer: {
+    marginBottom: 16,
+  },
+  requirement: {
+    color: "#666",
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  requirementMet: {
+    color: "#00FF7F",
   },
 });

@@ -45,6 +45,48 @@ export async function checkPasswordBreach(password: string): Promise<boolean> {
 }
 
 /**
+ * Calculate password strength score
+ */
+export function calculatePasswordStrength(password: string): {
+  score: number;
+  level: 'weak' | 'medium' | 'strong';
+  checks: {
+    minLength: boolean;
+    hasUppercase: boolean;
+    hasLowercase: boolean;
+    hasNumber: boolean;
+    hasSpecialChar: boolean;
+    isLongEnough: boolean;
+  };
+} {
+  const checks = {
+    minLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    isLongEnough: password.length >= 12,
+  };
+
+  let score = 0;
+  if (checks.minLength) score += 1;
+  if (checks.hasUppercase) score += 1;
+  if (checks.hasLowercase) score += 1;
+  if (checks.hasNumber) score += 1;
+  if (checks.hasSpecialChar) score += 1;
+  if (checks.isLongEnough) score += 1;
+
+  let level: 'weak' | 'medium' | 'strong' = 'weak';
+  if (score >= 5) {
+    level = 'strong';
+  } else if (score >= 4) {
+    level = 'medium';
+  }
+
+  return { score, level, checks };
+}
+
+/**
  * Validate password meets security requirements
  */
 export function validatePasswordStrength(password: string): {
