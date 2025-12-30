@@ -151,15 +151,10 @@ export default function MatchesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Your Matches</Text>
-        <View style={styles.navButtons}>
-          <TouchableOpacity onPress={() => router.push("/swipe")} style={styles.navButton}>
-            <Text style={styles.navButtonText}>🔥 Swipe</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/chat")} style={styles.navButton}>
-            <Text style={styles.navButtonText}>💬 Chat</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <View style={styles.tabContainer}>
@@ -237,33 +232,23 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#2f2f2f",
   },
+  backButton: {
+    marginRight: 16,
+  },
+  backText: {
+    color: "#00FF7F",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   title: {
     fontSize: 24,
     color: "#fff",
     fontWeight: "bold",
-  },
-  navButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  navButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#2f2f2f",
-  },
-  navButtonText: {
-    color: "#00FF7F",
-    fontSize: 14,
-    fontWeight: "600",
   },
   tabContainer: {
     flexDirection: "row",
