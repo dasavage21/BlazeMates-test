@@ -21,11 +21,15 @@ type Match = {
   image_url: string | null;
 };
 
+type TabType = "matches" | "likes";
+
 export default function MatchesScreen() {
   const router = useRouter();
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [mutualMatches, setMutualMatches] = useState<Match[]>([]);
+  const [pendingLikes, setPendingLikes] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("matches");
 
   const loadMatches = useCallback(async () => {
     try {
@@ -39,7 +43,7 @@ export default function MatchesScreen() {
 
       setCurrentUserId(myUserId);
 
-      const { data: likesData, error: likesError } = await supabase
+      const { data: myLikes, error: likesError } = await supabase
         .from("likes")
         .select("liked_user_id")
         .eq("user_id", myUserId);
@@ -50,13 +54,29 @@ export default function MatchesScreen() {
         return;
       }
 
-      const likedUserIds = (likesData || []).map((like) => like.liked_user_id);
+      const likedUserIds = (myLikes || []).map((like) => like.liked_user_id);
 
       if (likedUserIds.length === 0) {
-        setMatches([]);
+        setMutualMatches([]);
+        setPendingLikes([]);
         setLoading(false);
         return;
       }
+
+      const { data: theirLikes, error: theirLikesError } = await supabase
+        .from("likes")
+        .select("user_id, liked_user_id")
+        .in("user_id", likedUserIds)
+        .eq("liked_user_id", myUserId);
+
+      if (theirLikesError) {
+        console.error("Failed to fetch their likes:", theirLikesError);
+      }
+
+      const mutualUserIds = (theirLikes || []).map((like) => like.user_id);
+      const pendingUserIds = likedUserIds.filter(
+        (id) => !mutualUserIds.includes(id)
+      );
 
       const { data: usersData, error: usersError } = await supabase
         .from("users")
@@ -69,7 +89,12 @@ export default function MatchesScreen() {
         return;
       }
 
-      setMatches(usersData || []);
+      const allUsers = usersData || [];
+      const mutual = allUsers.filter((user) => mutualUserIds.includes(user.id));
+      const pending = allUsers.filter((user) => pendingUserIds.includes(user.id));
+
+      setMutualMatches(mutual);
+      setPendingLikes(pending);
       setLoading(false);
     } catch (error) {
       console.error("Error loading matches:", error);
@@ -91,17 +116,20 @@ export default function MatchesScreen() {
   const handleMatchPress = useCallback(
     async (matchId: string) => {
       if (!currentUserId) return;
-      const threadId = createThreadId(currentUserId, matchId);
 
-      try {
-        await supabase.from("threads").upsert({ id: threadId }, { onConflict: "id" });
-      } catch (e: any) {
-        console.warn("Failed to create chat thread", e);
+      if (activeTab === "matches") {
+        const threadId = createThreadId(currentUserId, matchId);
+
+        try {
+          await supabase.from("threads").upsert({ id: threadId }, { onConflict: "id" });
+        } catch (e: any) {
+          console.warn("Failed to create chat thread", e);
+        }
+
+        router.push({ pathname: "/chat", params: { threadId } });
       }
-
-      router.push({ pathname: "/chat", params: { threadId } });
     },
-    [currentUserId, createThreadId, router]
+    [currentUserId, createThreadId, router, activeTab]
   );
 
   if (loading) {
@@ -114,6 +142,12 @@ export default function MatchesScreen() {
     );
   }
 
+  const displayedMatches = activeTab === "matches" ? mutualMatches : pendingLikes;
+  const emptyMessage =
+    activeTab === "matches"
+      ? "No mutual matches yet. Keep swiping!"
+      : "You haven't liked anyone yet. Start swiping!";
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -123,15 +157,36 @@ export default function MatchesScreen() {
         <Text style={styles.title}>Your Matches</Text>
       </View>
 
-      {matches.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            No matches yet. Start swiping to find your BlazeMates!
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "matches" && styles.activeTab]}
+          onPress={() => setActiveTab("matches")}
+        >
+          <Text
+            style={[styles.tabText, activeTab === "matches" && styles.activeTabText]}
+          >
+            Matches ({mutualMatches.length})
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "likes" && styles.activeTab]}
+          onPress={() => setActiveTab("likes")}
+        >
+          <Text
+            style={[styles.tabText, activeTab === "likes" && styles.activeTabText]}
+          >
+            Likes ({pendingLikes.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {displayedMatches.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
         </View>
       ) : (
         <FlatList
-          data={matches}
+          data={displayedMatches}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
@@ -152,7 +207,9 @@ export default function MatchesScreen() {
                 <Text style={styles.matchBio} numberOfLines={2}>
                   {item.bio || "No bio"}
                 </Text>
-                <Text style={styles.messagePrompt}>Tap to message</Text>
+                <Text style={styles.messagePrompt}>
+                  {activeTab === "matches" ? "Tap to message" : "Waiting for them to match"}
+                </Text>
               </View>
             </TouchableOpacity>
           )}
@@ -192,6 +249,30 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "#fff",
     fontWeight: "bold",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    backgroundColor: "#1a1a1a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#2f2f2f",
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  activeTab: {
+    borderBottomColor: "#00FF7F",
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#888",
+  },
+  activeTabText: {
+    color: "#00FF7F",
   },
   list: {
     padding: 16,
