@@ -1,6 +1,6 @@
 // app/forgot-password.tsx
 import { useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 
@@ -46,33 +46,51 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Forgot password</Text>
-      <Text style={styles.subtitle}>
-        Enter the email address tied to your account. We will send you a reset link.
-      </Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#888"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TouchableOpacity style={styles.btn} onPress={sendReset} disabled={busy}>
-        <Text style={styles.btnText}>{busy ? "Sending..." : "Send reset link"}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.replace("/login")}>
-        <Text style={styles.link}>Back to sign in</Text>
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView
+      style={styles.wrapper}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
+        <Text style={styles.title}>Forgot password</Text>
+        <Text style={styles.subtitle}>
+          Enter the email address tied to your account. We will send you a reset link.
+        </Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#888"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TouchableOpacity style={styles.btn} onPress={sendReset} disabled={busy}>
+          <Text style={styles.btnText}>{busy ? "Sending..." : "Send reset link"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.replace("/login")}>
+          <Text style={styles.link}>Back to sign in</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
+    backgroundColor: "#121212",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#121212",
+  },
+  container: {
+    flexGrow: 1,
     backgroundColor: "#121212",
     padding: 24,
     justifyContent: "center",

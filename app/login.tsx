@@ -1,6 +1,6 @@
 // app/login.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../supabaseClient';
@@ -134,25 +134,37 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign in</Text>
-      <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#888" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail}/>
-      <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#888" secureTextEntry value={password} onChangeText={setPassword}/>
-      <TouchableOpacity onPress={() => router.push('/forgot-password')}>
-        <Text style={styles.link}>Forgot password?</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.btn} onPress={signIn} disabled={busy}>
-        <Text style={styles.btnText}>{busy ? 'Signing in...' : 'Sign In'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity disabled={busy} onPress={() => router.push('/create-account')}>
-        <Text style={styles.link}>Create account</Text>
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView
+      style={styles.wrapper}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
+        <Text style={styles.title}>Sign in</Text>
+        <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#888" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail}/>
+        <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#888" secureTextEntry value={password} onChangeText={setPassword}/>
+        <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+          <Text style={styles.link}>Forgot password?</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.btn} onPress={signIn} disabled={busy}>
+          <Text style={styles.btnText}>{busy ? 'Signing in...' : 'Sign In'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity disabled={busy} onPress={() => router.push('/create-account')}>
+          <Text style={styles.link}>Create account</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:{ flex:1, backgroundColor:'#121212', padding:20, justifyContent:'center' },
+  wrapper: { flex: 1, backgroundColor: '#121212' },
+  scrollView: { flex: 1, backgroundColor: '#121212' },
+  container:{ flexGrow:1, backgroundColor:'#121212', padding:20, justifyContent:'center' },
   title:{ color:'#00FF7F', fontSize:24, fontWeight:'bold', marginBottom:16, textAlign:'center' },
   input:{ backgroundColor:'#1f1f1f', color:'#fff', borderRadius:10, padding:14, marginBottom:12 },
   btn:{ backgroundColor:'#00FF7F', padding:14, borderRadius:10, alignItems:'center' },

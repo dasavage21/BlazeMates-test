@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -138,110 +141,128 @@ export default function CreateAccountScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create account</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#888"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#888"
-        secureTextEntry
-        value={password}
-        onChangeText={handlePasswordChange}
-      />
+    <KeyboardAvoidingView
+      style={styles.wrapper}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
+        <Text style={styles.title}>Create account</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#888"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#888"
+          secureTextEntry
+          value={password}
+          onChangeText={handlePasswordChange}
+        />
 
-      {passwordStrength && (
-        <View style={styles.strengthContainer}>
-          <View style={styles.strengthBar}>
-            <View
+        {passwordStrength && (
+          <View style={styles.strengthContainer}>
+            <View style={styles.strengthBar}>
+              <View
+                style={[
+                  styles.strengthFill,
+                  passwordStrength.level === 'weak' && styles.strengthWeak,
+                  passwordStrength.level === 'medium' && styles.strengthMedium,
+                  passwordStrength.level === 'strong' && styles.strengthStrong,
+                ]}
+              />
+            </View>
+            <Text
               style={[
-                styles.strengthFill,
-                passwordStrength.level === 'weak' && styles.strengthWeak,
-                passwordStrength.level === 'medium' && styles.strengthMedium,
-                passwordStrength.level === 'strong' && styles.strengthStrong,
+                styles.strengthText,
+                passwordStrength.level === 'weak' && styles.strengthTextWeak,
+                passwordStrength.level === 'medium' && styles.strengthTextMedium,
+                passwordStrength.level === 'strong' && styles.strengthTextStrong,
               ]}
-            />
+            >
+              {passwordStrength.level === 'weak' && 'Weak Password'}
+              {passwordStrength.level === 'medium' && 'Medium Password'}
+              {passwordStrength.level === 'strong' && 'Strong Password'}
+            </Text>
           </View>
-          <Text
-            style={[
-              styles.strengthText,
-              passwordStrength.level === 'weak' && styles.strengthTextWeak,
-              passwordStrength.level === 'medium' && styles.strengthTextMedium,
-              passwordStrength.level === 'strong' && styles.strengthTextStrong,
-            ]}
-          >
-            {passwordStrength.level === 'weak' && 'Weak Password'}
-            {passwordStrength.level === 'medium' && 'Medium Password'}
-            {passwordStrength.level === 'strong' && 'Strong Password'}
+        )}
+
+        <View style={styles.requirementsContainer}>
+          <Text style={[
+            styles.requirement,
+            passwordStrength?.checks.minLength && styles.requirementMet
+          ]}>
+            {passwordStrength?.checks.minLength ? '✓' : '○'} At least 8 characters
+          </Text>
+          <Text style={[
+            styles.requirement,
+            passwordStrength?.checks.hasUppercase && styles.requirementMet
+          ]}>
+            {passwordStrength?.checks.hasUppercase ? '✓' : '○'} One uppercase letter
+          </Text>
+          <Text style={[
+            styles.requirement,
+            passwordStrength?.checks.hasLowercase && styles.requirementMet
+          ]}>
+            {passwordStrength?.checks.hasLowercase ? '✓' : '○'} One lowercase letter
+          </Text>
+          <Text style={[
+            styles.requirement,
+            passwordStrength?.checks.hasNumber && styles.requirementMet
+          ]}>
+            {passwordStrength?.checks.hasNumber ? '✓' : '○'} One number
           </Text>
         </View>
-      )}
+        <TextInput
+          style={styles.input}
+          placeholder="Age (21+)"
+          placeholderTextColor="#888"
+          keyboardType="number-pad"
+          value={ageInput}
+          onChangeText={setAgeInput}
+        />
 
-      <View style={styles.requirementsContainer}>
-        <Text style={[
-          styles.requirement,
-          passwordStrength?.checks.minLength && styles.requirementMet
-        ]}>
-          {passwordStrength?.checks.minLength ? '✓' : '○'} At least 8 characters
-        </Text>
-        <Text style={[
-          styles.requirement,
-          passwordStrength?.checks.hasUppercase && styles.requirementMet
-        ]}>
-          {passwordStrength?.checks.hasUppercase ? '✓' : '○'} One uppercase letter
-        </Text>
-        <Text style={[
-          styles.requirement,
-          passwordStrength?.checks.hasLowercase && styles.requirementMet
-        ]}>
-          {passwordStrength?.checks.hasLowercase ? '✓' : '○'} One lowercase letter
-        </Text>
-        <Text style={[
-          styles.requirement,
-          passwordStrength?.checks.hasNumber && styles.requirementMet
-        ]}>
-          {passwordStrength?.checks.hasNumber ? '✓' : '○'} One number
-        </Text>
-      </View>
-      <TextInput
-        style={styles.input}
-        placeholder="Age (21+)"
-        placeholderTextColor="#888"
-        keyboardType="number-pad"
-        value={ageInput}
-        onChangeText={setAgeInput}
-      />
+        <TouchableOpacity
+          style={[styles.btn, busy && styles.btnDisabled]}
+          onPress={handleSignUp}
+          disabled={busy}
+        >
+          <Text style={styles.btnText}>{busy ? "Creating..." : "Sign Up"}</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.btn, busy && styles.btnDisabled]}
-        onPress={handleSignUp}
-        disabled={busy}
-      >
-        <Text style={styles.btnText}>{busy ? "Creating..." : "Sign Up"}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.linkButton}
-        disabled={busy}
-        onPress={() => router.replace("/login")}
-      >
-        <Text style={styles.link}>Back to sign in</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={styles.linkButton}
+          disabled={busy}
+          onPress={() => router.replace("/login")}
+        >
+          <Text style={styles.link}>Back to sign in</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
+    backgroundColor: "#121212",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#121212",
+  },
+  container: {
+    flexGrow: 1,
     backgroundColor: "#121212",
     padding: 20,
     justifyContent: "center",

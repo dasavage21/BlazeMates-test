@@ -2,6 +2,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -136,53 +139,71 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Reset password</Text>
-      <Text style={styles.caption}>
-        {tokens
-          ? "Enter a new password for your BlazeMates account."
-          : "Open the password reset email from your device to continue."}
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="New password (min. 8 chars)"
-        placeholderTextColor="#888"
-        secureTextEntry
-        value={password}
-        editable={!!tokens && !busy}
-        onChangeText={setPassword}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm new password"
-        placeholderTextColor="#888"
-        secureTextEntry
-        value={confirmPassword}
-        editable={!!tokens && !busy}
-        onChangeText={setConfirmPassword}
-      />
-
-      <TouchableOpacity
-        style={[styles.btn, disabled ? styles.btnDisabled : null]}
-        onPress={submit}
-        disabled={disabled}
+    <KeyboardAvoidingView
+      style={styles.wrapper}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
       >
-        <Text style={styles.btnText}>
-          {busy ? "Updating…" : "Update password"}
+        <Text style={styles.title}>Reset password</Text>
+        <Text style={styles.caption}>
+          {tokens
+            ? "Enter a new password for your BlazeMates account."
+            : "Open the password reset email from your device to continue."}
         </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.replace("/login")}>
-        <Text style={styles.link}>Back to sign in</Text>
-      </TouchableOpacity>
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="New password (min. 8 chars)"
+          placeholderTextColor="#888"
+          secureTextEntry
+          value={password}
+          editable={!!tokens && !busy}
+          onChangeText={setPassword}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Confirm new password"
+          placeholderTextColor="#888"
+          secureTextEntry
+          value={confirmPassword}
+          editable={!!tokens && !busy}
+          onChangeText={setConfirmPassword}
+        />
+
+        <TouchableOpacity
+          style={[styles.btn, disabled ? styles.btnDisabled : null]}
+          onPress={submit}
+          disabled={disabled}
+        >
+          <Text style={styles.btnText}>
+            {busy ? "Updating…" : "Update password"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.replace("/login")}>
+          <Text style={styles.link}>Back to sign in</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
+    backgroundColor: "#121212",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#121212",
+  },
+  container: {
+    flexGrow: 1,
     backgroundColor: "#121212",
     padding: 24,
     justifyContent: "center",
