@@ -79,7 +79,7 @@ export default function MatchScreen() {
         <Text style={styles.chatText}>💬 Start Chatting</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.back()}>
+      <TouchableOpacity onPress={() => router.push('/swipe')}>
         <Text style={styles.skipText}>⬅️ Keep Swiping</Text>
       </TouchableOpacity>
     </View>
