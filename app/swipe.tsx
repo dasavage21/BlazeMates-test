@@ -734,10 +734,7 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     borderRadius: 20,
     overflow: "hidden",
-    shadowColor: "#00FF7F",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 10,
+    boxShadow: "0px 5px 10px 0px rgba(0, 255, 127, 0.3)",
     elevation: 5,
   },
   image: {
@@ -828,10 +825,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    boxShadow: "0px 2px 4px 0px rgba(0, 0, 0, 0.3)",
     elevation: 4,
   },
   nopeButton: {

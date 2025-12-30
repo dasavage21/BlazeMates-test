@@ -203,10 +203,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#00FF7F",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
+    boxShadow: "0px 2px 8px 0px rgba(0, 255, 127, 0.2)",
     elevation: 3,
   },
   matchImage: {

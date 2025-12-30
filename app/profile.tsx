@@ -210,9 +210,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: "100%",
     marginBottom: 30,
-    shadowColor: "#00FF7F",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
+    boxShadow: "0px 0px 10px 0px rgba(0, 255, 127, 0.2)",
   },
   label: {
     color: "#eee",
