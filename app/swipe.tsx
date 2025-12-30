@@ -255,7 +255,7 @@ export default function SwipeScreen() {
 
   useEffect(() => {
     if (!loading && profiles.length === 0) {
-      router.push("/matches");
+      router.replace("/matches");
     }
   }, [loading, profiles.length, router]);
 
@@ -491,7 +491,7 @@ export default function SwipeScreen() {
         if (index < profiles.length - 1) {
           setIndex((i) => i + 1);
         } else {
-          router.push("/matches");
+          router.replace("/matches");
         }
       }
     }, [shouldAdvance, index, profiles.length, router])
@@ -560,7 +560,7 @@ export default function SwipeScreen() {
     if (index < profiles.length - 1) {
       setIndex((i) => i + 1);
     } else {
-      router.push("/matches");
+      router.replace("/matches");
     }
   };
 
