@@ -152,22 +152,30 @@ export default function ResetPasswordScreen() {
         </Text>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, !tokens && styles.inputDisabled]}
           placeholder="New password (min. 8 chars)"
           placeholderTextColor="#888"
           secureTextEntry
           value={password}
           editable={!!tokens && !busy}
           onChangeText={setPassword}
+          autoCapitalize="none"
+          autoCorrect={false}
+          textContentType="newPassword"
+          selectionColor="#00FF7F"
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, !tokens && styles.inputDisabled]}
           placeholder="Confirm new password"
           placeholderTextColor="#888"
           secureTextEntry
           value={confirmPassword}
           editable={!!tokens && !busy}
           onChangeText={setConfirmPassword}
+          autoCapitalize="none"
+          autoCorrect={false}
+          textContentType="newPassword"
+          selectionColor="#00FF7F"
         />
 
         <TouchableOpacity
@@ -222,6 +230,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     marginBottom: 16,
+    fontSize: 16,
+  },
+  inputDisabled: {
+    opacity: 0.5,
+    backgroundColor: "#0f0f0f",
   },
   btn: {
     backgroundColor: "#00FF7F",
