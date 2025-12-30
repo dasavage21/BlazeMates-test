@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 
 import { supabase } from "../supabaseClient";
-import { validatePassword } from "../lib/passwordSecurity";
+import { validatePassword, calculatePasswordStrength } from "../lib/passwordSecurity";
 
 type RecoveryTokens = {
   access_token: string;
@@ -80,6 +80,11 @@ export default function ResetPasswordScreen() {
     };
     applySession();
   }, [tokens]);
+
+  const passwordStrength = useMemo(
+    () => password.length > 0 ? calculatePasswordStrength(password) : null,
+    [password]
+  );
 
   const disabled = useMemo(
     () =>
@@ -164,6 +169,52 @@ export default function ResetPasswordScreen() {
           textContentType="newPassword"
           selectionColor="#00FF7F"
         />
+
+        {passwordStrength && (
+          <View style={styles.strengthContainer}>
+            <View style={styles.strengthBar}>
+              <View
+                style={[
+                  styles.strengthBarFill,
+                  passwordStrength.level === 'weak' && styles.strengthWeak,
+                  passwordStrength.level === 'medium' && styles.strengthMedium,
+                  passwordStrength.level === 'strong' && styles.strengthStrong,
+                  { width: `${(passwordStrength.score / 6) * 100}%` },
+                ]}
+              />
+            </View>
+            <Text
+              style={[
+                styles.strengthLabel,
+                passwordStrength.level === 'weak' && styles.strengthWeakText,
+                passwordStrength.level === 'medium' && styles.strengthMediumText,
+                passwordStrength.level === 'strong' && styles.strengthStrongText,
+              ]}
+            >
+              {passwordStrength.level === 'weak' && 'Weak'}
+              {passwordStrength.level === 'medium' && 'Medium'}
+              {passwordStrength.level === 'strong' && 'Strong'}
+            </Text>
+            <View style={styles.checksContainer}>
+              <Text style={[styles.checkItem, passwordStrength.checks.minLength && styles.checkValid]}>
+                {passwordStrength.checks.minLength ? '✓' : '○'} At least 8 characters
+              </Text>
+              <Text style={[styles.checkItem, passwordStrength.checks.hasUppercase && styles.checkValid]}>
+                {passwordStrength.checks.hasUppercase ? '✓' : '○'} Uppercase letter
+              </Text>
+              <Text style={[styles.checkItem, passwordStrength.checks.hasLowercase && styles.checkValid]}>
+                {passwordStrength.checks.hasLowercase ? '✓' : '○'} Lowercase letter
+              </Text>
+              <Text style={[styles.checkItem, passwordStrength.checks.hasNumber && styles.checkValid]}>
+                {passwordStrength.checks.hasNumber ? '✓' : '○'} Number
+              </Text>
+              <Text style={[styles.checkItem, passwordStrength.checks.hasSpecialChar && styles.checkValid]}>
+                {passwordStrength.checks.hasSpecialChar ? '✓' : '○'} Special character
+              </Text>
+            </View>
+          </View>
+        )}
+
         <TextInput
           style={[styles.input, !tokens && styles.inputDisabled]}
           placeholder="Confirm new password"
@@ -254,5 +305,55 @@ const styles = StyleSheet.create({
     color: "#00FF7F",
     marginTop: 18,
     textAlign: "center",
+  },
+  strengthContainer: {
+    marginBottom: 16,
+    marginTop: -8,
+  },
+  strengthBar: {
+    height: 6,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  strengthBarFill: {
+    height: "100%",
+    borderRadius: 3,
+    transition: "width 0.3s ease",
+  },
+  strengthWeak: {
+    backgroundColor: "#ff4444",
+  },
+  strengthMedium: {
+    backgroundColor: "#ffaa00",
+  },
+  strengthStrong: {
+    backgroundColor: "#00FF7F",
+  },
+  strengthLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  strengthWeakText: {
+    color: "#ff4444",
+  },
+  strengthMediumText: {
+    color: "#ffaa00",
+  },
+  strengthStrongText: {
+    color: "#00FF7F",
+  },
+  checksContainer: {
+    marginTop: 6,
+  },
+  checkItem: {
+    color: "#666",
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  checkValid: {
+    color: "#00FF7F",
   },
 });
