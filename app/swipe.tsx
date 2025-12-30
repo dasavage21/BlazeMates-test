@@ -602,16 +602,22 @@ export default function SwipeScreen() {
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/matches")}>
-            <Text style={styles.navLink}>💚 Matches</Text>
+            <Text style={styles.navLink}>
+              {isSmallPhone ? "Matches" : "💚 Matches"}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/chat")}>
-            <Text style={styles.navLink}>💬 Chat</Text>
+            <Text style={styles.navLink}>
+              {isSmallPhone ? "Chat" : "💬 Chat"}
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.navRight}>
           <TouchableOpacity onPress={() => router.push("/settings")}>
-            <Text style={styles.navLink}>⚙️ Settings</Text>
+            <Text style={styles.navLink} numberOfLines={1}>
+              {isSmallPhone ? "⚙️" : "⚙️ Settings"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -727,7 +733,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: isSmallPhone ? 6 : 8,
-    flex: isSmallPhone ? 1 : undefined,
+    flex: 1,
+    minWidth: 0,
   },
   logo: {
     fontSize: logoSize,
@@ -736,24 +743,28 @@ const styles = StyleSheet.create({
     fontSize: brandFontSize,
     fontWeight: "bold",
     color: "#00FF7F",
+    flexShrink: 1,
   },
   navCenter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: navGap,
-    flex: 2,
+    gap: isSmallPhone ? 8 : navGap,
+    flex: isSmallPhone ? 2 : 2,
     justifyContent: "center",
+    minWidth: 0,
   },
   navRight: {
     flexDirection: "row",
     alignItems: "center",
-    flex: isSmallPhone ? 1 : undefined,
+    flex: isSmallPhone ? 0.5 : undefined,
     justifyContent: "flex-end",
+    minWidth: isSmallPhone ? 32 : 0,
   },
   navLink: {
     color: "#fff",
     fontSize: navFontSize,
     fontWeight: "500",
+    flexShrink: 1,
   },
   navProfilePic: {
     width: navProfilePicSize,
