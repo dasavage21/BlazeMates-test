@@ -28,14 +28,33 @@ import { supabase } from "../supabaseClient";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
-const cardWidth = Math.min(screenWidth * 0.9, 440);
+
+const isSmallPhone = screenWidth <= 360;
+const isMediumPhone = screenWidth > 360 && screenWidth < 414;
+const isLargePhone = screenWidth >= 414 && screenWidth < 768;
 const isDesktop = screenWidth >= 768;
+
+const cardWidth = Math.min(screenWidth * 0.92, 440);
+const navPadding = isSmallPhone ? 12 : (isMediumPhone ? 14 : (isDesktop ? 40 : 16));
+const navGap = isSmallPhone ? 12 : (isMediumPhone ? 16 : (isDesktop ? 24 : 16));
+const navFontSize = isSmallPhone ? 12 : (isDesktop ? 15 : 13);
+const logoSize = isSmallPhone ? 24 : 28;
+const brandFontSize = isSmallPhone ? 16 : 20;
+const navProfilePicSize = isSmallPhone ? 30 : 36;
+
 const profilePicSize = isDesktop ? 90 : 70;
 const titleFontSize = isDesktop ? 26 : 22;
 const buttonFontSize = isDesktop ? 16 : 15;
 const settingsFontSize = isDesktop ? 16 : 14;
 const containerPaddingTop = isDesktop ? 60 : 48;
 const containerPaddingHorizontal = isDesktop ? 20 : 16;
+
+const cardNameFontSize = isSmallPhone ? 18 : 22;
+const cardBioFontSize = isSmallPhone ? 13 : 15;
+const cardMetaFontSize = isSmallPhone ? 11 : 13;
+const cardInfoPadding = isSmallPhone ? 12 : 16;
+const actionButtonSize = isSmallPhone ? 50 : 60;
+const actionButtonGap = isSmallPhone ? 24 : 40;
 
 const SWIPE_THRESHOLD = 120;
 
@@ -699,42 +718,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#1a1a1a",
-    paddingVertical: 12,
-    paddingHorizontal: isDesktop ? 40 : 16,
+    paddingVertical: isSmallPhone ? 10 : 12,
+    paddingHorizontal: navPadding,
     borderBottomWidth: 1,
     borderBottomColor: "#2a2a2a",
   },
   navLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: isSmallPhone ? 6 : 8,
+    flex: isSmallPhone ? 1 : undefined,
   },
   logo: {
-    fontSize: 28,
+    fontSize: logoSize,
   },
   brandName: {
-    fontSize: 20,
+    fontSize: brandFontSize,
     fontWeight: "bold",
     color: "#00FF7F",
   },
   navCenter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: isDesktop ? 24 : 16,
+    gap: navGap,
+    flex: 2,
+    justifyContent: "center",
   },
   navRight: {
     flexDirection: "row",
     alignItems: "center",
+    flex: isSmallPhone ? 1 : undefined,
+    justifyContent: "flex-end",
   },
   navLink: {
     color: "#fff",
-    fontSize: isDesktop ? 15 : 13,
+    fontSize: navFontSize,
     fontWeight: "500",
   },
   navProfilePic: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: navProfilePicSize,
+    height: navProfilePicSize,
+    borderRadius: navProfilePicSize / 2,
     borderColor: "#00FF7F",
     borderWidth: 2,
   },
@@ -743,13 +767,14 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 20,
+    paddingVertical: isSmallPhone ? 12 : 20,
+    paddingHorizontal: isSmallPhone ? 8 : 0,
     position: "relative",
   },
   cardWrapper: {
     width: cardWidth,
     maxWidth: 440,
-    height: screenHeight * 0.55,
+    height: isSmallPhone ? screenHeight * 0.5 : screenHeight * 0.55,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -764,75 +789,76 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: screenHeight * 0.35,
+    height: isSmallPhone ? screenHeight * 0.3 : screenHeight * 0.35,
     resizeMode: "cover",
   },
   cardInfo: {
-    padding: 16,
+    padding: cardInfoPadding,
     backgroundColor: "#1e1e1e",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: isSmallPhone ? 4 : 6,
   },
   name: {
-    fontSize: 22,
+    fontSize: cardNameFontSize,
     fontWeight: "600",
     color: "#fff",
     marginRight: 10,
   },
-  verified: { fontSize: 18, color: "#00FF7F" },
+  verified: { fontSize: isSmallPhone ? 16 : 18, color: "#00FF7F" },
   bio: {
-    fontSize: 15,
+    fontSize: cardBioFontSize,
     color: "#ccc",
-    marginVertical: 8,
+    marginVertical: isSmallPhone ? 6 : 8,
   },
   meta: {
-    fontSize: 13,
+    fontSize: cardMetaFontSize,
     color: "#aaa",
     marginTop: 4,
   },
   lookingForTag: {
     backgroundColor: "#2e2e2e",
     color: "#00FF7F",
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    paddingVertical: isSmallPhone ? 3 : 4,
+    paddingHorizontal: isSmallPhone ? 10 : 12,
     borderRadius: 16,
-    fontSize: 12,
+    fontSize: isSmallPhone ? 11 : 12,
     fontWeight: "600",
     overflow: "hidden",
+    alignSelf: "flex-start",
   },
   likeStamp: {
     position: "absolute",
-    top: 50,
-    left: 30,
-    borderWidth: 4,
+    top: isSmallPhone ? 40 : 50,
+    left: isSmallPhone ? 20 : 30,
+    borderWidth: isSmallPhone ? 3 : 4,
     borderColor: "#00FF7F",
     borderRadius: 8,
-    padding: 8,
+    padding: isSmallPhone ? 6 : 8,
     transform: [{ rotate: "-20deg" }],
     zIndex: 10,
   },
   likeText: {
-    fontSize: 32,
+    fontSize: isSmallPhone ? 28 : 32,
     fontWeight: "bold",
     color: "#00FF7F",
     letterSpacing: 2,
   },
   nopeStamp: {
     position: "absolute",
-    top: 50,
-    right: 30,
-    borderWidth: 4,
+    top: isSmallPhone ? 40 : 50,
+    right: isSmallPhone ? 20 : 30,
+    borderWidth: isSmallPhone ? 3 : 4,
     borderColor: "#FF3B5C",
     borderRadius: 8,
-    padding: 8,
+    padding: isSmallPhone ? 6 : 8,
     transform: [{ rotate: "20deg" }],
     zIndex: 10,
   },
   nopeText: {
-    fontSize: 32,
+    fontSize: isSmallPhone ? 28 : 32,
     fontWeight: "bold",
     color: "#FF3B5C",
     letterSpacing: 2,
@@ -841,13 +867,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 24,
-    gap: 40,
+    marginTop: isSmallPhone ? 16 : 24,
+    gap: actionButtonGap,
+    paddingHorizontal: 16,
   },
   actionButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: actionButtonSize,
+    height: actionButtonSize,
+    borderRadius: actionButtonSize / 2,
     justifyContent: "center",
     alignItems: "center",
     boxShadow: "0px 2px 4px 0px rgba(0, 0, 0, 0.3)",
@@ -860,21 +887,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#00FF7F",
   },
   buttonIcon: {
-    fontSize: 28,
+    fontSize: isSmallPhone ? 24 : 28,
     color: "#fff",
     fontWeight: "bold",
   },
   cooldownBanner: {
-    marginTop: 16,
+    marginTop: isSmallPhone ? 12 : 16,
     backgroundColor: "#2e2e2e",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
+    marginHorizontal: 16,
   },
   cooldownText: {
     color: "#FF3B5C",
-    fontSize: 14,
+    fontSize: isSmallPhone ? 12 : 14,
     fontWeight: "600",
+    textAlign: "center",
   },
   emptyState: {
     alignItems: "center",
@@ -882,7 +911,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: "#aaa",
-    fontSize: isDesktop ? 16 : 15,
+    fontSize: isSmallPhone ? 14 : (isDesktop ? 16 : 15),
     textAlign: "center",
   },
   loadingContainer: {
@@ -892,14 +921,15 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: "#00FF7F",
-    fontSize: 18,
+    fontSize: isSmallPhone ? 16 : 18,
     fontWeight: "600",
     marginTop: 16,
   },
   footer: {
     color: "#777",
-    paddingVertical: 20,
-    fontSize: 12,
+    paddingVertical: isSmallPhone ? 16 : 20,
+    paddingHorizontal: 16,
+    fontSize: isSmallPhone ? 10 : 12,
     textAlign: "center",
   },
 });
