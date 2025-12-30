@@ -254,12 +254,6 @@ export default function SwipeScreen() {
   }, [likedUsers]);
 
   useEffect(() => {
-    if (!loading && profiles.length === 0) {
-      router.replace("/matches");
-    }
-  }, [loading, profiles.length, router]);
-
-  useEffect(() => {
     const sub = DeviceEventEmitter.addListener(
       "avatar-updated",
       ({ url, ts }) => {
@@ -490,8 +484,6 @@ export default function SwipeScreen() {
         setShouldAdvance(false);
         if (index < profiles.length - 1) {
           setIndex((i) => i + 1);
-        } else {
-          router.replace("/matches");
         }
       }
     }, [shouldAdvance, index, profiles.length, router])
@@ -559,8 +551,6 @@ export default function SwipeScreen() {
   const handleNext = () => {
     if (index < profiles.length - 1) {
       setIndex((i) => i + 1);
-    } else {
-      router.replace("/matches");
     }
   };
 
