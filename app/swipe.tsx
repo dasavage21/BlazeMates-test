@@ -396,10 +396,17 @@ export default function SwipeScreen() {
             table: "users",
           },
           (payload) => {
+            console.log("New user detected:", payload.new);
             const newUser = payload.new as SupaUser;
 
-            if (myUserIdRef.current && newUser.id === myUserIdRef.current) return;
-            if (likedUsersRef.current.includes(newUser.id)) return;
+            if (myUserIdRef.current && newUser.id === myUserIdRef.current) {
+              console.log("Skipping - it's the current user");
+              return;
+            }
+            if (likedUsersRef.current.includes(newUser.id)) {
+              console.log("Skipping - already liked this user");
+              return;
+            }
 
             const newProfile: Profile = {
               id: newUser.id,
@@ -421,7 +428,10 @@ export default function SwipeScreen() {
               newProfile.lookingFor === "both";
 
             if (lookingForMatches) {
+              console.log("Adding new user to profiles:", newProfile.name);
               setProfiles((prev) => [...prev, newProfile]);
+            } else {
+              console.log("Skipping - looking_for doesn't match");
             }
           }
         )
@@ -433,13 +443,18 @@ export default function SwipeScreen() {
             table: "users",
           },
           (payload) => {
+            console.log("User update detected:", payload.new);
             const updatedUser = payload.new as SupaUser;
 
-            if (myUserIdRef.current && updatedUser.id === myUserIdRef.current) return;
+            if (myUserIdRef.current && updatedUser.id === myUserIdRef.current) {
+              console.log("Skipping update - it's the current user");
+              return;
+            }
 
             setProfiles((prev) =>
               prev.map((profile) => {
                 if (profile.id === updatedUser.id) {
+                  console.log("Updating profile for:", updatedUser.name);
                   return {
                     id: updatedUser.id,
                     name: updatedUser.name ?? "—",
@@ -460,7 +475,15 @@ export default function SwipeScreen() {
             );
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            console.log("Realtime subscription active for users table");
+          } else if (status === "CHANNEL_ERROR") {
+            console.error("Failed to subscribe to users table updates");
+          } else if (status === "TIMED_OUT") {
+            console.error("Realtime subscription timed out");
+          }
+        });
 
       return () => {
         supabase.removeChannel(channel);
