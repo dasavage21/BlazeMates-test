@@ -24,6 +24,7 @@ export default function CreateAccountScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [ageInput, setAgeInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<{
@@ -51,10 +52,31 @@ export default function CreateAccountScreen() {
   const handleSignUp = async () => {
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password.trim();
+    const trimmedUsername = username.trim();
     const trimmedAge = ageInput.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
       Alert.alert("Missing details", "Enter an email and password to continue.");
+      return;
+    }
+
+    if (!trimmedUsername) {
+      Alert.alert("Username Required", "Please enter a username.");
+      return;
+    }
+
+    if (trimmedUsername.length < 3) {
+      Alert.alert("Username Too Short", "Username must be at least 3 characters.");
+      return;
+    }
+
+    if (trimmedUsername.length > 20) {
+      Alert.alert("Username Too Long", "Username must be 20 characters or less.");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+      Alert.alert("Invalid Username", "Username can only contain letters, numbers, and underscores.");
       return;
     }
 
@@ -103,6 +125,18 @@ export default function CreateAccountScreen() {
 
       console.log("User created with ID:", userId);
 
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', trimmedUsername)
+        .maybeSingle();
+
+      if (existingUser) {
+        Alert.alert("Username Taken", "This username is already taken. Please choose another.");
+        setBusy(false);
+        return;
+      }
+
       const session = data?.session;
       if (!session) {
         console.log("No session returned - email confirmation required");
@@ -113,7 +147,10 @@ export default function CreateAccountScreen() {
       }
 
       console.log("Session established, creating profile");
-      const mergeResult = await mergeUserRow(supabase, userId, { age: ageNum });
+      const mergeResult = await mergeUserRow(supabase, userId, {
+        age: ageNum,
+        username: trimmedUsername
+      });
 
       if (mergeResult.error) {
         console.error("Profile creation error:", mergeResult.error);
@@ -127,7 +164,10 @@ export default function CreateAccountScreen() {
       await AsyncStorage.setItem("userAge", ageNum.toString());
       await AsyncStorage.setItem(
         "userProfile",
-        JSON.stringify({ age: ageNum })
+        JSON.stringify({
+          age: ageNum,
+          username: trimmedUsername
+        })
       );
 
       router.replace("/profile");
@@ -152,6 +192,18 @@ export default function CreateAccountScreen() {
         bounces={false}
       >
         <Text style={styles.title}>Create account</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          placeholderTextColor="#888"
+          autoCapitalize="none"
+          value={username}
+          onChangeText={setUsername}
+          maxLength={20}
+        />
+        <Text style={styles.hint}>
+          3-20 characters, letters, numbers, and underscores only
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -307,7 +359,7 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 12,
     marginBottom: 12,
-    marginTop: -8,
+    marginTop: -4,
   },
   strengthContainer: {
     marginTop: 8,

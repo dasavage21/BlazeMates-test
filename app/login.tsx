@@ -67,7 +67,7 @@ export default function LoginScreen() {
 
       const { data: profileData, error } = await supabase
         .from('users')
-        .select('name,bio,strain,style,looking_for,image_url,age')
+        .select('name,bio,strain,style,looking_for,image_url,age,username')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -103,6 +103,7 @@ export default function LoginScreen() {
         lookingFor: profileData.looking_for ?? existing.lookingFor ?? 'smoke',
         profileImage: profileData.image_url ?? existing.profileImage ?? null,
         age: resolvedAge,
+        username: profileData.username ?? existing.username ?? null,
       };
 
       await AsyncStorage.setItem('userProfile', JSON.stringify(mergedProfile));
@@ -127,6 +128,23 @@ export default function LoginScreen() {
       }
       await syncPendingAvatarIfAuthed();
       await hydrateProfileCache();
+
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('username')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!userData?.username) {
+          router.replace('/username-setup');
+          return;
+        }
+      }
+
       router.replace('/profile');
     } finally {
       setBusy(false);
