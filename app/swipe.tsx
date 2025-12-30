@@ -7,6 +7,8 @@ import {
   DeviceEventEmitter,
   Dimensions,
   Image,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -546,18 +548,27 @@ export default function SwipeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#00FF7F" />
-          <Text style={styles.loadingText}>Loading profiles...</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#00FF7F" />
+            <Text style={styles.loadingText}>Loading profiles...</Text>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.navbar}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        scrollEnabled={false}
+      >
+        <View style={styles.container}>
+          <View style={styles.navbar}>
         <View style={styles.navLeft}>
           <Text style={styles.logo}>🔥</Text>
           <Text style={styles.brandName}>BlazeMates</Text>
@@ -657,14 +668,28 @@ export default function SwipeScreen() {
         </View>
       )}
 
-      <Text style={styles.footer}>
-        BlazeMates LLC v1.0.0 (c) 2025 BlazeMates LLC. All rights reserved.
-      </Text>
-    </View>
+          <Text style={styles.footer}>
+            BlazeMates LLC v1.0.0 (c) 2025 BlazeMates LLC. All rights reserved.
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#0f0f0f",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#0f0f0f",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    backgroundColor: "#0f0f0f",
+  },
   container: {
     flex: 1,
     backgroundColor: "#0f0f0f",
