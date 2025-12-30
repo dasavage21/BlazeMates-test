@@ -19,7 +19,10 @@ export default function MatchScreen() {
 
   useEffect(() => {
     const fetchMatchUser = async () => {
-      if (!matchId || typeof matchId !== 'string') return;
+      if (!matchId || typeof matchId !== 'string') {
+        router.replace('/swipe');
+        return;
+      }
 
       const { data, error } = await supabase
         .from('users')
@@ -27,11 +30,15 @@ export default function MatchScreen() {
         .eq('id', matchId)
         .maybeSingle();
 
-      if (!error && data) setMatchUser(data);
+      if (!error && data) {
+        setMatchUser(data);
+      } else {
+        router.replace('/swipe');
+      }
     };
 
     fetchMatchUser();
-  }, [matchId]);
+  }, [matchId, router]);
 
   useEffect(() => {
     (async () => {
