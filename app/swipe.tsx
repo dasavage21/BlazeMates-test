@@ -35,12 +35,12 @@ const isLargePhone = screenWidth >= 414 && screenWidth < 768;
 const isDesktop = screenWidth >= 768;
 
 const cardWidth = Math.min(screenWidth * 0.92, 440);
-const navPadding = isSmallPhone ? 12 : (isMediumPhone ? 14 : (isDesktop ? 40 : 16));
+const navPadding = isSmallPhone ? 10 : (isMediumPhone ? 14 : (isDesktop ? 40 : 16));
 const navGap = isSmallPhone ? 12 : (isMediumPhone ? 16 : (isDesktop ? 24 : 16));
 const navFontSize = isSmallPhone ? 12 : (isDesktop ? 15 : 13);
-const logoSize = isSmallPhone ? 24 : 28;
-const brandFontSize = isSmallPhone ? 16 : 20;
-const navProfilePicSize = isSmallPhone ? 30 : 36;
+const logoSize = isSmallPhone ? 22 : 28;
+const brandFontSize = isSmallPhone ? 14 : 20;
+const navProfilePicSize = isSmallPhone ? 28 : 36;
 
 const profilePicSize = isDesktop ? 90 : 70;
 const titleFontSize = isDesktop ? 26 : 22;
@@ -590,7 +590,7 @@ export default function SwipeScreen() {
           <View style={styles.navbar}>
         <View style={styles.navLeft}>
           <Text style={styles.logo}>🔥</Text>
-          <Text style={styles.brandName}>BlazeMates</Text>
+          <Text style={styles.brandName} numberOfLines={1}>BlazeMates</Text>
         </View>
 
         <View style={styles.navCenter}>
@@ -732,8 +732,8 @@ const styles = StyleSheet.create({
   navLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: isSmallPhone ? 6 : 8,
-    flex: 1,
+    gap: isSmallPhone ? 4 : 8,
+    flex: isSmallPhone ? 0.9 : 1,
     minWidth: 0,
   },
   logo: {
