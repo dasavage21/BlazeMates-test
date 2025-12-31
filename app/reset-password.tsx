@@ -229,6 +229,16 @@ export default function ResetPasswordScreen() {
           selectionColor="#00FF7F"
         />
 
+        {confirmPassword.length > 0 && (
+          <View style={styles.matchContainer}>
+            {password === confirmPassword ? (
+              <Text style={styles.matchText}>✓ Passwords match</Text>
+            ) : (
+              <Text style={styles.noMatchText}>○ Passwords do not match</Text>
+            )}
+          </View>
+        )}
+
         <TouchableOpacity
           style={[styles.btn, disabled ? styles.btnDisabled : null]}
           onPress={submit}
@@ -355,5 +365,19 @@ const styles = StyleSheet.create({
   },
   checkValid: {
     color: "#00FF7F",
+  },
+  matchContainer: {
+    marginBottom: 16,
+    marginTop: -8,
+  },
+  matchText: {
+    color: "#00FF7F",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  noMatchText: {
+    color: "#ff4444",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
