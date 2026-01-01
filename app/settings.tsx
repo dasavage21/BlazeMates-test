@@ -194,6 +194,20 @@ export default function SettingsScreen() {
         <Switch value={notifications} onValueChange={toggleNotifications} />
       </View>
 
+      <TouchableOpacity
+        style={styles.buttonPremium}
+        onPress={() => router.push("/subscription")}
+      >
+        <Text style={styles.buttonTextPremium}>👑 Upgrade to Blaze OG</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/insights")}
+      >
+        <Text style={styles.buttonText}>📊 Profile Insights</Text>
+      </TouchableOpacity>
+
       {isAdmin && (
         <TouchableOpacity
           style={styles.button}
@@ -264,6 +278,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 8,
     alignItems: "center",
+  },
+  buttonPremium: {
+    backgroundColor: "#FFD700",
+    padding: 14,
+    borderRadius: 10,
+    marginVertical: 8,
+    alignItems: "center",
+  },
+  buttonTextPremium: {
+    color: "#121212",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   buttonDanger: {
     backgroundColor: "#ff5555",
