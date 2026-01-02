@@ -80,6 +80,8 @@ export default function MatchesScreen() {
 
       if (theirLikesError) {
         console.error("Failed to fetch their likes:", theirLikesError);
+        setLoading(false);
+        return;
       }
 
       const mutualUserIds = (theirLikes || []).map((like) => like.user_id);

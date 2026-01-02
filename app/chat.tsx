@@ -505,12 +505,10 @@ export default function ChatScreen() {
                 null,
             ])
           );
-          mapped.forEach((item) => {
+          return mapped.map((item) => {
             const displayName = lookup.get(item.user_id);
-            if (displayName) {
-              item.display_name = displayName;
-            }
-          });
+            return displayName ? { ...item, display_name: displayName } : item;
+          }).slice(0, 10);
         }
       } catch {
         // profiles table might not exist; ignore

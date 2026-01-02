@@ -569,16 +569,21 @@ export default function SwipeScreen() {
     if (!current) return;
 
     if (!likedUsers.includes(current.id)) {
-      setLikedUsers((prev) => [...prev, current.id]);
-
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
 
       if (myUserId) {
-        await supabase.from("likes").insert({
+        const { error: insertError } = await supabase.from("likes").insert({
           user_id: myUserId,
           liked_user_id: current.id,
         });
+
+        if (insertError) {
+          console.error("Failed to insert like:", insertError);
+          return;
+        }
+
+        setLikedUsers((prev) => [...prev, current.id]);
 
         const { data: theirLike } = await supabase
           .from("likes")
@@ -605,21 +610,31 @@ export default function SwipeScreen() {
     if (!current) return;
 
     if (!likedUsers.includes(current.id)) {
-      setLikedUsers((prev) => [...prev, current.id]);
-
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
 
       if (myUserId) {
-        await supabase.from("likes").insert({
+        const { error: insertError } = await supabase.from("likes").insert({
           user_id: myUserId,
           liked_user_id: current.id,
         });
 
-        await supabase.from("super_likes").insert({
+        if (insertError) {
+          console.error("Failed to insert like:", insertError);
+          return;
+        }
+
+        const { error: superLikeError } = await supabase.from("super_likes").insert({
           from_user_id: myUserId,
           to_user_id: current.id,
         });
+
+        if (superLikeError) {
+          console.error("Failed to insert super like:", superLikeError);
+          return;
+        }
+
+        setLikedUsers((prev) => [...prev, current.id]);
 
         const newRemaining = superLikesRemaining - 1;
         setSuperLikesRemaining(newRemaining);
