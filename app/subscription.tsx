@@ -22,6 +22,53 @@ export default function SubscriptionScreen() {
 
         <Text style={styles.title}>Upgrade to Premium</Text>
 
+        <View style={[styles.tierCard, styles.popularTier]}>
+          <View style={styles.popularBadge}>
+            <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+          </View>
+
+          <View style={styles.tierHeader}>
+            <Text style={styles.tierBadge}>2</Text>
+            <Text style={styles.tierTitle}>Blaze+</Text>
+          </View>
+
+          <Text style={styles.price}>$4.99/month</Text>
+          <Text style={styles.subtitle}>Enhanced Experience</Text>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.sectionTitle}>More control + visibility.</Text>
+
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🔁</Text>
+              <Text style={styles.featureText}>Unlimited swipes</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>👀</Text>
+              <Text style={styles.featureText}>See who liked you</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🧊</Text>
+              <Text style={styles.featureText}>Undo last swipe</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>⭐</Text>
+              <Text style={styles.featureText}>Profile boost (1 per week)</Text>
+            </View>
+          </View>
+
+          <View style={styles.comingSoonBanner}>
+            <Text style={styles.comingSoonText}>🚀 Coming Soon</Text>
+            <Text style={styles.comingSoonSubtext}>
+              Premium subscriptions will be available in the next update!
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.tierCard}>
           <View style={styles.tierHeader}>
             <Text style={styles.tierBadge}>3</Text>
@@ -118,6 +165,27 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 2,
     borderColor: "#00FF7F",
+    marginBottom: 24,
+    position: "relative",
+  },
+  popularTier: {
+    borderColor: "#FF6B35",
+  },
+  popularBadge: {
+    position: "absolute",
+    top: -12,
+    right: 20,
+    backgroundColor: "#FF6B35",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+  popularBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   tierHeader: {
     flexDirection: "row",
