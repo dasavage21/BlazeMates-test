@@ -108,6 +108,40 @@ export default function MatchesScreen() {
     }, [loadMatches])
   );
 
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel('likes-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'likes',
+        },
+        () => {
+          loadMatches();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'likes',
+        },
+        () => {
+          loadMatches();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, loadMatches]);
+
   const createThreadId = useCallback((userId1: string, userId2: string) => {
     const sorted = [userId1, userId2].sort();
     return `dm_${sorted[0]}_${sorted[1]}`;
