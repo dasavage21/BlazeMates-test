@@ -67,7 +67,7 @@ export default function SubscriptionScreen() {
           </View>
 
           <View style={styles.tierHeader}>
-            <Text style={styles.tierBadge}>2</Text>
+            <Text style={styles.tierBadge}>🔥</Text>
             <Text style={styles.tierTitle}>Blaze+</Text>
           </View>
 
