@@ -22,6 +22,45 @@ export default function SubscriptionScreen() {
 
         <Text style={styles.title}>Upgrade to Premium</Text>
 
+        <View style={[styles.tierCard, styles.freeTier]}>
+          <View style={styles.tierHeader}>
+            <Text style={styles.tierBadge}>1</Text>
+            <Text style={styles.tierTitle}>Free (Default)</Text>
+          </View>
+
+          <Text style={styles.freePrice}>$0/month</Text>
+          <Text style={styles.subtitle}>Gets users hooked first.</Text>
+
+          <View style={styles.divider} />
+
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>✏️</Text>
+              <Text style={styles.featureText}>Create profile</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>💚</Text>
+              <Text style={styles.featureText}>Swipe & match (daily limit)</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>💬</Text>
+              <Text style={styles.featureText}>Basic chat after match</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>👤</Text>
+              <Text style={styles.featureText}>View profiles</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🎯</Text>
+              <Text style={styles.featureText}>Limited filters (age + distance)</Text>
+            </View>
+          </View>
+        </View>
+
         <View style={[styles.tierCard, styles.popularTier]}>
           <View style={styles.popularBadge}>
             <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
@@ -168,6 +207,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     position: "relative",
   },
+  freeTier: {
+    borderColor: "#666",
+  },
   popularTier: {
     borderColor: "#FF6B35",
   },
@@ -211,6 +253,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     color: "#00FF7F",
+    marginTop: 8,
+  },
+  freePrice: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#888",
     marginTop: 8,
   },
   subtitle: {
