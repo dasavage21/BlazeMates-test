@@ -239,6 +239,7 @@ export default function SwipeScreen() {
   const [index, setIndex] = useState(0);
   const [userAge, setUserAge] = useState<number | null>(null);
   const [likedUsers, setLikedUsers] = useState<string[]>([]);
+  const [passedUsers, setPassedUsers] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [profilePhoto, setProfilePhoto] = useState(
     "https://via.placeholder.com/50"
@@ -251,6 +252,7 @@ export default function SwipeScreen() {
   const [isPremium, setIsPremium] = useState(false);
 
   const likedUsersRef = useRef<string[]>([]);
+  const passedUsersRef = useRef<string[]>([]);
   const myUserIdRef = useRef<string | undefined>();
 
   useEffect(() => {
@@ -258,8 +260,12 @@ export default function SwipeScreen() {
   }, [likedUsers]);
 
   useEffect(() => {
-    setProfiles((prev) => prev.filter((p) => !likedUsers.includes(p.id)));
-  }, [likedUsers]);
+    passedUsersRef.current = passedUsers;
+  }, [passedUsers]);
+
+  useEffect(() => {
+    setProfiles((prev) => prev.filter((p) => !likedUsers.includes(p.id) && !passedUsers.includes(p.id)));
+  }, [likedUsers, passedUsers]);
 
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener(
@@ -330,6 +336,7 @@ export default function SwipeScreen() {
       myUserIdRef.current = myUserId;
 
       let alreadyLiked: string[] = [];
+      let alreadyPassed: string[] = [];
       if (myUserId) {
         const { data: likesData } = await supabase
           .from("likes")
@@ -340,6 +347,17 @@ export default function SwipeScreen() {
           alreadyLiked = likesData.map((like) => like.liked_user_id);
           setLikedUsers(alreadyLiked);
           likedUsersRef.current = alreadyLiked;
+        }
+
+        const { data: passesData } = await supabase
+          .from("passes")
+          .select("passed_user_id")
+          .eq("user_id", myUserId);
+
+        if (passesData) {
+          alreadyPassed = passesData.map((pass) => pass.passed_user_id);
+          setPassedUsers(alreadyPassed);
+          passedUsersRef.current = alreadyPassed;
         }
 
         const { data: myData } = await supabase
@@ -396,6 +414,7 @@ export default function SwipeScreen() {
       const filtered = everyone
         .filter((p) => !myUserId || p.id !== myUserId)
         .filter((p) => !alreadyLiked.includes(p.id))
+        .filter((p) => !alreadyPassed.includes(p.id))
         .filter(
           (p) =>
             userLookingFor === "both" ||
@@ -434,6 +453,10 @@ export default function SwipeScreen() {
             }
             if (likedUsersRef.current.includes(newUser.id)) {
               console.log("Skipping - already liked this user");
+              return;
+            }
+            if (passedUsersRef.current.includes(newUser.id)) {
+              console.log("Skipping - already passed this user");
               return;
             }
             if (newUser.is_suspended === true) {
@@ -662,8 +685,11 @@ export default function SwipeScreen() {
     handleNext();
   };
 
-  const handleSwipeLeft = () => {
+  const handleSwipeLeft = async () => {
     if (cooldownActive) return;
+
+    const current = profiles[index];
+    if (!current) return;
 
     const next = skipCount + 1;
     setSkipCount(next);
@@ -675,6 +701,24 @@ export default function SwipeScreen() {
         setSkipCount(0);
       }, 5000);
       return;
+    }
+
+    if (!passedUsers.includes(current.id)) {
+      const { data: authData } = await supabase.auth.getUser();
+      const myUserId = authData?.user?.id;
+
+      if (myUserId) {
+        const { error: insertError } = await supabase.from("passes").insert({
+          user_id: myUserId,
+          passed_user_id: current.id,
+        });
+
+        if (insertError) {
+          console.error("Failed to insert pass:", insertError);
+        } else {
+          setPassedUsers((prev) => [...prev, current.id]);
+        }
+      }
     }
 
     handleNext();
