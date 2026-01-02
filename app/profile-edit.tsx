@@ -365,101 +365,124 @@ export default function ProfileEditScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>
-        Edit Your Profile{syncing ? " (syncing photo…) " : ""}
-      </Text>
-
-      {profileImage && (
-        <Image
-          source={{ uri: profileImage }}
-          style={{
-            width: 150,
-            height: 150,
-            borderRadius: 75,
-            marginBottom: 20,
-          }}
-        />
-      )}
-
-      {uploading && (
-        <View style={styles.uploadRow}>
-          <ActivityIndicator size="small" color="#00FF7F" />
-          <Text style={styles.uploadLabel}>Uploading photo...</Text>
-        </View>
-      )}
-
-      <TouchableOpacity
-        style={[styles.button, styles.secondaryButton]}
-        onPress={openCamera}
-      >
-        <Text style={styles.buttonSecondaryText}>
-          {Platform.OS === "web" ? "📷 Choose Photo" : "📷 Take / Update Photo"}
+      <View style={styles.header}>
+        <Text style={styles.title}>Edit Your Profile</Text>
+        <Text style={styles.subtitle}>
+          {syncing ? "Syncing photo..." : "Update your information"}
         </Text>
-      </TouchableOpacity>
-
-      <TextInput
-        placeholder="Name"
-        placeholderTextColor="#888"
-        value={name}
-        onChangeText={setName}
-        maxLength={50}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Bio"
-        placeholderTextColor="#888"
-        value={bio}
-        onChangeText={setBio}
-        maxLength={500}
-        style={[styles.input, { height: 80 }]}
-        multiline
-      />
-      <TextInput
-        placeholder="Favorite Strain"
-        placeholderTextColor="#888"
-        value={strain}
-        onChangeText={setStrain}
-        maxLength={50}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Blaze Style"
-        placeholderTextColor="#888"
-        value={style}
-        onChangeText={setStyle}
-        maxLength={50}
-        style={styles.input}
-      />
-
-      <Text style={styles.label}>Looking For:</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={lookingFor}
-          onValueChange={(value: Looking) => setLookingFor(value)}
-          style={styles.picker}
-          dropdownIconColor="#00FF7F"
-        >
-          <Picker.Item label="🌿 Just Wanna Smoke" value="smoke" />
-          <Picker.Item label="🍑 Just Looking to Hook Up" value="hookup" />
-          <Picker.Item label="🌿+🍑 Both" value="both" />
-        </Picker>
       </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={saveProfile}
-        disabled={saving}
-      >
-        <Text style={styles.buttonText}>
-          {saving ? "Saving…" : "💾 Save Changes"}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.photoSection}>
+        <View style={styles.photoFrame}>
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Text style={styles.placeholderText}>No Photo</Text>
+            </View>
+          )}
+          {uploading && (
+            <View style={styles.uploadOverlay}>
+              <ActivityIndicator size="large" color="#00FF7F" />
+            </View>
+          )}
+        </View>
 
-      {hasCamPermission === false && (
-        <Text style={{ color: "#ff7777", marginTop: 12 }}>
-          Camera permission denied. You can enable it in system settings.
-        </Text>
-      )}
+        <TouchableOpacity style={styles.photoButton} onPress={openCamera}>
+          <Text style={styles.photoButtonText}>
+            {Platform.OS === "web" ? "Choose Photo" : "Take Photo"}
+          </Text>
+        </TouchableOpacity>
+
+        {hasCamPermission === false && (
+          <Text style={styles.permissionWarning}>
+            Camera permission needed
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.formSection}>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Display Name *</Text>
+          <TextInput
+            placeholder="Enter your name"
+            placeholderTextColor="#666"
+            value={name}
+            onChangeText={setName}
+            maxLength={50}
+            style={styles.input}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>About You</Text>
+          <TextInput
+            placeholder="Tell people about yourself..."
+            placeholderTextColor="#666"
+            value={bio}
+            onChangeText={setBio}
+            maxLength={500}
+            style={[styles.input, styles.textArea]}
+            multiline
+            numberOfLines={4}
+          />
+          <Text style={styles.charCount}>{bio.length}/500</Text>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Favorite Strain</Text>
+          <TextInput
+            placeholder="e.g., Blue Dream, OG Kush..."
+            placeholderTextColor="#666"
+            value={strain}
+            onChangeText={setStrain}
+            maxLength={50}
+            style={styles.input}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Blaze Style</Text>
+          <TextInput
+            placeholder="e.g., Joint, Bong, Vape..."
+            placeholderTextColor="#666"
+            value={style}
+            onChangeText={setStyle}
+            maxLength={50}
+            style={styles.input}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Looking For</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={lookingFor}
+              onValueChange={(value: Looking) => setLookingFor(value)}
+              style={styles.picker}
+              dropdownIconColor="#00FF7F"
+            >
+              <Picker.Item label="🌿 Just Wanna Smoke" value="smoke" />
+              <Picker.Item label="🍑 Just Looking to Hook Up" value="hookup" />
+              <Picker.Item label="🌿+🍑 Both" value="both" />
+            </Picker>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={saveProfile}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#121212" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -467,59 +490,168 @@ export default function ProfileEditScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: "#121212",
-    paddingTop: 60,
-    paddingHorizontal: 20,
+    backgroundColor: "#0f0f0f",
     paddingBottom: 40,
-    alignItems: "center",
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    backgroundColor: "#121212",
+    borderBottomWidth: 1,
+    borderBottomColor: "#222",
   },
   title: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "bold",
-    color: "#00FF7F",
+    color: "#fff",
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#888",
+    letterSpacing: 0.2,
+  },
+  photoSection: {
+    alignItems: "center",
+    paddingVertical: 40,
+    backgroundColor: "#121212",
+    borderBottomWidth: 1,
+    borderBottomColor: "#222",
+  },
+  photoFrame: {
+    position: "relative",
+    width: 180,
+    height: 180,
     marginBottom: 20,
+  },
+  profileImage: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 4,
+    borderColor: "#00FF7F",
+  },
+  placeholderImage: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "#1f1f1f",
+    borderWidth: 3,
+    borderColor: "#333",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderText: {
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  uploadOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderRadius: 90,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  photoButton: {
+    backgroundColor: "#1f1f1f",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#00FF7F",
+  },
+  photoButtonText: {
+    color: "#00FF7F",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  permissionWarning: {
+    color: "#ff6b6b",
+    fontSize: 13,
+    marginTop: 12,
+  },
+  formSection: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    maxWidth: 600,
+    width: "100%",
+    alignSelf: "center",
+  },
+  fieldGroup: {
+    marginBottom: 28,
+  },
+  fieldLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 10,
+    letterSpacing: 0.3,
   },
   input: {
-    width: "100%",
-    backgroundColor: "#1f1f1f",
+    backgroundColor: "#1a1a1a",
     color: "#fff",
-    borderRadius: 10,
-    padding: 14,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
   },
-  label: {
-    alignSelf: "flex-start",
-    color: "#ccc",
-    fontSize: 16,
-    marginBottom: 6,
+  textArea: {
+    height: 120,
+    textAlignVertical: "top",
+    paddingTop: 16,
+  },
+  charCount: {
+    fontSize: 13,
+    color: "#666",
+    textAlign: "right",
+    marginTop: 6,
   },
   pickerContainer: {
-    width: "100%",
-    backgroundColor: "#1f1f1f",
-    borderRadius: 10,
-    marginBottom: 20,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    overflow: "hidden",
   },
-  picker: { color: "#fff", width: "100%" },
-  button: {
+  picker: {
+    color: "#fff",
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
+    maxWidth: 600,
+    width: "100%",
+    alignSelf: "center",
+  },
+  saveButton: {
     backgroundColor: "#00FF7F",
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    marginTop: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
-    width: "100%",
+    justifyContent: "center",
+    shadowColor: "#00FF7F",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  buttonText: { color: "#121212", fontWeight: "bold", fontSize: 16 },
-  secondaryButton: { backgroundColor: "#1f1f1f" },
-  buttonSecondaryText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  uploadRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
-  uploadLabel: {
-    color: "#ccc",
-    marginLeft: 8,
+  saveButtonText: {
+    color: "#121212",
+    fontWeight: "bold",
+    fontSize: 17,
+    letterSpacing: 0.5,
   },
 });
