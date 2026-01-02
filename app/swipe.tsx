@@ -701,11 +701,6 @@ export default function SwipeScreen() {
               {isSmallPhone ? "Matches" : "💚 Matches"}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/chat")}>
-            <Text style={styles.navLink}>
-              {isSmallPhone ? "Chat" : "💬 Chat"}
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.navRight}>
