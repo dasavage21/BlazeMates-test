@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../supabaseClient";
+import { updateUserActivity } from "../lib/activityTracker";
 
 type Match = {
   id: string;
@@ -19,6 +20,7 @@ type Match = {
   age: number;
   bio: string;
   image_url: string | null;
+  last_active_at: string | null;
 };
 
 type TabType = "matches" | "likes";
@@ -30,6 +32,13 @@ export default function MatchesScreen() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("matches");
+
+  const isUserActive = useCallback((lastActiveAt: string | null): boolean => {
+    if (!lastActiveAt) return false;
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const lastActive = new Date(lastActiveAt);
+    return lastActive > tenMinutesAgo;
+  }, []);
 
   const loadMatches = useCallback(async () => {
     try {
@@ -80,7 +89,7 @@ export default function MatchesScreen() {
 
       const { data: usersData, error: usersError } = await supabase
         .from("users")
-        .select("id, name, age, bio, image_url")
+        .select("id, name, age, bio, image_url, last_active_at")
         .in("id", likedUserIds);
 
       if (usersError) {
@@ -105,6 +114,7 @@ export default function MatchesScreen() {
   useFocusEffect(
     useCallback(() => {
       loadMatches();
+      updateUserActivity();
     }, [loadMatches])
   );
 
@@ -223,38 +233,45 @@ export default function MatchesScreen() {
           data={displayedMatches}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <View style={styles.matchCard}>
-              <TouchableOpacity
-                style={styles.matchMainContent}
-                onPress={() => handleMatchPress(item.id)}
-              >
-                <Image
-                  source={{
-                    uri: item.image_url || "https://via.placeholder.com/80",
-                  }}
-                  style={styles.matchImage}
-                />
-                <View style={styles.matchInfo}>
-                  <Text style={styles.matchName}>
-                    {item.name || "Unknown"}, {item.age || "?"}
-                  </Text>
-                  <Text style={styles.matchBio} numberOfLines={2}>
-                    {item.bio || "No bio"}
-                  </Text>
-                  <Text style={styles.messagePrompt}>
-                    {activeTab === "matches" ? "Tap to message" : "Waiting for them to match"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.viewProfileButton}
-                onPress={() => router.push(`/match?matchId=${item.id}`)}
-              >
-                <Text style={styles.viewProfileText}>View Profile</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isActive = activeTab === "likes" && isUserActive(item.last_active_at);
+            return (
+              <View style={styles.matchCard}>
+                <TouchableOpacity
+                  style={styles.matchMainContent}
+                  onPress={() => handleMatchPress(item.id)}
+                >
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{
+                        uri: item.image_url || "https://via.placeholder.com/80",
+                      }}
+                      style={styles.matchImage}
+                    />
+                    {isActive && <View style={styles.activeIndicator} />}
+                  </View>
+                  <View style={styles.matchInfo}>
+                    <Text style={styles.matchName}>
+                      {item.name || "Unknown"}, {item.age || "?"}
+                      {isActive && <Text style={styles.activeText}> • Active</Text>}
+                    </Text>
+                    <Text style={styles.matchBio} numberOfLines={2}>
+                      {item.bio || "No bio"}
+                    </Text>
+                    <Text style={styles.messagePrompt}>
+                      {activeTab === "matches" ? "Tap to message" : "Waiting for them to match"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.viewProfileButton}
+                  onPress={() => router.push(`/match?matchId=${item.id}`)}
+                >
+                  <Text style={styles.viewProfileText}>View Profile</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
         />
       )}
     </SafeAreaView>
@@ -332,16 +349,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
+  imageContainer: {
+    position: "relative",
+    marginRight: 16,
+  },
   matchImage: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    marginRight: 16,
     borderWidth: 2,
     borderColor: "#00FF7F",
   },
+  activeIndicator: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#00FF7F",
+    borderWidth: 2,
+    borderColor: "#1e1e1e",
+  },
   matchInfo: {
     flex: 1,
+  },
+  activeText: {
+    fontSize: 14,
+    color: "#00FF7F",
+    fontWeight: "600",
   },
   viewProfileButton: {
     backgroundColor: "#1a1a1a",

@@ -25,6 +25,7 @@ import Animated, {
   Extrapolate,
 } from "react-native-reanimated";
 import { supabase } from "../supabaseClient";
+import { updateUserActivity } from "../lib/activityTracker";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -546,6 +547,7 @@ export default function SwipeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      updateUserActivity();
       if (shouldAdvance) {
         setShouldAdvance(false);
         if (index < profiles.length - 1) {

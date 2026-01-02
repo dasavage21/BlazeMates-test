@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "../supabaseClient";
 import { showChatNotification, requestNotificationPermission } from "../lib/notificationHelper";
+import { updateUserActivity } from "../lib/activityTracker";
 
 type Message = {
   id: string;
@@ -89,6 +90,7 @@ export default function ChatScreen() {
         }
 
         await requestNotificationPermission();
+        updateUserActivity();
       } catch (error) {
         console.warn("Failed to load auth user", error);
         if (!cancelled) setUserId(null);
