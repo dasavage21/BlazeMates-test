@@ -1,90 +1,14 @@
-import { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../supabaseClient";
 
 export default function SubscriptionScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [currentTier, setCurrentTier] = useState<string>("free");
-
-  useEffect(() => {
-    loadSubscriptionStatus();
-  }, []);
-
-  const loadSubscriptionStatus = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("users")
-        .select("subscription_tier")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (data) {
-        setCurrentTier(data.subscription_tier || "free");
-      }
-    } catch (error) {
-      console.error("Error loading subscription:", error);
-    }
-  };
-
-  const handleSubscribe = async () => {
-    Alert.alert(
-      "Payment Integration Required",
-      "To process payments, you'll need to integrate Stripe. Visit the setup guide to get started.\n\nhttps://bolt.new/setup/stripe",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Demo Mode",
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user) return;
-
-              const expiresAt = new Date();
-              expiresAt.setDate(expiresAt.getDate() + 30);
-
-              const resetAt = new Date();
-              resetAt.setDate(resetAt.getDate() + 30);
-
-              const { error } = await supabase
-                .from("users")
-                .update({
-                  subscription_tier: "blaze_og",
-                  subscription_status: "active",
-                  subscription_expires_at: expiresAt.toISOString(),
-                  super_likes_remaining: 10,
-                  super_likes_reset_at: resetAt.toISOString(),
-                })
-                .eq("id", user.id);
-
-              if (error) throw error;
-
-              Alert.alert("Success!", "You're now a Blaze OG member!");
-              setCurrentTier("blaze_og");
-            } catch (error) {
-              console.error("Error upgrading:", error);
-              Alert.alert("Error", "Failed to upgrade subscription");
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
 
   return (
     <View style={styles.container}>
@@ -149,26 +73,13 @@ export default function SubscriptionScreen() {
             </View>
           </View>
 
-          {currentTier === "blaze_og" ? (
-            <View style={styles.activeSubscription}>
-              <Text style={styles.activeText}>✓ Active Subscription</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.subscribeButton, loading && styles.buttonDisabled]}
-              onPress={handleSubscribe}
-              disabled={loading}
-            >
-              <Text style={styles.subscribeButtonText}>
-                {loading ? "Processing..." : "Subscribe Now"}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.comingSoonBanner}>
+            <Text style={styles.comingSoonText}>🚀 Coming Soon</Text>
+            <Text style={styles.comingSoonSubtext}>
+              Premium subscriptions will be available in the next update!
+            </Text>
+          </View>
         </View>
-
-        <Text style={styles.disclaimer}>
-          Cancel anytime. Subscription renews automatically.
-        </Text>
       </ScrollView>
     </View>
   );
@@ -280,37 +191,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#aaa",
   },
-  subscribeButton: {
-    backgroundColor: "#00FF7F",
-    padding: 16,
+  comingSoonBanner: {
+    backgroundColor: "#2a2a2a",
+    padding: 20,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 24,
+    borderWidth: 2,
+    borderColor: "#FFD700",
   },
-  subscribeButtonText: {
-    color: "#121212",
-    fontSize: 18,
+  comingSoonText: {
+    color: "#FFD700",
+    fontSize: 20,
     fontWeight: "bold",
+    marginBottom: 8,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  activeSubscription: {
-    backgroundColor: "#00FF7F",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 24,
-  },
-  activeText: {
-    color: "#121212",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  disclaimer: {
+  comingSoonSubtext: {
+    color: "#aaa",
+    fontSize: 14,
     textAlign: "center",
-    color: "#666",
-    fontSize: 12,
-    marginTop: 20,
   },
 });
