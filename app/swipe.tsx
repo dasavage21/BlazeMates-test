@@ -781,9 +781,27 @@ export default function SwipeScreen() {
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              😕 No users found yet. Check back soon!
+            <View style={styles.emptyIcon}>
+              <Text style={styles.emptyIconText}>🔥</Text>
+            </View>
+            <Text style={styles.emptyTitle}>
+              {index >= profiles.length && profiles.length > 0
+                ? "You've Seen Everyone!"
+                : "No Profiles Available"}
             </Text>
+            <Text style={styles.emptyText}>
+              {index >= profiles.length && profiles.length > 0
+                ? "Check back later for new matches, or adjust your preferences in Settings."
+                : "No users found yet. Check back soon!"}
+            </Text>
+            {index >= profiles.length && profiles.length > 0 && (
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => router.push("/settings")}
+              >
+                <Text style={styles.emptyButtonText}>⚙️ Adjust Preferences</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -1076,12 +1094,56 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: "center",
-    paddingHorizontal: 20,
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#1a1a1a",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: "#2a2a2a",
+  },
+  emptyIconText: {
+    fontSize: 48,
+  },
+  emptyTitle: {
+    color: "#fff",
+    fontSize: isSmallPhone ? 20 : 24,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   emptyText: {
-    color: "#aaa",
-    fontSize: isSmallPhone ? 14 : (isDesktop ? 16 : 15),
+    color: "#888",
+    fontSize: isSmallPhone ? 14 : 16,
     textAlign: "center",
+    lineHeight: 24,
+    maxWidth: 400,
+  },
+  emptyButton: {
+    marginTop: 24,
+    backgroundColor: "#00FF7F",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 24,
+    shadowColor: "#00FF7F",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  emptyButtonText: {
+    color: "#121212",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   loadingContainer: {
     flex: 1,
