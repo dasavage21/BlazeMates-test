@@ -1,6 +1,6 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
@@ -9,6 +9,11 @@ type UserProfile = {
   id: string;
   name: string | null;
   image_url: string | null;
+  age: number | null;
+  bio: string | null;
+  strain: string | null;
+  style: string | null;
+  looking_for: string | null;
 };
 
 export default function MatchScreen() {
@@ -20,25 +25,22 @@ export default function MatchScreen() {
   useEffect(() => {
     const fetchMatchUser = async () => {
       if (!matchId || typeof matchId !== 'string') {
-        router.replace('/swipe');
         return;
       }
 
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, image_url')
+        .select('id, name, image_url, age, bio, strain, style, looking_for')
         .eq('id', matchId)
         .maybeSingle();
 
       if (!error && data) {
         setMatchUser(data);
-      } else {
-        router.replace('/swipe');
       }
     };
 
     fetchMatchUser();
-  }, [matchId, router]);
+  }, [matchId]);
 
   useEffect(() => {
     (async () => {
@@ -64,77 +66,284 @@ export default function MatchScreen() {
     router.push({ pathname: '/chat', params: { threadId } });
   }, [matchId, myUserId, router]);
 
+  if (!matchUser) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.matchText}>🔥 It&apos;s a match!</Text>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile</Text>
+      </View>
 
-      <Image
-        source={{
-          uri:
-            matchUser?.image_url && matchUser.image_url.trim().length > 0
-              ? matchUser.image_url
-              : 'https://via.placeholder.com/250',
-        }}
-        style={styles.avatar}
-      />
+      <View style={styles.profileHeader}>
+        <View style={styles.avatarContainer}>
+          <Image
+            source={{
+              uri:
+                matchUser.image_url && matchUser.image_url.trim().length > 0
+                  ? matchUser.image_url
+                  : 'https://via.placeholder.com/250',
+            }}
+            style={styles.avatar}
+          />
+          {matchUser.age !== null && matchUser.age >= 21 && (
+            <View style={styles.verifiedBadge}>
+              <Text style={styles.verifiedText}>✓</Text>
+            </View>
+          )}
+        </View>
 
-      <Text style={styles.subText}>
-        You and {matchUser?.name || 'someone'} like each other.
-      </Text>
+        <View style={styles.nameSection}>
+          <Text style={styles.name}>{matchUser.name || 'Unknown'}</Text>
+          {matchUser.age !== null && matchUser.age >= 21 && (
+            <Text style={styles.verifiedLabel}>Verified</Text>
+          )}
+        </View>
 
-      <TouchableOpacity style={styles.chatBtn} onPress={handleStartChat}>
-        <Text style={styles.chatText}>💬 Start Chatting</Text>
-      </TouchableOpacity>
+        <Text style={styles.ageText}>
+          {matchUser.age !== null ? `${matchUser.age} years old` : 'Age not set'}
+        </Text>
+      </View>
 
-      <TouchableOpacity onPress={() => router.push('/swipe')}>
-        <Text style={styles.skipText}>⬅️ Keep Swiping</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.contentSection}>
+        {matchUser.bio && (
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>About</Text>
+            <Text style={styles.bioText}>{matchUser.bio}</Text>
+          </View>
+        )}
+
+        <View style={styles.infoCard}>
+          <Text style={styles.cardTitle}>Details</Text>
+
+          {matchUser.strain && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Favorite Strain</Text>
+              <Text style={styles.infoValue}>{matchUser.strain}</Text>
+            </View>
+          )}
+
+          {matchUser.style && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Blaze Style</Text>
+              <Text style={styles.infoValue}>{matchUser.style}</Text>
+            </View>
+          )}
+
+          {matchUser.looking_for && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Looking For</Text>
+              <Text style={styles.infoValue}>
+                {matchUser.looking_for === 'smoke'
+                  ? '🌿 Just Wanna Smoke'
+                  : matchUser.looking_for === 'hookup'
+                  ? '🍑 Just Looking to Hook Up'
+                  : matchUser.looking_for === 'both'
+                  ? '🌿+🍑 Both'
+                  : 'Not set'}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.chatButton} onPress={handleStartChat}>
+          <Text style={styles.chatButtonText}>Start Chatting</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#0f0f0f',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
   },
-  matchText: {
-    fontSize: 32,
+  loadingText: {
     color: '#00FF7F',
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  subText: {
     fontSize: 18,
-    color: '#ccc',
-    textAlign: 'center',
-    marginVertical: 10,
+    fontWeight: '600',
+  },
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: '#0f0f0f',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    backgroundColor: '#0f0f0f',
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#121212',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  backText: {
+    color: '#00FF7F',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  profileHeader: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    backgroundColor: '#121212',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 20,
   },
   avatar: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 4,
     borderColor: '#00FF7F',
-    borderWidth: 3,
-    marginBottom: 20,
   },
-  chatBtn: {
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#00FF7F',
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#121212',
   },
-  chatText: {
-    fontSize: 16,
+  verifiedText: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#121212',
   },
-  skipText: {
-    color: '#ccc',
+  nameSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  name: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: -0.5,
+  },
+  verifiedLabel: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#00FF7F',
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(0, 255, 127, 0.1)',
+    borderRadius: 6,
+  },
+  ageText: {
+    fontSize: 18,
+    color: '#888',
+    letterSpacing: 0.3,
+  },
+  contentSection: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  infoCard: {
+    backgroundColor: '#121212',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 16,
+    letterSpacing: 0.3,
+  },
+  bioText: {
+    fontSize: 16,
+    color: '#ccc',
+    lineHeight: 24,
+    letterSpacing: 0.2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1a1a1a',
+  },
+  infoLabel: {
+    fontSize: 15,
+    color: '#888',
+    fontWeight: '500',
+    flex: 1,
+    letterSpacing: 0.2,
+  },
+  infoValue: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+    letterSpacing: 0.2,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  chatButton: {
+    backgroundColor: '#00FF7F',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#00FF7F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  chatButtonText: {
+    color: '#121212',
+    fontWeight: 'bold',
+    fontSize: 17,
+    letterSpacing: 0.5,
   },
 });

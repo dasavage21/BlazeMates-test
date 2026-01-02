@@ -190,28 +190,36 @@ export default function MatchesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.matchCard}
-              onPress={() => handleMatchPress(item.id)}
-            >
-              <Image
-                source={{
-                  uri: item.image_url || "https://via.placeholder.com/80",
-                }}
-                style={styles.matchImage}
-              />
-              <View style={styles.matchInfo}>
-                <Text style={styles.matchName}>
-                  {item.name || "Unknown"}, {item.age || "?"}
-                </Text>
-                <Text style={styles.matchBio} numberOfLines={2}>
-                  {item.bio || "No bio"}
-                </Text>
-                <Text style={styles.messagePrompt}>
-                  {activeTab === "matches" ? "Tap to message" : "Waiting for them to match"}
-                </Text>
-              </View>
-            </TouchableOpacity>
+            <View style={styles.matchCard}>
+              <TouchableOpacity
+                style={styles.matchMainContent}
+                onPress={() => handleMatchPress(item.id)}
+              >
+                <Image
+                  source={{
+                    uri: item.image_url || "https://via.placeholder.com/80",
+                  }}
+                  style={styles.matchImage}
+                />
+                <View style={styles.matchInfo}>
+                  <Text style={styles.matchName}>
+                    {item.name || "Unknown"}, {item.age || "?"}
+                  </Text>
+                  <Text style={styles.matchBio} numberOfLines={2}>
+                    {item.bio || "No bio"}
+                  </Text>
+                  <Text style={styles.messagePrompt}>
+                    {activeTab === "matches" ? "Tap to message" : "Waiting for them to match"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.viewProfileButton}
+                onPress={() => router.push(`/match?matchId=${item.id}`)}
+              >
+                <Text style={styles.viewProfileText}>View Profile</Text>
+              </TouchableOpacity>
+            </View>
           )}
         />
       )}
@@ -282,10 +290,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
     boxShadow: "0px 2px 8px 0px rgba(0, 255, 127, 0.2)",
     elevation: 3,
+  },
+  matchMainContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
   },
   matchImage: {
     width: 80,
@@ -297,6 +308,20 @@ const styles = StyleSheet.create({
   },
   matchInfo: {
     flex: 1,
+  },
+  viewProfileButton: {
+    backgroundColor: "#1a1a1a",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#00FF7F",
+    alignItems: "center",
+  },
+  viewProfileText: {
+    color: "#00FF7F",
+    fontSize: 14,
+    fontWeight: "600",
   },
   matchName: {
     fontSize: 18,
