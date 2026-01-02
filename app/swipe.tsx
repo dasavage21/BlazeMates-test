@@ -836,16 +836,8 @@ export default function SwipeScreen() {
             <Text style={styles.emptyText}>
               {profiles.length === 0
                 ? "No users found yet. Check back soon!"
-                : "You've seen all available profiles. New people join all the time, so check back later or adjust your preferences."}
+                : "You've seen all available profiles. New people join all the time, so check back later!"}
             </Text>
-            {profiles.length > 0 && (
-              <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => router.push("/settings")}
-              >
-                <Text style={styles.emptyButtonText}>⚙️ Adjust Preferences</Text>
-              </TouchableOpacity>
-            )}
           </View>
         )}
       </View>
