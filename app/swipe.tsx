@@ -829,16 +829,16 @@ export default function SwipeScreen() {
               <Text style={styles.emptyIconText}>🔥</Text>
             </View>
             <Text style={styles.emptyTitle}>
-              {index >= profiles.length && profiles.length > 0
-                ? "You've Seen Everyone!"
-                : "No Profiles Available"}
+              {profiles.length === 0
+                ? "No Profiles Available"
+                : "That's Everyone For Now!"}
             </Text>
             <Text style={styles.emptyText}>
-              {index >= profiles.length && profiles.length > 0
-                ? "Check back later for new matches, or adjust your preferences in Settings."
-                : "No users found yet. Check back soon!"}
+              {profiles.length === 0
+                ? "No users found yet. Check back soon!"
+                : "You've seen all available profiles. New people join all the time, so check back later or adjust your preferences."}
             </Text>
-            {index >= profiles.length && profiles.length > 0 && (
+            {profiles.length > 0 && (
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={() => router.push("/settings")}
