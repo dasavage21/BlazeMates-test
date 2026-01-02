@@ -110,52 +110,51 @@ export default function SubscriptionScreen() {
 
         <View style={styles.tierCard}>
           <View style={styles.tierHeader}>
-            <Text style={styles.tierBadge}>3</Text>
-            <Text style={styles.tierTitle}>Blaze OG</Text>
+            <Text style={styles.tierBadge}>💨</Text>
+            <Text style={styles.tierTitle}>Blaze Pro</Text>
           </View>
 
-          <Text style={styles.price}>$19.99/month</Text>
-          <Text style={styles.subtitle}>Elite Tier</Text>
+          <Text style={styles.price}>$12.99/month</Text>
+          <Text style={styles.subtitle}>Power User Tier</Text>
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionTitle}>Status + exclusivity.</Text>
-          <Text style={styles.sectionSubtitle}>Everything above PLUS</Text>
+          <Text style={styles.sectionTitle}>Everything in Blaze+, plus:</Text>
 
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>👑</Text>
-              <Text style={styles.featureText}>OG Smoker badge</Text>
+              <Text style={styles.featureIcon}>⭐</Text>
+              <Text style={styles.featureText}>Daily profile boost</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>💎</Text>
-              <Text style={styles.featureText}>Top placement in swipe stack</Text>
+              <Text style={styles.featureIcon}>⏪</Text>
+              <Text style={styles.featureText}>Rewind last swipe</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🔒</Text>
-              <Text style={styles.featureText}>Verified-only chat option</Text>
+              <Text style={styles.featureIcon}>🚀</Text>
+              <Text style={styles.featureText}>Priority placement in swipe queue</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🎁</Text>
-              <Text style={styles.featureText}>Monthly Super Likes (5-10)</Text>
+              <Text style={styles.featureIcon}>🟢</Text>
+              <Text style={styles.featureText}>See "recently active"</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🆕</Text>
-              <Text style={styles.featureText}>Early access to new features</Text>
-            </View>
-
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🧠</Text>
-              <Text style={styles.featureText}>Profile insights</Text>
+              <Text style={styles.featureIcon}>📊</Text>
+              <Text style={styles.featureText}>Profile analytics</Text>
             </View>
 
             <View style={styles.subFeaturesList}>
-              <Text style={styles.subFeatureText}>○ Swipe-through rate</Text>
-              <Text style={styles.subFeatureText}>○ Match likelihood score</Text>
+              <Text style={styles.subFeatureText}>○ Views</Text>
+              <Text style={styles.subFeatureText}>○ Likes per day</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🎨</Text>
+              <Text style={styles.featureText}>Custom profile badges (cosmetic)</Text>
             </View>
           </View>
 
