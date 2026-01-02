@@ -1,18 +1,16 @@
 // Ac 2025 Benjamin Hawk. All rights reserved.
 
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Linking,
   Platform,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../lib/ThemeContext";
 import {
   clearLocalAuthSession,
   handleRefreshTokenError,
@@ -22,11 +20,8 @@ import { supabase, SUPABASE_PROJECT_REF } from "../supabaseClient";
 // in settings.tsx
 
 export default function SettingsScreen() {
-  const { isDark, toggleTheme } = useTheme();
-  const [notifications, setNotifications] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
-  const showThemeToggle = false; // flip to true when exposing the theme switch
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -48,24 +43,6 @@ export default function SettingsScreen() {
 
     checkAdminStatus();
   }, []);
-
-  const handleToggleTheme = useCallback(async () => {
-    try {
-      await toggleTheme();
-    } catch (error) {
-      console.error("Failed to toggle theme", error);
-      Alert.alert("Theme Error", "Unable to change the app theme right now.");
-    }
-  }, [toggleTheme]);
-
-  const handleThemeSwitch = useCallback(() => {
-    void handleToggleTheme();
-  }, [handleToggleTheme]);
-
-  const toggleNotifications = () => {
-    setNotifications((prev) => !prev);
-    // Hook in with notification system here if using one
-  };
 
   const handleSignOut = async () => {
     await clearLocalAuthSession();
@@ -180,34 +157,6 @@ export default function SettingsScreen() {
         <Text style={styles.header}>Settings</Text>
       </View>
 
-      {showThemeToggle && (
-        <View style={styles.row}>
-          <Text style={styles.label}>
-            {isDark ? "Dark Theme Enabled" : "Light Theme Enabled"}
-          </Text>
-          <Switch value={isDark} onValueChange={handleThemeSwitch} />
-        </View>
-      )}
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Push Notifications</Text>
-        <Switch value={notifications} onValueChange={toggleNotifications} />
-      </View>
-
-      <TouchableOpacity
-        style={styles.buttonPremium}
-        onPress={() => router.push("/subscription")}
-      >
-        <Text style={styles.buttonTextPremium}>👑 Upgrade to Blaze OG</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("/insights")}
-      >
-        <Text style={styles.buttonText}>📊 Profile Insights</Text>
-      </TouchableOpacity>
-
       {isAdmin && (
         <TouchableOpacity
           style={styles.button}
@@ -265,31 +214,12 @@ const styles = StyleSheet.create({
     color: "#00FF7F",
     fontWeight: "bold",
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 12,
-    alignItems: "center",
-  },
-  label: { color: "#fff", fontSize: 16 },
   button: {
     backgroundColor: "#1f1f1f",
     padding: 14,
     borderRadius: 10,
     marginVertical: 8,
     alignItems: "center",
-  },
-  buttonPremium: {
-    backgroundColor: "#FFD700",
-    padding: 14,
-    borderRadius: 10,
-    marginVertical: 8,
-    alignItems: "center",
-  },
-  buttonTextPremium: {
-    color: "#121212",
-    fontWeight: "bold",
-    fontSize: 16,
   },
   buttonDanger: {
     backgroundColor: "#ff5555",

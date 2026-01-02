@@ -7,7 +7,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LogBox } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ThemeProvider } from "../lib/ThemeContext";
 import { useFrameworkReady } from "../hooks/useFrameworkReady";
 
 LogBox.ignoreLogs(["Warning: useInsertionEffect must not schedule updates"]);
@@ -16,14 +15,12 @@ export default function Layout() {
   useFrameworkReady();
 
   return (
-    <ThemeProvider>
-      <SafeAreaProvider>
-        <Stack
-          initialRouteName="index"
-          screenOptions={{ headerShown: false }} // This hides the top header on all screens
-        />
-        <StatusBar style="light" />
-      </SafeAreaProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <Stack
+        initialRouteName="index"
+        screenOptions={{ headerShown: false }} // This hides the top header on all screens
+      />
+      <StatusBar style="light" />
+    </SafeAreaProvider>
   );
 }

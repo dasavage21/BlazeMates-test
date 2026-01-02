@@ -70,7 +70,6 @@ type Profile = {
   bio: string;
   lookingFor: Looking;
   image: string;
-  isPremium?: boolean;
 };
 
 type SupaUser = {
@@ -82,7 +81,6 @@ type SupaUser = {
   style: string | null;
   looking_for: Looking | null;
   image_url: string | null;
-  subscription_tier?: string | null;
 };
 
 function SwipeCard({
@@ -211,9 +209,6 @@ function SwipeCard({
               {userAge && userAge >= 21 && (
                 <Text style={styles.verified}> ✅</Text>
               )}
-              {profile.isPremium && (
-                <Text style={styles.premiumBadge}> 👑</Text>
-              )}
             </Text>
           </View>
 
@@ -248,8 +243,6 @@ export default function SwipeScreen() {
   const [skipCount, setSkipCount] = useState(0);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
-  const [superLikesRemaining, setSuperLikesRemaining] = useState(0);
-  const [isPremium, setIsPremium] = useState(false);
 
   const likedUsersRef = useRef<string[]>([]);
   const passedUsersRef = useRef<string[]>([]);
@@ -360,21 +353,11 @@ export default function SwipeScreen() {
           passedUsersRef.current = alreadyPassed;
         }
 
-        const { data: myData } = await supabase
-          .from("users")
-          .select("subscription_tier, super_likes_remaining")
-          .eq("id", myUserId)
-          .maybeSingle();
-
-        if (myData) {
-          setIsPremium(myData.subscription_tier === "blaze_og");
-          setSuperLikesRemaining(myData.super_likes_remaining || 0);
-        }
       }
 
       const { data, error } = await supabase
         .from("users")
-        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier")
+        .select("id,name,age,bio,strain,style,looking_for,image_url")
         .eq("is_suspended", false);
 
       if (error) {
@@ -408,7 +391,6 @@ export default function SwipeScreen() {
           u.image_url && u.image_url.trim().length > 0
             ? u.image_url
             : PLACEHOLDER_300,
-        isPremium: u.subscription_tier === "blaze_og",
       }));
 
       const filtered = everyone
@@ -420,12 +402,7 @@ export default function SwipeScreen() {
             userLookingFor === "both" ||
             p.lookingFor === userLookingFor ||
             p.lookingFor === "both"
-        )
-        .sort((a, b) => {
-          if (a.isPremium && !b.isPremium) return -1;
-          if (!a.isPremium && b.isPremium) return 1;
-          return 0;
-        });
+        );
 
       setProfiles(filtered);
       setIndex(0);
@@ -444,7 +421,6 @@ export default function SwipeScreen() {
             console.log("New user detected:", payload.new);
             const newUser = payload.new as SupaUser & {
               is_suspended?: boolean;
-              subscription_tier?: string | null;
             };
 
             if (myUserIdRef.current && newUser.id === myUserIdRef.current) {
@@ -476,7 +452,6 @@ export default function SwipeScreen() {
                 newUser.image_url && newUser.image_url.trim().length > 0
                   ? newUser.image_url
                   : PLACEHOLDER_300,
-              isPremium: newUser.subscription_tier === "blaze_og",
             };
 
             const lookingForMatches =
@@ -503,7 +478,6 @@ export default function SwipeScreen() {
             console.log("User update detected:", payload.new);
             const updatedUser = payload.new as SupaUser & {
               is_suspended?: boolean;
-              subscription_tier?: string | null;
             };
 
             if (myUserIdRef.current && updatedUser.id === myUserIdRef.current) {
@@ -534,7 +508,6 @@ export default function SwipeScreen() {
                       updatedUser.image_url.trim().length > 0
                         ? updatedUser.image_url
                         : PLACEHOLDER_300,
-                    isPremium: updatedUser.subscription_tier === "blaze_og",
                   };
                 }
                 return profile;
@@ -607,65 +580,6 @@ export default function SwipeScreen() {
         }
 
         setLikedUsers((prev) => [...prev, current.id]);
-
-        const { data: theirLike } = await supabase
-          .from("likes")
-          .select("id")
-          .eq("user_id", current.id)
-          .eq("liked_user_id", myUserId)
-          .maybeSingle();
-
-        if (theirLike) {
-          setShouldAdvance(true);
-          router.push(`/match?matchId=${current.id}`);
-          return;
-        }
-      }
-    }
-
-    handleNext();
-  };
-
-  const handleSuperLike = async () => {
-    if (!isPremium || superLikesRemaining <= 0) return;
-
-    const current = profiles[index];
-    if (!current) return;
-
-    if (!likedUsers.includes(current.id)) {
-      const { data: authData } = await supabase.auth.getUser();
-      const myUserId = authData?.user?.id;
-
-      if (myUserId) {
-        const { error: insertError } = await supabase.from("likes").insert({
-          user_id: myUserId,
-          liked_user_id: current.id,
-        });
-
-        if (insertError) {
-          console.error("Failed to insert like:", insertError);
-          return;
-        }
-
-        const { error: superLikeError } = await supabase.from("super_likes").insert({
-          from_user_id: myUserId,
-          to_user_id: current.id,
-        });
-
-        if (superLikeError) {
-          console.error("Failed to insert super like:", superLikeError);
-          return;
-        }
-
-        setLikedUsers((prev) => [...prev, current.id]);
-
-        const newRemaining = superLikesRemaining - 1;
-        setSuperLikesRemaining(newRemaining);
-
-        await supabase
-          .from("users")
-          .update({ super_likes_remaining: newRemaining })
-          .eq("id", myUserId);
 
         const { data: theirLike } = await supabase
           .from("likes")
@@ -856,21 +770,6 @@ export default function SwipeScreen() {
             <Text style={styles.buttonIcon}>✕</Text>
           </TouchableOpacity>
 
-          {isPremium && (
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.superLikeButton,
-                superLikesRemaining <= 0 && { opacity: 0.3 },
-              ]}
-              onPress={handleSuperLike}
-              disabled={superLikesRemaining <= 0}
-            >
-              <Text style={styles.buttonIcon}>⭐</Text>
-              <Text style={styles.superLikeCount}>{superLikesRemaining}</Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             style={[styles.actionButton, styles.likeButton]}
             onPress={handleButtonSwipeRight}
@@ -1014,7 +913,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   verified: { fontSize: isSmallPhone ? 16 : 18, color: "#00FF7F" },
-  premiumBadge: { fontSize: isSmallPhone ? 16 : 18, color: "#FFD700" },
   bio: {
     fontSize: cardBioFontSize,
     color: "#ccc",
@@ -1092,22 +990,6 @@ const styles = StyleSheet.create({
   },
   likeButton: {
     backgroundColor: "#00FF7F",
-  },
-  superLikeButton: {
-    backgroundColor: "#FFD700",
-    position: "relative",
-  },
-  superLikeCount: {
-    position: "absolute",
-    bottom: 4,
-    right: 4,
-    backgroundColor: "#000",
-    color: "#FFD700",
-    fontSize: 10,
-    fontWeight: "bold",
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
   },
   buttonIcon: {
     fontSize: isSmallPhone ? 24 : 28,
