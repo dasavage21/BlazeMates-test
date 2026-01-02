@@ -355,7 +355,8 @@ export default function SwipeScreen() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier");
+        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier")
+        .eq("is_suspended", false);
 
       if (error) {
         console.error("Failed to fetch users:", error);
@@ -421,7 +422,10 @@ export default function SwipeScreen() {
           },
           (payload) => {
             console.log("New user detected:", payload.new);
-            const newUser = payload.new as SupaUser;
+            const newUser = payload.new as SupaUser & {
+              is_suspended?: boolean;
+              subscription_tier?: string | null;
+            };
 
             if (myUserIdRef.current && newUser.id === myUserIdRef.current) {
               console.log("Skipping - it's the current user");
@@ -429,6 +433,10 @@ export default function SwipeScreen() {
             }
             if (likedUsersRef.current.includes(newUser.id)) {
               console.log("Skipping - already liked this user");
+              return;
+            }
+            if (newUser.is_suspended === true) {
+              console.log("Skipping - user is suspended");
               return;
             }
 
@@ -444,6 +452,7 @@ export default function SwipeScreen() {
                 newUser.image_url && newUser.image_url.trim().length > 0
                   ? newUser.image_url
                   : PLACEHOLDER_300,
+              isPremium: newUser.subscription_tier === "blaze_og",
             };
 
             const lookingForMatches =
@@ -468,10 +477,19 @@ export default function SwipeScreen() {
           },
           (payload) => {
             console.log("User update detected:", payload.new);
-            const updatedUser = payload.new as SupaUser;
+            const updatedUser = payload.new as SupaUser & {
+              is_suspended?: boolean;
+              subscription_tier?: string | null;
+            };
 
             if (myUserIdRef.current && updatedUser.id === myUserIdRef.current) {
               console.log("Skipping update - it's the current user");
+              return;
+            }
+
+            if (updatedUser.is_suspended === true) {
+              console.log("Removing suspended user from profiles");
+              setProfiles((prev) => prev.filter((p) => p.id !== updatedUser.id));
               return;
             }
 
@@ -492,6 +510,7 @@ export default function SwipeScreen() {
                       updatedUser.image_url.trim().length > 0
                         ? updatedUser.image_url
                         : PLACEHOLDER_300,
+                    isPremium: updatedUser.subscription_tier === "blaze_og",
                   };
                 }
                 return profile;
