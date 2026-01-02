@@ -234,7 +234,7 @@ export default function MatchesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
-            const isActive = activeTab === "likes" && isUserActive(item.last_active_at);
+            const isActive = isUserActive(item.last_active_at);
             return (
               <View style={styles.matchCard}>
                 <TouchableOpacity
