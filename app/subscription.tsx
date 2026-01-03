@@ -4,11 +4,74 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { supabase } from "../supabaseClient";
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleSubscribe = async (tier: "plus" | "pro") => {
+    try {
+      setLoading(tier);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        Alert.alert("Error", "You must be logged in to subscribe");
+        return;
+      }
+
+      const priceIds = {
+        plus: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PLUS || "",
+        pro: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PRO || "",
+      };
+
+      if (!priceIds[tier]) {
+        Alert.alert(
+          "Configuration Error",
+          "Subscription pricing not configured. Please contact support."
+        );
+        return;
+      }
+
+      const functionUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`;
+      const response = await fetch(functionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          priceId: priceIds[tier],
+          successUrl: `${window.location.origin}/profile?success=true`,
+          cancelUrl: `${window.location.origin}/subscription?canceled=true`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+
+      if (data.url) {
+        await Linking.openURL(data.url);
+      }
+    } catch (error) {
+      console.error("Subscribe error:", error);
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to start checkout"
+      );
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -100,12 +163,17 @@ export default function SubscriptionScreen() {
             </View>
           </View>
 
-          <View style={styles.comingSoonBanner}>
-            <Text style={styles.comingSoonText}>🚀 Features Active!</Text>
-            <Text style={styles.comingSoonSubtext}>
-              All premium features are working! Payment system coming in the next update.
-            </Text>
-          </View>
+          <TouchableOpacity
+            style={[styles.subscribeButton, loading === "plus" && styles.buttonDisabled]}
+            onPress={() => handleSubscribe("plus")}
+            disabled={loading !== null}
+          >
+            {loading === "plus" ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.subscribeButtonText}>Subscribe to Blaze+</Text>
+            )}
+          </TouchableOpacity>
         </View>
 
         <View style={styles.tierCard}>
@@ -158,12 +226,17 @@ export default function SubscriptionScreen() {
             </View>
           </View>
 
-          <View style={styles.comingSoonBanner}>
-            <Text style={styles.comingSoonText}>🚀 Coming Soon</Text>
-            <Text style={styles.comingSoonSubtext}>
-              Premium subscriptions will be available in the next update!
-            </Text>
-          </View>
+          <TouchableOpacity
+            style={[styles.subscribeButton, loading === "pro" && styles.buttonDisabled]}
+            onPress={() => handleSubscribe("pro")}
+            disabled={loading !== null}
+          >
+            {loading === "pro" ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.subscribeButtonText}>Subscribe to Blaze Pro</Text>
+            )}
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -325,5 +398,21 @@ const styles = StyleSheet.create({
     color: "#aaa",
     fontSize: 14,
     textAlign: "center",
+  },
+  subscribeButton: {
+    backgroundColor: "#00FF7F",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  subscribeButtonText: {
+    color: "#121212",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
