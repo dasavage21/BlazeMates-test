@@ -1,6 +1,6 @@
 # BlazeMates
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/273bb4be-742f-47fe-9fd2-09b96bc48ce4/deploy-status)](https://app.netlify.com/projects/blazemates/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/d4397514-1116-4d42-bc06-b7d42b100402/deploy-status)](https://app.netlify.com/projects/musical-sundae-407d59/deploys)
 
 BlazeMates is an Expo/React Native social discovery app built around cannabis-friendly connections. The project uses [Expo Router](https://docs.expo.dev/router/introduction/) for navigation and Supabase for authentication and data access.
 
