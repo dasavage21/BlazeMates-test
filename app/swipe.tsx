@@ -243,6 +243,9 @@ export default function SwipeScreen() {
   const [skipCount, setSkipCount] = useState(0);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
+  const [swipesRemaining, setSwipesRemaining] = useState<number>(-1);
+  const [isPremium, setIsPremium] = useState(false);
+  const [showLimitReached, setShowLimitReached] = useState(false);
 
   const likedUsersRef = useRef<string[]>([]);
   const passedUsersRef = useRef<string[]>([]);
@@ -268,6 +271,33 @@ export default function SwipeScreen() {
       }
     );
     return () => sub.remove();
+  }, []);
+
+  const checkDailyLimit = useCallback(async () => {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const myUserId = authData?.user?.id;
+
+      if (!myUserId) return;
+
+      const { data, error } = await supabase.rpc("check_and_reset_daily_swipes", {
+        p_user_id: myUserId,
+      });
+
+      if (error) {
+        console.error("Failed to check daily limit:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const { swipes_remaining, is_premium } = data[0];
+        setSwipesRemaining(swipes_remaining);
+        setIsPremium(is_premium);
+        setShowLimitReached(!is_premium && swipes_remaining <= 0);
+      }
+    } catch (error) {
+      console.error("Error checking daily limit:", error);
+    }
   }, []);
 
   const loadHeaderPhoto = useCallback(async () => {
@@ -539,7 +569,8 @@ export default function SwipeScreen() {
 
   useEffect(() => {
     loadHeaderPhoto();
-  }, [loadHeaderPhoto]);
+    checkDailyLimit();
+  }, [loadHeaderPhoto, checkDailyLimit]);
 
   useFocusEffect(
     useCallback(() => {
@@ -564,6 +595,11 @@ export default function SwipeScreen() {
     const current = profiles[index];
     if (!current) return;
 
+    if (!isPremium && swipesRemaining <= 0) {
+      setShowLimitReached(true);
+      return;
+    }
+
     if (!likedUsers.includes(current.id)) {
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
@@ -580,6 +616,11 @@ export default function SwipeScreen() {
         }
 
         setLikedUsers((prev) => [...prev, current.id]);
+
+        if (!isPremium) {
+          await supabase.rpc("increment_daily_swipes", { p_user_id: myUserId });
+          setSwipesRemaining((prev) => Math.max(0, prev - 1));
+        }
 
         const { data: theirLike } = await supabase
           .from("likes")
@@ -604,6 +645,11 @@ export default function SwipeScreen() {
 
     const current = profiles[index];
     if (!current) return;
+
+    if (!isPremium && swipesRemaining <= 0) {
+      setShowLimitReached(true);
+      return;
+    }
 
     const next = skipCount + 1;
     setSkipCount(next);
@@ -631,6 +677,11 @@ export default function SwipeScreen() {
           console.error("Failed to insert pass:", insertError);
         } else {
           setPassedUsers((prev) => [...prev, current.id]);
+
+          if (!isPremium) {
+            await supabase.rpc("increment_daily_swipes", { p_user_id: myUserId });
+            setSwipesRemaining((prev) => Math.max(0, prev - 1));
+          }
         }
       }
     }
@@ -784,6 +835,37 @@ export default function SwipeScreen() {
           <Text style={styles.cooldownText}>
             ⏳ Slow down! You're swiping too fast.
           </Text>
+        </View>
+      )}
+
+      {!isPremium && swipesRemaining >= 0 && swipesRemaining <= 10 && !showLimitReached && (
+        <View style={styles.swipeCounterBanner}>
+          <Text style={styles.swipeCounterText}>
+            {swipesRemaining} swipes remaining today
+          </Text>
+        </View>
+      )}
+
+      {showLimitReached && (
+        <View style={styles.limitReachedOverlay}>
+          <View style={styles.limitReachedModal}>
+            <Text style={styles.limitReachedTitle}>Daily Limit Reached</Text>
+            <Text style={styles.limitReachedText}>
+              You've used all your swipes for today. Upgrade to BlazeMates Premium for unlimited swipes!
+            </Text>
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => router.push("/subscription")}
+            >
+              <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dismissButton}
+              onPress={() => setShowLimitReached(false)}
+            >
+              <Text style={styles.dismissButtonText}>Maybe Later</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -1079,6 +1161,79 @@ const styles = StyleSheet.create({
     paddingVertical: isSmallPhone ? 16 : 20,
     paddingHorizontal: 16,
     fontSize: isSmallPhone ? 10 : 12,
+    textAlign: "center",
+  },
+  swipeCounterBanner: {
+    marginTop: isSmallPhone ? 8 : 12,
+    backgroundColor: "#2e2e2e",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    alignSelf: "center",
+  },
+  swipeCounterText: {
+    color: "#00FF7F",
+    fontSize: isSmallPhone ? 11 : 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  limitReachedOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  limitReachedModal: {
+    backgroundColor: "#1e1e1e",
+    borderRadius: 20,
+    padding: 24,
+    marginHorizontal: 20,
+    maxWidth: 400,
+    width: "90%",
+    borderWidth: 2,
+    borderColor: "#00FF7F",
+  },
+  limitReachedTitle: {
+    fontSize: isSmallPhone ? 20 : 24,
+    fontWeight: "bold",
+    color: "#00FF7F",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  limitReachedText: {
+    fontSize: isSmallPhone ? 14 : 16,
+    color: "#ccc",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  upgradeButton: {
+    backgroundColor: "#00FF7F",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    marginBottom: 12,
+  },
+  upgradeButtonText: {
+    color: "#121212",
+    fontSize: isSmallPhone ? 15 : 16,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  dismissButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  dismissButtonText: {
+    color: "#888",
+    fontSize: isSmallPhone ? 14 : 15,
+    fontWeight: "600",
     textAlign: "center",
   },
 });
