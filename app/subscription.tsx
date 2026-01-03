@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -39,6 +40,10 @@ export default function SubscriptionScreen() {
         return;
       }
 
+      const baseUrl = Platform.OS === "web"
+        ? (typeof window !== "undefined" ? window.location.origin : "")
+        : process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+
       const functionUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`;
       const response = await fetch(functionUrl, {
         method: "POST",
@@ -48,8 +53,8 @@ export default function SubscriptionScreen() {
         },
         body: JSON.stringify({
           priceId: priceIds[tier],
-          successUrl: `${window.location.origin}/profile?success=true`,
-          cancelUrl: `${window.location.origin}/subscription?canceled=true`,
+          successUrl: `${baseUrl}/profile?success=true`,
+          cancelUrl: `${baseUrl}/subscription?canceled=true`,
         }),
       });
 
