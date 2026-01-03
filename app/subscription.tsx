@@ -35,9 +35,16 @@ export default function SubscriptionScreen() {
         pro: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PRO || "",
       };
 
+      console.log(`[Subscription] All env vars:`, {
+        plus: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PLUS,
+        pro: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PRO,
+        supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      });
       console.log(`[Subscription] Price ID for ${tier}:`, priceIds[tier]);
+      console.log(`[Subscription] Price ID is empty?`, !priceIds[tier]);
 
       if (!priceIds[tier]) {
+        console.error("[Subscription] Price ID is empty - showing alert");
         Alert.alert(
           "Configuration Error",
           "Subscription pricing not configured. Please contact support."
