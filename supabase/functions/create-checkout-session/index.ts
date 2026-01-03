@@ -15,24 +15,23 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
-  }
-
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      {
-        status: 405,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
-
   try {
+    if (req.method === "OPTIONS") {
+      return new Response(null, {
+        status: 200,
+        headers: corsHeaders,
+      });
+    }
+
+    if (req.method !== "POST") {
+      return new Response(
+        JSON.stringify({ error: "Method not allowed" }),
+        {
+          status: 405,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
     const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
     const [scheme, token] = authHeader.split(" ");
     if (!token || scheme?.toLowerCase() !== "bearer") {
@@ -49,10 +48,16 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 
+    console.log("[Edge Function] Environment variables check:", {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!serviceKey,
+      hasStripeKey: !!stripeSecretKey,
+    });
+
     if (!supabaseUrl || !serviceKey || !stripeSecretKey) {
       console.error("Missing environment variables");
       return new Response(
-        JSON.stringify({ error: "Internal server error" }),
+        JSON.stringify({ error: "Internal server error - missing configuration" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -66,6 +71,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: tokenUser, error: tokenError } = await supabase.auth.getUser(token);
     if (tokenError || !tokenUser?.user) {
+      console.error("[Edge Function] Auth error:", tokenError);
       return new Response(
         JSON.stringify({ error: "Invalid access token" }),
         {
@@ -88,6 +94,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("[Edge Function] Received payload:", payload);
+
     if (!payload.priceId || !payload.successUrl || !payload.cancelUrl) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: priceId, successUrl, cancelUrl" }),
@@ -101,6 +109,8 @@ Deno.serve(async (req: Request) => {
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2024-12-18.acacia",
     });
+
+    console.log("[Edge Function] Creating Stripe checkout session...");
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -124,6 +134,8 @@ Deno.serve(async (req: Request) => {
       },
     });
 
+    console.log("[Edge Function] Checkout session created:", session.id);
+
     return new Response(
       JSON.stringify({ url: session.url }),
       {
@@ -132,7 +144,7 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (err) {
-    console.error("Create checkout session error:", err);
+    console.error("[Edge Function] Create checkout session error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error", details: String(err) }),
       {

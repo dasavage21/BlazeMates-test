@@ -18,10 +18,13 @@ export default function SubscriptionScreen() {
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleSubscribe = async (tier: "plus" | "pro") => {
+    console.log(`[Subscription] Starting subscription flow for tier: ${tier}`);
     try {
       setLoading(tier);
 
       const { data: { session } } = await supabase.auth.getSession();
+      console.log(`[Subscription] Session check:`, session ? "Valid session" : "No session");
+
       if (!session) {
         Alert.alert("Error", "You must be logged in to subscribe");
         return;
@@ -31,6 +34,8 @@ export default function SubscriptionScreen() {
         plus: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PLUS || "",
         pro: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PRO || "",
       };
+
+      console.log(`[Subscription] Price ID for ${tier}:`, priceIds[tier]);
 
       if (!priceIds[tier]) {
         Alert.alert(
@@ -44,7 +49,11 @@ export default function SubscriptionScreen() {
         ? (typeof window !== "undefined" ? window.location.origin : "")
         : process.env.EXPO_PUBLIC_SUPABASE_URL || "";
 
+      console.log(`[Subscription] Base URL:`, baseUrl);
+
       const functionUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`;
+      console.log(`[Subscription] Calling edge function:`, functionUrl);
+
       const response = await fetch(functionUrl, {
         method: "POST",
         headers: {
@@ -58,17 +67,23 @@ export default function SubscriptionScreen() {
         }),
       });
 
+      console.log(`[Subscription] Response status:`, response.status);
       const data = await response.json();
+      console.log(`[Subscription] Response data:`, data);
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create checkout session");
+        throw new Error(data.error || data.details || "Failed to create checkout session");
       }
 
       if (data.url) {
+        console.log(`[Subscription] Opening checkout URL`);
         await Linking.openURL(data.url);
+      } else {
+        console.error("[Subscription] No URL in response");
+        Alert.alert("Error", "No checkout URL returned from server");
       }
     } catch (error) {
-      console.error("Subscribe error:", error);
+      console.error("[Subscription] Subscribe error:", error);
       Alert.alert(
         "Error",
         error instanceof Error ? error.message : "Failed to start checkout"
