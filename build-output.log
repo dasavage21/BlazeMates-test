@@ -1,0 +1,40 @@
+
+> blazemates@1.0.0 build
+> expo export --platform web
+
+env: load .env
+env: export EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_SUPABASE_URL STRIPE_SECRET_KEY EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY EXPO_PUBLIC_STRIPE_PRICE_ID_PLUS EXPO_PUBLIC_STRIPE_PRICE_ID_PRO STRIPE_WEBHOOK_SECRET
+Starting Metro Bundler
+Static rendering is enabled. Learn more: https://docs.expo.dev/router/reference/static-rendering/
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 72.6% (817/959)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 80.7% (1001/1114)
+λ Bundled 3115ms node_modules/expo-router/node/render.js (1453 modules)
+Web Bundled 3803ms node_modules/expo-router/entry.js (1238 modules)
+
+› web bundles (1):
+_expo/static/js/web/entry-22bcff1a17153a11bd4adba16526f226.js (2.44 MB)
+
+› Static routes (21):
+/map (17.2 kB)
+/chat (17.2 kB)
+/ (index) (17.2 kB)
+/login (17.2 kB)
+/match (17.2 kB)
+/swipe (17.2 kB)
+/camera (17.2 kB)
+/matches (17.2 kB)
+/profile (17.2 kB)
+/settings (17.2 kB)
+/_sitemap (17.1 kB)
+/age-check (17.2 kB)
+/+not-found (17.1 kB)
+/profile-edit (17.2 kB)
+/subscription (17.2 kB)
+/admin-reports (17.2 kB)
+/create-account (17.2 kB)
+/reset-password (17.2 kB)
+/username-setup (17.2 kB)
+/forgot-password (17.2 kB)
+/underage-blocked (17.2 kB)
+
+Exported: dist
