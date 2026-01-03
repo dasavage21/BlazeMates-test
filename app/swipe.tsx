@@ -246,6 +246,11 @@ export default function SwipeScreen() {
   const [swipesRemaining, setSwipesRemaining] = useState<number>(-1);
   const [isPremium, setIsPremium] = useState(false);
   const [showLimitReached, setShowLimitReached] = useState(false);
+  const [lastSwipeAction, setLastSwipeAction] = useState<{
+    type: "like" | "pass";
+    userId: string;
+  } | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
 
   const likedUsersRef = useRef<string[]>([]);
   const passedUsersRef = useRef<string[]>([]);
@@ -294,6 +299,7 @@ export default function SwipeScreen() {
         setSwipesRemaining(swipes_remaining);
         setIsPremium(is_premium);
         setShowLimitReached(!is_premium && swipes_remaining <= 0);
+        setCanUndo(is_premium);
       }
     } catch (error) {
       console.error("Error checking daily limit:", error);
@@ -616,6 +622,7 @@ export default function SwipeScreen() {
         }
 
         setLikedUsers((prev) => [...prev, current.id]);
+        setLastSwipeAction({ type: "like", userId: current.id });
 
         if (!isPremium) {
           await supabase.rpc("increment_daily_swipes", { p_user_id: myUserId });
@@ -677,6 +684,7 @@ export default function SwipeScreen() {
           console.error("Failed to insert pass:", insertError);
         } else {
           setPassedUsers((prev) => [...prev, current.id]);
+          setLastSwipeAction({ type: "pass", userId: current.id });
 
           if (!isPremium) {
             await supabase.rpc("increment_daily_swipes", { p_user_id: myUserId });
@@ -701,6 +709,51 @@ export default function SwipeScreen() {
 
   const handleButtonSwipeLeft = () => {
     handleSwipeLeft();
+  };
+
+  const handleUndo = async () => {
+    if (!lastSwipeAction || !isPremium) return;
+
+    const { data: authData } = await supabase.auth.getUser();
+    const myUserId = authData?.user?.id;
+
+    if (!myUserId) return;
+
+    try {
+      if (lastSwipeAction.type === "like") {
+        const { error } = await supabase
+          .from("likes")
+          .delete()
+          .eq("user_id", myUserId)
+          .eq("liked_user_id", lastSwipeAction.userId);
+
+        if (!error) {
+          setLikedUsers((prev) => prev.filter((id) => id !== lastSwipeAction.userId));
+        } else {
+          console.error("Failed to undo like:", error);
+        }
+      } else if (lastSwipeAction.type === "pass") {
+        const { error } = await supabase
+          .from("passes")
+          .delete()
+          .eq("user_id", myUserId)
+          .eq("passed_user_id", lastSwipeAction.userId);
+
+        if (!error) {
+          setPassedUsers((prev) => prev.filter((id) => id !== lastSwipeAction.userId));
+        } else {
+          console.error("Failed to undo pass:", error);
+        }
+      }
+
+      if (index > 0) {
+        setIndex((i) => i - 1);
+      }
+
+      setLastSwipeAction(null);
+    } catch (error) {
+      console.error("Error undoing swipe:", error);
+    }
   };
 
   const visibleProfiles = profiles.slice(index, index + 3);
@@ -820,6 +873,15 @@ export default function SwipeScreen() {
           >
             <Text style={styles.buttonIcon}>✕</Text>
           </TouchableOpacity>
+
+          {canUndo && lastSwipeAction && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.undoButton]}
+              onPress={handleUndo}
+            >
+              <Text style={styles.buttonIcon}>↶</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.actionButton, styles.likeButton]}
@@ -1072,6 +1134,9 @@ const styles = StyleSheet.create({
   },
   likeButton: {
     backgroundColor: "#00FF7F",
+  },
+  undoButton: {
+    backgroundColor: "#FFD700",
   },
   buttonIcon: {
     fontSize: isSmallPhone ? 24 : 28,

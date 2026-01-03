@@ -23,15 +23,17 @@ type Match = {
   last_active_at: string | null;
 };
 
-type TabType = "matches" | "likes";
+type TabType = "matches" | "likes" | "wholiked";
 
 export default function MatchesScreen() {
   const router = useRouter();
   const [mutualMatches, setMutualMatches] = useState<Match[]>([]);
   const [pendingLikes, setPendingLikes] = useState<Match[]>([]);
+  const [whoLikedYou, setWhoLikedYou] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("matches");
+  const [isPremium, setIsPremium] = useState(false);
 
   const isUserActive = useCallback((lastActiveAt: string | null): boolean => {
     if (!lastActiveAt) return false;
@@ -52,6 +54,17 @@ export default function MatchesScreen() {
 
       setCurrentUserId(myUserId);
 
+      const { data: userData } = await supabase
+        .from("users")
+        .select("subscription_tier, subscription_status")
+        .eq("id", myUserId)
+        .maybeSingle();
+
+      const userIsPremium =
+        userData?.subscription_tier === "blaze_og" &&
+        userData?.subscription_status === "active";
+      setIsPremium(userIsPremium);
+
       const { data: myLikes, error: likesError } = await supabase
         .from("likes")
         .select("liked_user_id")
@@ -65,9 +78,24 @@ export default function MatchesScreen() {
 
       const likedUserIds = (myLikes || []).map((like) => like.liked_user_id);
 
-      if (likedUserIds.length === 0) {
+      const { data: likesReceived, error: likesReceivedError } = await supabase
+        .from("likes")
+        .select("user_id")
+        .eq("liked_user_id", myUserId);
+
+      if (likesReceivedError) {
+        console.error("Failed to fetch likes received:", likesReceivedError);
+      }
+
+      const receivedLikeUserIds = (likesReceived || []).map((like) => like.user_id);
+      const whoLikedMeIds = receivedLikeUserIds.filter(
+        (id) => !likedUserIds.includes(id)
+      );
+
+      if (likedUserIds.length === 0 && whoLikedMeIds.length === 0) {
         setMutualMatches([]);
         setPendingLikes([]);
+        setWhoLikedYou([]);
         setLoading(false);
         return;
       }
@@ -89,10 +117,20 @@ export default function MatchesScreen() {
         (id) => !mutualUserIds.includes(id)
       );
 
+      const allUserIds = [...new Set([...likedUserIds, ...whoLikedMeIds])];
+
+      if (allUserIds.length === 0) {
+        setMutualMatches([]);
+        setPendingLikes([]);
+        setWhoLikedYou([]);
+        setLoading(false);
+        return;
+      }
+
       const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select("id, name, age, bio, image_url, last_active_at")
-        .in("id", likedUserIds);
+        .in("id", allUserIds);
 
       if (usersError) {
         console.error("Failed to fetch users:", usersError);
@@ -103,9 +141,11 @@ export default function MatchesScreen() {
       const allUsers = usersData || [];
       const mutual = allUsers.filter((user) => mutualUserIds.includes(user.id));
       const pending = allUsers.filter((user) => pendingUserIds.includes(user.id));
+      const whoLiked = allUsers.filter((user) => whoLikedMeIds.includes(user.id));
 
       setMutualMatches(mutual);
       setPendingLikes(pending);
+      setWhoLikedYou(whoLiked);
       setLoading(false);
     } catch (error) {
       console.error("Error loading matches:", error);
@@ -173,9 +213,11 @@ export default function MatchesScreen() {
         }
 
         router.push({ pathname: "/chat", params: { threadId } });
+      } else if (activeTab === "wholiked" && !isPremium) {
+        router.push("/subscription");
       }
     },
-    [currentUserId, createThreadId, router, activeTab]
+    [currentUserId, createThreadId, router, activeTab, isPremium]
   );
 
   if (loading) {
@@ -188,11 +230,19 @@ export default function MatchesScreen() {
     );
   }
 
-  const displayedMatches = activeTab === "matches" ? mutualMatches : pendingLikes;
+  const displayedMatches =
+    activeTab === "matches"
+      ? mutualMatches
+      : activeTab === "likes"
+      ? pendingLikes
+      : whoLikedYou;
+
   const emptyMessage =
     activeTab === "matches"
       ? "No mutual matches yet. Keep swiping!"
-      : "You haven't liked anyone yet. Start swiping!";
+      : activeTab === "likes"
+      ? "You haven't liked anyone yet. Start swiping!"
+      : "No one has liked you yet. Keep swiping!";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -224,6 +274,16 @@ export default function MatchesScreen() {
             Likes ({pendingLikes.length})
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "wholiked" && styles.activeTab]}
+          onPress={() => setActiveTab("wholiked")}
+        >
+          <Text
+            style={[styles.tabText, activeTab === "wholiked" && styles.activeTabText]}
+          >
+            Who Liked You ({whoLikedYou.length})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {displayedMatches.length === 0 ? (
@@ -237,6 +297,7 @@ export default function MatchesScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
             const isActive = isUserActive(item.last_active_at);
+            const isBlurred = activeTab === "wholiked" && !isPremium;
             return (
               <View style={styles.matchCard}>
                 <TouchableOpacity
@@ -248,29 +309,51 @@ export default function MatchesScreen() {
                       source={{
                         uri: item.image_url || "https://via.placeholder.com/80",
                       }}
-                      style={styles.matchImage}
+                      style={[styles.matchImage, isBlurred && styles.blurredImage]}
+                      blurRadius={isBlurred ? 20 : 0}
                     />
-                    {isActive && <View style={styles.activeIndicator} />}
+                    {isActive && !isBlurred && <View style={styles.activeIndicator} />}
+                    {isBlurred && (
+                      <View style={styles.premiumOverlay}>
+                        <Text style={styles.premiumIcon}>👀</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.matchInfo}>
                     <Text style={styles.matchName}>
-                      {item.name || "Unknown"}, {item.age || "?"}
-                      {isActive && <Text style={styles.activeText}> • Active</Text>}
+                      {isBlurred ? "Premium User" : `${item.name || "Unknown"}, ${item.age || "?"}`}
+                      {isActive && !isBlurred && <Text style={styles.activeText}> • Active</Text>}
                     </Text>
                     <Text style={styles.matchBio} numberOfLines={2}>
-                      {item.bio || "No bio"}
+                      {isBlurred
+                        ? "Upgrade to Premium to see who liked you!"
+                        : item.bio || "No bio"}
                     </Text>
                     <Text style={styles.messagePrompt}>
-                      {activeTab === "matches" ? "Tap to message" : "Waiting for them to match"}
+                      {activeTab === "matches"
+                        ? "Tap to message"
+                        : activeTab === "wholiked" && isBlurred
+                        ? "Tap to upgrade"
+                        : "Waiting for them to match"}
                     </Text>
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.viewProfileButton}
-                  onPress={() => router.push(`/match?matchId=${item.id}`)}
-                >
-                  <Text style={styles.viewProfileText}>View Profile</Text>
-                </TouchableOpacity>
+                {!isBlurred && (
+                  <TouchableOpacity
+                    style={styles.viewProfileButton}
+                    onPress={() => router.push(`/match?matchId=${item.id}`)}
+                  >
+                    <Text style={styles.viewProfileText}>View Profile</Text>
+                  </TouchableOpacity>
+                )}
+                {isBlurred && (
+                  <TouchableOpacity
+                    style={styles.upgradeProfileButton}
+                    onPress={() => router.push("/subscription")}
+                  >
+                    <Text style={styles.upgradeProfileText}>Upgrade to See</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             );
           }}
@@ -422,5 +505,34 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
     lineHeight: 24,
+  },
+  blurredImage: {
+    opacity: 0.6,
+  },
+  premiumOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    borderRadius: 40,
+  },
+  premiumIcon: {
+    fontSize: 32,
+  },
+  upgradeProfileButton: {
+    backgroundColor: "#FFD700",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  upgradeProfileText: {
+    color: "#121212",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

@@ -96,14 +96,14 @@ export default function SubscriptionScreen() {
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>⭐</Text>
-              <Text style={styles.featureText}>Profile boost (1 per week)</Text>
+              <Text style={styles.featureText}>Profile boost (1 per week) - Coming Soon</Text>
             </View>
           </View>
 
           <View style={styles.comingSoonBanner}>
-            <Text style={styles.comingSoonText}>🚀 Coming Soon</Text>
+            <Text style={styles.comingSoonText}>🚀 Features Active!</Text>
             <Text style={styles.comingSoonSubtext}>
-              Premium subscriptions will be available in the next update!
+              All premium features are working! Payment system coming in the next update.
             </Text>
           </View>
         </View>
