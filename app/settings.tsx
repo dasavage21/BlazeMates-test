@@ -166,6 +166,13 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       )}
 
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/subscription")}
+      >
+        <Text style={styles.buttonText}>Upgrade to Premium</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>
