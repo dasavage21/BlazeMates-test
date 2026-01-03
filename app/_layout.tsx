@@ -12,7 +12,11 @@ import { useFrameworkReady } from "../hooks/useFrameworkReady";
 LogBox.ignoreLogs(["Warning: useInsertionEffect must not schedule updates"]);
 
 export default function Layout() {
-  useFrameworkReady();
+  const ready = useFrameworkReady();
+
+  if (!ready) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
