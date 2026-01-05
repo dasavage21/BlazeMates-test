@@ -112,6 +112,13 @@ export default function SubscriptionScreen() {
 
         <Text style={styles.title}>Upgrade to Premium</Text>
 
+        <View style={styles.comingSoonBanner}>
+          <Text style={styles.comingSoonText}>Coming Soon!</Text>
+          <Text style={styles.comingSoonSubtext}>
+            Premium subscriptions are launching soon. Check back later for exclusive features and benefits.
+          </Text>
+        </View>
+
         <View style={[styles.tierCard, styles.freeTier]}>
           <View style={styles.tierHeader}>
             <Text style={styles.tierBadge}>1</Text>
@@ -191,15 +198,10 @@ export default function SubscriptionScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.subscribeButton, loading === "plus" && styles.buttonDisabled]}
-            onPress={() => handleSubscribe("plus")}
-            disabled={loading !== null}
+            style={[styles.subscribeButton, styles.buttonDisabled]}
+            disabled={true}
           >
-            {loading === "plus" ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.subscribeButtonText}>Subscribe to Blaze+</Text>
-            )}
+            <Text style={styles.subscribeButtonText}>Coming Soon</Text>
           </TouchableOpacity>
         </View>
 
@@ -254,15 +256,10 @@ export default function SubscriptionScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.subscribeButton, loading === "pro" && styles.buttonDisabled]}
-            onPress={() => handleSubscribe("pro")}
-            disabled={loading !== null}
+            style={[styles.subscribeButton, styles.buttonDisabled]}
+            disabled={true}
           >
-            {loading === "pro" ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.subscribeButtonText}>Subscribe to Blaze Pro</Text>
-            )}
+            <Text style={styles.subscribeButtonText}>Coming Soon</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
