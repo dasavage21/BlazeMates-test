@@ -27,6 +27,12 @@ import Animated, {
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 
+const SITE_STATUS = {
+  enabled: false,
+  message: "We're currently experiencing technical difficulties. Please check back soon.",
+  type: 'warning' as 'warning' | 'info' | 'error',
+};
+
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
@@ -773,6 +779,11 @@ export default function SwipeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {SITE_STATUS.enabled && (
+        <View style={[styles.statusBanner, styles[`statusBanner${SITE_STATUS.type.charAt(0).toUpperCase() + SITE_STATUS.type.slice(1)}`]]}>
+          <Text style={styles.statusText}>{SITE_STATUS.message}</Text>
+        </View>
+      )}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -1298,6 +1309,26 @@ const styles = StyleSheet.create({
   dismissButtonText: {
     color: "#888",
     fontSize: isSmallPhone ? 14 : 15,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  statusBanner: {
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusBannerWarning: {
+    backgroundColor: "#FFA500",
+  },
+  statusBannerInfo: {
+    backgroundColor: "#00A3E0",
+  },
+  statusBannerError: {
+    backgroundColor: "#FF4444",
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
   },

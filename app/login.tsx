@@ -7,6 +7,12 @@ import { supabase } from '../supabaseClient';
 import { handleRefreshTokenError } from '../lib/authSession';
 import { mergeUserRow } from '../lib/userStore';
 
+const SITE_STATUS = {
+  enabled: false,
+  message: "We're currently experiencing technical difficulties. Please check back soon.",
+  type: 'warning' as 'warning' | 'info' | 'error',
+};
+
 async function syncPendingAvatarIfAuthed() {
   try {
     const pending = await AsyncStorage.getItem('pendingAvatarUri');
@@ -156,6 +162,11 @@ export default function LoginScreen() {
       style={styles.wrapper}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {SITE_STATUS.enabled && (
+        <View style={[styles.statusBanner, styles[`statusBanner${SITE_STATUS.type.charAt(0).toUpperCase() + SITE_STATUS.type.slice(1)}`]]}>
+          <Text style={styles.statusText}>{SITE_STATUS.message}</Text>
+        </View>
+      )}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.container}
@@ -188,4 +199,24 @@ const styles = StyleSheet.create({
   btn:{ backgroundColor:'#00FF7F', padding:14, borderRadius:10, alignItems:'center' },
   btnText:{ color:'#121212', fontWeight:'bold' },
   link:{ color:'#00FF7F', marginTop:14, textAlign:'center' },
+  statusBanner: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusBannerWarning: {
+    backgroundColor: '#FFA500',
+  },
+  statusBannerInfo: {
+    backgroundColor: '#00A3E0',
+  },
+  statusBannerError: {
+    backgroundColor: '#FF4444',
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
