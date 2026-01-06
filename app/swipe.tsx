@@ -26,12 +26,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
-
-const SITE_STATUS = {
-  enabledBr: true,
-  message: "We're currently experiencing technical difficulties. Please check back soon.",
-  type: 'warning' as 'warning' | 'info' | 'error',
-};
+import { fetchSiteStatus, SiteStatus } from "../lib/siteStatus";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -257,6 +252,11 @@ export default function SwipeScreen() {
     userId: string;
   } | null>(null);
   const [canUndo, setCanUndo] = useState(false);
+  const [siteStatus, setSiteStatus] = useState<SiteStatus>({
+    enabled: false,
+    message: '',
+    type: 'warning',
+  });
 
   const likedUsersRef = useRef<string[]>([]);
   const passedUsersRef = useRef<string[]>([]);
@@ -282,6 +282,10 @@ export default function SwipeScreen() {
       }
     );
     return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    fetchSiteStatus().then(setSiteStatus);
   }, []);
 
   const checkDailyLimit = useCallback(async () => {
@@ -779,9 +783,9 @@ export default function SwipeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {SITE_STATUS.enabled && (
-        <View style={[styles.statusBanner, styles[`statusBanner${SITE_STATUS.type.charAt(0).toUpperCase() + SITE_STATUS.type.slice(1)}`]]}>
-          <Text style={styles.statusText}>{SITE_STATUS.message}</Text>
+      {siteStatus.enabled && (
+        <View style={[styles.statusBanner, styles[`statusBanner${siteStatus.type.charAt(0).toUpperCase() + siteStatus.type.slice(1)}`]]}>
+          <Text style={styles.statusText}>{siteStatus.message}</Text>
         </View>
       )}
       <ScrollView

@@ -1,17 +1,12 @@
 // app/login.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../supabaseClient';
 import { handleRefreshTokenError } from '../lib/authSession';
 import { mergeUserRow } from '../lib/userStore';
-
-const SITE_STATUS = {
-  enabled: true,
-  message: "We're currently experiencing technical difficulties. Please check back soon.",
-  type: 'warning' as 'warning' | 'info' | 'error',
-};
+import { fetchSiteStatus, SiteStatus } from '../lib/siteStatus';
 
 async function syncPendingAvatarIfAuthed() {
   try {
@@ -55,6 +50,15 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [siteStatus, setSiteStatus] = useState<SiteStatus>({
+    enabled: false,
+    message: '',
+    type: 'warning',
+  });
+
+  useEffect(() => {
+    fetchSiteStatus().then(setSiteStatus);
+  }, []);
 
   const hydrateProfileCache = async () => {
     try {
@@ -162,9 +166,9 @@ export default function LoginScreen() {
       style={styles.wrapper}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {SITE_STATUS.enabled && (
-        <View style={[styles.statusBanner, styles[`statusBanner${SITE_STATUS.type.charAt(0).toUpperCase() + SITE_STATUS.type.slice(1)}`]]}>
-          <Text style={styles.statusText}>{SITE_STATUS.message}</Text>
+      {siteStatus.enabled && (
+        <View style={[styles.statusBanner, styles[`statusBanner${siteStatus.type.charAt(0).toUpperCase() + siteStatus.type.slice(1)}`]]}>
+          <Text style={styles.statusText}>{siteStatus.message}</Text>
         </View>
       )}
       <ScrollView
