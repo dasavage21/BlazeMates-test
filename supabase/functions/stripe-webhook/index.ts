@@ -220,8 +220,18 @@ async function syncCustomerFromStripe(customerId: string) {
       const priceId = subscription.items.data[0].price.id;
       const isActive = ['active', 'trialing'].includes(subscription.status);
 
-      // Determine the tier based on price ID
-      const tier = isActive ? 'blaze_og' : 'free';
+      // Map price IDs to tiers
+      const PRICE_ID_PLUS = Deno.env.get('STRIPE_PRICE_ID_PLUS');
+      const PRICE_ID_PRO = Deno.env.get('STRIPE_PRICE_ID_PRO');
+
+      let tier = 'free';
+      if (isActive) {
+        if (priceId === PRICE_ID_PLUS) {
+          tier = 'plus';
+        } else if (priceId === PRICE_ID_PRO) {
+          tier = 'pro';
+        }
+      }
 
       const { error: userError } = await supabase
         .from('users')
