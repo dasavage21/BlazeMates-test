@@ -8,7 +8,7 @@ import { handleRefreshTokenError } from '../lib/authSession';
 import { mergeUserRow } from '../lib/userStore';
 
 const SITE_STATUS = {
-  enabled: false,
+  enabled: true,
   message: "We're currently experiencing technical difficulties. Please check back soon.",
   type: 'warning' as 'warning' | 'info' | 'error',
 };
