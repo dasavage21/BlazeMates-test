@@ -88,6 +88,31 @@ async function handleEvent(event: Stripe.Event) {
 
     if (isSubscription) {
       console.info(`Starting subscription sync for customer: ${customerId}`);
+
+      // Create stripe_customers record if it doesn't exist
+      if (event.type === 'checkout.session.completed') {
+        const session = stripeData as Stripe.Checkout.Session;
+        const metadata = session.metadata || {};
+        const userId = metadata.user_id;
+
+        if (userId) {
+          const { error: customerError } = await supabase
+            .from('stripe_customers')
+            .upsert({
+              user_id: userId,
+              customer_id: customerId,
+            }, {
+              onConflict: 'customer_id',
+            });
+
+          if (customerError) {
+            console.error('Error creating stripe customer:', customerError);
+          } else {
+            console.info(`Created/updated stripe_customers record for user: ${userId}`);
+          }
+        }
+      }
+
       await syncCustomerFromStripe(customerId);
     } else if (mode === 'payment' && payment_status === 'paid') {
       try {
@@ -183,6 +208,37 @@ async function syncCustomerFromStripe(customerId: string) {
       console.error('Error syncing subscription:', subError);
       throw new Error('Failed to sync subscription in database');
     }
+
+    // Update the users table with the subscription info
+    const { data: customerData } = await supabase
+      .from('stripe_customers')
+      .select('user_id')
+      .eq('customer_id', customerId)
+      .maybeSingle();
+
+    if (customerData?.user_id) {
+      const priceId = subscription.items.data[0].price.id;
+      const isActive = ['active', 'trialing'].includes(subscription.status);
+
+      // Determine the tier based on price ID
+      const tier = isActive ? 'blaze_og' : 'free';
+
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
+          subscription_tier: tier,
+          subscription_status: isActive ? 'active' : 'canceled',
+          subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+        })
+        .eq('id', customerData.user_id);
+
+      if (userError) {
+        console.error('Error updating user subscription:', userError);
+      } else {
+        console.info(`Updated user ${customerData.user_id} subscription to ${tier}`);
+      }
+    }
+
     console.info(`Successfully synced subscription for customer: ${customerId}`);
   } catch (error) {
     console.error(`Failed to sync subscription for customer ${customerId}:`, error);
