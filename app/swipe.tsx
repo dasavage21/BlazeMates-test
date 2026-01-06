@@ -28,7 +28,7 @@ import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 
 const SITE_STATUS = {
-  enabled: false,
+  enabledBr: true,
   message: "We're currently experiencing technical difficulties. Please check back soon.",
   type: 'warning' as 'warning' | 'info' | 'error',
 };
