@@ -809,9 +809,9 @@ export default function SwipeScreen() {
               style={styles.navProfilePic}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/map")}>
+          <TouchableOpacity onPress={() => router.push("/matches")}>
             <Text style={styles.navLink}>
-              {isSmallPhone ? "Map" : "🗺️ Map"}
+              {isSmallPhone ? "Chat" : "💬 Chat"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/matches")}>

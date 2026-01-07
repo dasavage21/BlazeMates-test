@@ -8,6 +8,7 @@ type UserRowUpdate = {
   looking_for?: string | null;
   image_url?: string | null;
   age?: number | null;
+  username?: string | null;
 };
 
 export async function mergeUserRow(
