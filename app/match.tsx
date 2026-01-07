@@ -4,6 +4,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } fr
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { SubscriptionBadge } from '../components/SubscriptionBadge';
 
 type UserProfile = {
   id: string;
@@ -14,6 +15,8 @@ type UserProfile = {
   strain: string | null;
   style: string | null;
   looking_for: string | null;
+  subscription_tier: string | null;
+  subscription_status: string | null;
 };
 
 export default function MatchScreen() {
@@ -30,7 +33,7 @@ export default function MatchScreen() {
 
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, image_url, age, bio, strain, style, looking_for')
+        .select('id, name, image_url, age, bio, strain, style, looking_for, subscription_tier, subscription_status')
         .eq('id', matchId)
         .maybeSingle();
 
@@ -106,6 +109,11 @@ export default function MatchScreen() {
           {matchUser.age !== null && matchUser.age >= 21 && (
             <Text style={styles.verifiedLabel}>Verified</Text>
           )}
+          <SubscriptionBadge
+            tier={matchUser.subscription_tier}
+            status={matchUser.subscription_status}
+            size="medium"
+          />
         </View>
 
         <Text style={styles.ageText}>

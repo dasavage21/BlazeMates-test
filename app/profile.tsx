@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../supabaseClient";
+import { SubscriptionBadge } from "../components/SubscriptionBadge";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function ProfileScreen() {
     lookingFor: "",
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -57,7 +60,7 @@ export default function ProfileScreen() {
       if (userId) {
         const { data, error } = await supabase
           .from("users")
-          .select("age, name, bio, strain, style, looking_for, image_url")
+          .select("age, name, bio, strain, style, looking_for, image_url, subscription_tier, subscription_status")
           .eq("id", userId)
           .maybeSingle();
 
@@ -82,6 +85,8 @@ export default function ProfileScreen() {
           if (data.image_url) {
             setProfileImage(data.image_url);
           }
+          setSubscriptionTier(data.subscription_tier);
+          setSubscriptionStatus(data.subscription_status);
         }
       }
     };
@@ -120,6 +125,11 @@ export default function ProfileScreen() {
           {age !== null && age >= 21 && (
             <Text style={styles.verifiedLabel}>Verified</Text>
           )}
+          <SubscriptionBadge
+            tier={subscriptionTier}
+            status={subscriptionStatus}
+            size="medium"
+          />
         </View>
 
         <Text style={styles.ageText}>

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
+import { SubscriptionBadge } from "../components/SubscriptionBadge";
 
 type Match = {
   id: string;
@@ -21,6 +22,8 @@ type Match = {
   bio: string;
   image_url: string | null;
   last_active_at: string | null;
+  subscription_tier: string | null;
+  subscription_status: string | null;
 };
 
 type TabType = "matches" | "likes" | "wholiked";
@@ -129,7 +132,7 @@ export default function MatchesScreen() {
 
       const { data: usersData, error: usersError } = await supabase
         .from("users")
-        .select("id, name, age, bio, image_url, last_active_at")
+        .select("id, name, age, bio, image_url, last_active_at, subscription_tier, subscription_status")
         .in("id", allUserIds);
 
       if (usersError) {
@@ -320,10 +323,19 @@ export default function MatchesScreen() {
                     )}
                   </View>
                   <View style={styles.matchInfo}>
-                    <Text style={styles.matchName}>
-                      {isBlurred ? "Premium User" : `${item.name || "Unknown"}, ${item.age || "?"}`}
-                      {isActive && !isBlurred && <Text style={styles.activeText}> • Active</Text>}
-                    </Text>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.matchName}>
+                        {isBlurred ? "Premium User" : `${item.name || "Unknown"}, ${item.age || "?"}`}
+                        {isActive && !isBlurred && <Text style={styles.activeText}> • Active</Text>}
+                      </Text>
+                      {!isBlurred && (
+                        <SubscriptionBadge
+                          tier={item.subscription_tier}
+                          status={item.subscription_status}
+                          size="small"
+                        />
+                      )}
+                    </View>
                     <Text style={styles.matchBio} numberOfLines={2}>
                       {isBlurred
                         ? "Upgrade to Premium to see who liked you!"
@@ -459,6 +471,12 @@ const styles = StyleSheet.create({
   matchInfo: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
   activeText: {
     fontSize: 14,
     color: "#00FF7F",
@@ -482,7 +500,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#fff",
-    marginBottom: 4,
   },
   matchBio: {
     fontSize: 14,

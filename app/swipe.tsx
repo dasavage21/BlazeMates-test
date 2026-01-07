@@ -27,6 +27,7 @@ import Animated, {
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 import { fetchSiteStatus, SiteStatus } from "../lib/siteStatus";
+import { SubscriptionBadge } from "../components/SubscriptionBadge";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -71,6 +72,8 @@ type Profile = {
   bio: string;
   lookingFor: Looking;
   image: string;
+  subscriptionTier: string | null;
+  subscriptionStatus: string | null;
 };
 
 type SupaUser = {
@@ -82,6 +85,8 @@ type SupaUser = {
   style: string | null;
   looking_for: Looking | null;
   image_url: string | null;
+  subscription_tier: string | null;
+  subscription_status: string | null;
 };
 
 function SwipeCard({
@@ -211,6 +216,11 @@ function SwipeCard({
                 <Text style={styles.verified}> ✅</Text>
               )}
             </Text>
+            <SubscriptionBadge
+              tier={profile.subscriptionTier}
+              status={profile.subscriptionStatus}
+              size="small"
+            />
           </View>
 
           {renderLookingForTag(profile.lookingFor)}
@@ -403,7 +413,7 @@ export default function SwipeScreen() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id,name,age,bio,strain,style,looking_for,image_url")
+        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier,subscription_status")
         .eq("is_suspended", false);
 
       if (error) {
@@ -437,6 +447,8 @@ export default function SwipeScreen() {
           u.image_url && u.image_url.trim().length > 0
             ? u.image_url
             : PLACEHOLDER_300,
+        subscriptionTier: u.subscription_tier,
+        subscriptionStatus: u.subscription_status,
       }));
 
       const filtered = everyone
@@ -498,6 +510,8 @@ export default function SwipeScreen() {
                 newUser.image_url && newUser.image_url.trim().length > 0
                   ? newUser.image_url
                   : PLACEHOLDER_300,
+              subscriptionTier: newUser.subscription_tier,
+              subscriptionStatus: newUser.subscription_status,
             };
 
             const lookingForMatches =
@@ -554,6 +568,8 @@ export default function SwipeScreen() {
                       updatedUser.image_url.trim().length > 0
                         ? updatedUser.image_url
                         : PLACEHOLDER_300,
+                    subscriptionTier: updatedUser.subscription_tier,
+                    subscriptionStatus: updatedUser.subscription_status,
                   };
                 }
                 return profile;
