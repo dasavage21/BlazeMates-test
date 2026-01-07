@@ -8,13 +8,11 @@ BlazeMates is fully compatible with web browsers and mobile devices (iOS and And
 - Modern browsers (Chrome, Firefox, Safari, Edge)
 - All core features work on web
 - Photo selection uses file picker instead of camera
-- Maps show location list (native map on mobile only)
 
 ### Mobile Devices
 - iOS (iPhone, iPad)
 - Android phones and tablets
 - Full camera access for profile photos
-- Native map view with user location
 - Optimized touch interactions
 
 ## Running the App
@@ -59,18 +57,6 @@ Opens Expo Dev Tools to choose platform
 - Supports drag-and-drop (browser dependent)
 - All standard image formats
 
-### Maps
-
-**Mobile:**
-- Interactive native maps with gestures
-- Real-time location tracking
-- Hotspot markers on map
-
-**Web:**
-- List view of nearby hotspots
-- Location coordinates displayed
-- Mobile-optimized experience recommended for maps
-
 ### File Storage
 
 Both platforms use:
@@ -90,12 +76,6 @@ if (Platform.OS === "web") {
   // Mobile-specific code
 }
 ```
-
-### Platform-Specific Files
-Some components have separate implementations:
-
-- `MapNative.native.tsx` - Mobile map with react-native-maps
-- `MapNative.web.tsx` - Web map fallback with location list
 
 ### API Compatibility
 All Expo and React Native APIs used are cross-platform compatible:
@@ -119,18 +99,15 @@ For optimal web experience:
 ### iOS
 - iOS 13.4 or later
 - Camera permission for profile photos
-- Location permission for maps (optional)
 
 ### Android
 - Android 5.0 (API 21) or later
 - Camera permission for profile photos
-- Location permission for maps (optional)
 
 ## Known Limitations
 
 ### Web Platform
 - No native camera access (uses file picker instead)
-- Maps feature shows list view only
 - Some native animations may differ slightly
 
 ### All Platforms
