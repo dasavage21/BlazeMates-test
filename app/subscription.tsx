@@ -10,15 +10,71 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+
+type SubscriptionInfo = {
+  tier: string | null;
+  status: string | null;
+  expiresAt: string | null;
+};
 
 export default function SubscriptionScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [currentSubscription, setCurrentSubscription] = useState<SubscriptionInfo>({
+    tier: null,
+    status: null,
+    expiresAt: null,
+  });
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+
+  useEffect(() => {
+    loadCurrentSubscription();
+  }, []);
+
+  const loadCurrentSubscription = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setCheckingSubscription(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("subscription_tier, subscription_status, subscription_expires_at")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setCurrentSubscription({
+          tier: data.subscription_tier,
+          status: data.subscription_status,
+          expiresAt: data.subscription_expires_at,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading subscription:", error);
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
 
   const handleSubscribe = async (tier: "plus" | "pro") => {
     console.log(`[Subscription] Starting subscription flow for tier: ${tier}`);
+
+    // Check if user already has an active subscription
+    if (currentSubscription.status === "active" &&
+        (currentSubscription.tier === "plus" || currentSubscription.tier === "pro" || currentSubscription.tier === "blaze_plus" || currentSubscription.tier === "blaze_og")) {
+      const currentTierName = currentSubscription.tier === "plus" || currentSubscription.tier === "blaze_plus" ? "Blaze+" : "Blaze Pro";
+      Alert.alert(
+        "Already Subscribed",
+        `You already have an active ${currentTierName} subscription. Please cancel your current subscription before subscribing to a different plan.`
+      );
+      return;
+    }
+
     try {
       setLoading(tier);
 
@@ -100,6 +156,25 @@ export default function SubscriptionScreen() {
     }
   };
 
+  const isCurrentlySubscribed = (tier: "plus" | "pro") => {
+    if (currentSubscription.status !== "active") return false;
+
+    if (tier === "plus") {
+      return currentSubscription.tier === "plus" || currentSubscription.tier === "blaze_plus";
+    } else {
+      return currentSubscription.tier === "pro" || currentSubscription.tier === "blaze_og" || currentSubscription.tier === "blaze_pro";
+    }
+  };
+
+  if (checkingSubscription) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#00FF7F" />
+        <Text style={styles.loadingText}>Loading subscription info...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -111,6 +186,20 @@ export default function SubscriptionScreen() {
         </TouchableOpacity>
 
         <Text style={styles.title}>Upgrade to Premium</Text>
+
+        {currentSubscription.status === "active" && currentSubscription.tier && currentSubscription.tier !== "free" && (
+          <View style={styles.currentSubBanner}>
+            <Text style={styles.currentSubTitle}>Current Subscription</Text>
+            <Text style={styles.currentSubTier}>
+              {currentSubscription.tier === "plus" || currentSubscription.tier === "blaze_plus" ? "✨ Blaze+" : "👑 Blaze Pro"}
+            </Text>
+            {currentSubscription.expiresAt && (
+              <Text style={styles.currentSubExpires}>
+                Renews on {new Date(currentSubscription.expiresAt).toLocaleDateString()}
+              </Text>
+            )}
+          </View>
+        )}
 
         <View style={[styles.tierCard, styles.freeTier]}>
           <View style={styles.tierHeader}>
@@ -191,12 +280,18 @@ export default function SubscriptionScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.subscribeButton, loading === "plus" && styles.buttonDisabled]}
-            disabled={loading === "plus"}
+            style={[
+              styles.subscribeButton,
+              (loading === "plus" || isCurrentlySubscribed("plus")) && styles.buttonDisabled,
+              isCurrentlySubscribed("plus") && styles.currentPlanButton,
+            ]}
+            disabled={loading === "plus" || isCurrentlySubscribed("plus")}
             onPress={() => handleSubscribe("plus")}
           >
             {loading === "plus" ? (
               <ActivityIndicator color="#121212" />
+            ) : isCurrentlySubscribed("plus") ? (
+              <Text style={styles.subscribeButtonText}>✓ Current Plan</Text>
             ) : (
               <Text style={styles.subscribeButtonText}>Subscribe to Blaze+</Text>
             )}
@@ -254,12 +349,18 @@ export default function SubscriptionScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.subscribeButton, loading === "pro" && styles.buttonDisabled]}
-            disabled={loading === "pro"}
+            style={[
+              styles.subscribeButton,
+              (loading === "pro" || isCurrentlySubscribed("pro")) && styles.buttonDisabled,
+              isCurrentlySubscribed("pro") && styles.currentPlanButton,
+            ]}
+            disabled={loading === "pro" || isCurrentlySubscribed("pro")}
             onPress={() => handleSubscribe("pro")}
           >
             {loading === "pro" ? (
               <ActivityIndicator color="#121212" />
+            ) : isCurrentlySubscribed("pro") ? (
+              <Text style={styles.subscribeButtonText}>✓ Current Plan</Text>
             ) : (
               <Text style={styles.subscribeButtonText}>Subscribe to Blaze Pro</Text>
             )}
@@ -274,6 +375,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#888",
+    fontSize: 16,
+    marginTop: 16,
+  },
+  currentSubBanner: {
+    backgroundColor: "#1f1f1f",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: "#00FF7F",
+    alignItems: "center",
+  },
+  currentSubTitle: {
+    color: "#888",
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  currentSubTier: {
+    color: "#00FF7F",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  currentSubExpires: {
+    color: "#aaa",
+    fontSize: 13,
   },
   scrollView: {
     flex: 1,
@@ -436,6 +571,10 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  currentPlanButton: {
+    backgroundColor: "#666",
+    opacity: 1,
   },
   subscribeButtonText: {
     color: "#121212",
