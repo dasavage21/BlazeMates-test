@@ -826,7 +826,7 @@ export default function SwipeScreen() {
       </View>
 
       <View style={styles.cardContainer}>
-        {visibleProfiles.length > 0 ? (
+        {visibleProfiles.length > 0 && !showLimitReached ? (
           <>
             {visibleProfiles
               .slice()
@@ -856,7 +856,7 @@ export default function SwipeScreen() {
                 );
               })}
           </>
-        ) : (
+        ) : !showLimitReached ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Text style={styles.emptyIconText}>🔥</Text>
@@ -872,10 +872,10 @@ export default function SwipeScreen() {
                 : "You've seen all available profiles. New people join all the time, so check back later!"}
             </Text>
           </View>
-        )}
+        ) : null}
       </View>
 
-      {visibleProfiles.length > 0 && (
+      {visibleProfiles.length > 0 && !showLimitReached && (
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[
