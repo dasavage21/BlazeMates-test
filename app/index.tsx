@@ -131,11 +131,11 @@ export default function IndexGate() {
         }
 
         await clearCachedSessionData();
-        router.replace("/login");
+        router.replace("/welcome");
       } catch (err) {
         console.warn("Initial session check failed", err);
         await clearCachedSessionData(true);
-        router.replace("/login");
+        router.replace("/welcome");
       } finally {
         setChecking(false);
       }
@@ -170,7 +170,7 @@ export default function IndexGate() {
           return;
         }
 
-        router.replace("/login");
+        router.replace("/welcome");
       }
     );
 

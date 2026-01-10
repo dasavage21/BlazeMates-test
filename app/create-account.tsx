@@ -191,6 +191,12 @@ export default function CreateAccountScreen() {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/welcome')}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Create account</Text>
         <TextInput
           style={styles.input}
@@ -318,6 +324,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212",
     padding: 20,
     justifyContent: "center",
+  },
+  backButton: {
+    marginBottom: 20,
+  },
+  backButtonText: {
+    color: "#00FF7F",
+    fontSize: 16,
+    fontWeight: "600",
   },
   title: {
     color: "#00FF7F",

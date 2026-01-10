@@ -182,6 +182,12 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/welcome')}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Sign in</Text>
         <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#888" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail}/>
         <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#888" secureTextEntry value={password} onChangeText={setPassword}/>
@@ -203,6 +209,8 @@ const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#121212' },
   scrollView: { flex: 1, backgroundColor: '#121212' },
   container:{ flexGrow:1, backgroundColor:'#121212', padding:20, justifyContent:'center' },
+  backButton: { marginBottom: 20 },
+  backButtonText: { color: '#00FF7F', fontSize: 16, fontWeight: '600' },
   title:{ color:'#00FF7F', fontSize:24, fontWeight:'bold', marginBottom:16, textAlign:'center' },
   input:{ backgroundColor:'#1f1f1f', color:'#fff', borderRadius:10, padding:14, marginBottom:12 },
   btn:{ backgroundColor:'#00FF7F', padding:14, borderRadius:10, alignItems:'center' },
