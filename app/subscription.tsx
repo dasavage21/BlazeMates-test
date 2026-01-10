@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
+import * as WebBrowser from "expo-web-browser";
 import { supabase } from "../supabaseClient";
 
 type SubscriptionInfo = {
@@ -31,6 +32,17 @@ export default function SubscriptionScreen() {
 
   useEffect(() => {
     loadCurrentSubscription();
+
+    // Reload subscription when screen comes back into focus (for mobile deep links)
+    const subscription = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        loadCurrentSubscription();
+      }
+    });
+
+    return () => {
+      subscription.data.subscription.unsubscribe();
+    };
   }, []);
 
   const loadCurrentSubscription = async () => {
@@ -108,14 +120,25 @@ export default function SubscriptionScreen() {
         return;
       }
 
+      // For mobile, use a web URL that can be opened in the in-app browser
+      // The user will close the browser manually after seeing the success message
       const baseUrl = Platform.OS === "web"
         ? (typeof window !== "undefined" ? window.location.origin : "")
-        : process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+        : `https://${process.env.EXPO_PUBLIC_SUPABASE_URL?.replace(/^https?:\/\//, '')}` || "";
 
       console.log(`[Subscription] Base URL:`, baseUrl);
 
       const functionUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`;
       console.log(`[Subscription] Calling edge function:`, functionUrl);
+
+      // Create success/cancel URLs
+      const successUrl = Platform.OS === 'web'
+        ? `${baseUrl}/profile?success=true`
+        : `${baseUrl}/subscription?success=true&mobile=true`;
+
+      const cancelUrl = Platform.OS === 'web'
+        ? `${baseUrl}/subscription?canceled=true`
+        : `${baseUrl}/subscription?canceled=true&mobile=true`;
 
       const response = await fetch(functionUrl, {
         method: "POST",
@@ -125,8 +148,8 @@ export default function SubscriptionScreen() {
         },
         body: JSON.stringify({
           priceId: priceIds[tier],
-          successUrl: `${baseUrl}/profile?success=true`,
-          cancelUrl: `${baseUrl}/subscription?canceled=true`,
+          successUrl,
+          cancelUrl,
         }),
       });
 
@@ -140,7 +163,45 @@ export default function SubscriptionScreen() {
 
       if (data.url) {
         console.log(`[Subscription] Opening checkout URL`);
-        await Linking.openURL(data.url);
+        if (Platform.OS === 'web') {
+          // On web, use Linking to navigate
+          await Linking.openURL(data.url);
+        } else {
+          // On mobile, use WebBrowser for in-app browser
+          const result = await WebBrowser.openBrowserAsync(data.url, {
+            presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+            toolbarColor: '#121212',
+            controlsColor: '#00FF7F',
+          });
+
+          console.log('[Subscription] WebBrowser result:', result);
+
+          // After browser closes, always refresh subscription status
+          // Give the webhook a moment to process
+          setTimeout(async () => {
+            await loadCurrentSubscription();
+
+            // If they completed payment, show a success message
+            if (result.type === 'dismiss') {
+              // Check if subscription was updated
+              const { data: { session: checkSession } } = await supabase.auth.getSession();
+              if (checkSession) {
+                const { data: updatedUser } = await supabase
+                  .from("users")
+                  .select("subscription_status")
+                  .eq("id", checkSession.user.id)
+                  .maybeSingle();
+
+                if (updatedUser?.subscription_status === 'active') {
+                  Alert.alert(
+                    "Success!",
+                    "Your subscription is now active. Enjoy your premium features!"
+                  );
+                }
+              }
+            }
+          }, 2000);
+        }
       } else {
         console.error("[Subscription] No URL in response");
         Alert.alert("Error", "No checkout URL returned from server");
