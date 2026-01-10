@@ -23,6 +23,7 @@ type SubscriptionInfo = {
 export default function SubscriptionScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [pollingPayment, setPollingPayment] = useState(false);
   const [currentSubscription, setCurrentSubscription] = useState<SubscriptionInfo>({
     tier: null,
     status: null,
@@ -176,31 +177,59 @@ export default function SubscriptionScreen() {
 
           console.log('[Subscription] WebBrowser result:', result);
 
-          // After browser closes, always refresh subscription status
-          // Give the webhook a moment to process
-          setTimeout(async () => {
-            await loadCurrentSubscription();
+          // After browser closes, poll for subscription status
+          // Stripe webhook can take several seconds to process
+          if (result.type === 'dismiss') {
+            setPollingPayment(true);
+            let pollAttempts = 0;
+            const maxPolls = 10;
+            const pollInterval = 2000;
 
-            // If they completed payment, show a success message
-            if (result.type === 'dismiss') {
-              // Check if subscription was updated
+            const pollSubscription = async () => {
+              pollAttempts++;
+              console.log(`[Subscription] Polling attempt ${pollAttempts}/${maxPolls}`);
+
               const { data: { session: checkSession } } = await supabase.auth.getSession();
               if (checkSession) {
                 const { data: updatedUser } = await supabase
                   .from("users")
-                  .select("subscription_status")
+                  .select("subscription_status, subscription_tier")
                   .eq("id", checkSession.user.id)
                   .maybeSingle();
 
                 if (updatedUser?.subscription_status === 'active') {
+                  console.log('[Subscription] Subscription activated!');
+                  setPollingPayment(false);
+                  await loadCurrentSubscription();
                   Alert.alert(
                     "Success!",
                     "Your subscription is now active. Enjoy your premium features!"
                   );
+                  return true;
                 }
               }
-            }
-          }, 2000);
+
+              // Continue polling if not active and haven't exceeded max attempts
+              if (pollAttempts < maxPolls) {
+                setTimeout(pollSubscription, pollInterval);
+              } else {
+                console.log('[Subscription] Max poll attempts reached');
+                setPollingPayment(false);
+                await loadCurrentSubscription();
+                Alert.alert(
+                  "Payment Processing",
+                  "Your payment is being processed. It may take a few minutes to activate. Please check back shortly."
+                );
+              }
+              return false;
+            };
+
+            // Start polling after 2 seconds
+            setTimeout(pollSubscription, 2000);
+          } else {
+            // User canceled, just refresh
+            await loadCurrentSubscription();
+          }
         }
       } else {
         console.error("[Subscription] No URL in response");
@@ -245,6 +274,13 @@ export default function SubscriptionScreen() {
         >
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
+
+        {pollingPayment && (
+          <View style={styles.pollingBanner}>
+            <ActivityIndicator size="small" color="#00FF7F" />
+            <Text style={styles.pollingText}>Verifying your payment...</Text>
+          </View>
+        )}
 
         <Text style={styles.title}>Upgrade to Premium</Text>
 
@@ -445,6 +481,22 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 16,
     marginTop: 16,
+  },
+  pollingBanner: {
+    backgroundColor: "#1f1f1f",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#00FF7F",
+  },
+  pollingText: {
+    color: "#00FF7F",
+    fontSize: 16,
+    fontWeight: "600",
   },
   currentSubBanner: {
     backgroundColor: "#1f1f1f",
