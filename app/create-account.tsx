@@ -375,7 +375,6 @@ const styles = StyleSheet.create({
   strengthFill: {
     height: "100%",
     borderRadius: 3,
-    transition: "width 0.3s ease",
   },
   strengthWeak: {
     width: "33%",

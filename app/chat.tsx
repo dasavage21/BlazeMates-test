@@ -692,7 +692,7 @@ export default function ChatScreen() {
       return;
     }
 
-    const confirmBlock = Platform.OS === 'web'
+    const confirmBlock = Platform.OS === 'web' && typeof window !== 'undefined'
       ? window.confirm(`Are you sure you want to block ${otherUserName || "this user"}? You won't be able to message each other.`)
       : await new Promise<boolean>((resolve) => {
           Alert.alert(
@@ -717,7 +717,7 @@ export default function ChatScreen() {
 
       if (error) {
         console.error("Block error:", error);
-        if (Platform.OS === 'web') {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
           window.alert("Failed to block user. Please try again.");
         } else {
           Alert.alert("Error", "Failed to block user. Please try again.");
@@ -726,14 +726,14 @@ export default function ChatScreen() {
       }
 
       setIsBlocked(true);
-      if (Platform.OS === 'web') {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert("You have blocked this user.");
       } else {
         Alert.alert("User Blocked", "You have blocked this user.");
       }
     } catch (error) {
       console.error("Failed to block user:", error);
-      if (Platform.OS === 'web') {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert("Something went wrong. Please try again.");
       } else {
         Alert.alert("Error", "Something went wrong. Please try again.");
@@ -749,7 +749,7 @@ export default function ChatScreen() {
 
     let reason: string | null = null;
 
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const choice = window.prompt(
         "Why are you reporting this user?\n\n1 - Harassment\n2 - Spam\n3 - Inappropriate Content\n\nEnter the number (1-3):"
       );
@@ -794,7 +794,7 @@ export default function ChatScreen() {
 
       if (error) {
         console.error("Report error:", error);
-        if (Platform.OS === 'web') {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
           window.alert("Failed to submit report. Please try again.");
         } else {
           Alert.alert("Error", "Failed to submit report. Please try again.");
@@ -802,14 +802,14 @@ export default function ChatScreen() {
         return;
       }
 
-      if (Platform.OS === 'web') {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert("Thank you for helping keep BlazeMates safe.");
       } else {
         Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
       }
     } catch (error) {
       console.error("Failed to report user:", error);
-      if (Platform.OS === 'web') {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert("Something went wrong. Please try again.");
       } else {
         Alert.alert("Error", "Something went wrong. Please try again.");

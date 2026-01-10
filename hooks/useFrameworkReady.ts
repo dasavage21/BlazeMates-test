@@ -10,7 +10,7 @@ export function useFrameworkReady() {
     async function prepare() {
       try {
         // Give the app a moment to initialize
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise<void>(resolve => setTimeout(resolve, 100));
       } catch (e) {
         console.warn(e);
       } finally {

@@ -270,7 +270,7 @@ export default function SwipeScreen() {
 
   const likedUsersRef = useRef<string[]>([]);
   const passedUsersRef = useRef<string[]>([]);
-  const myUserIdRef = useRef<string | undefined>();
+  const myUserIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     likedUsersRef.current = likedUsers;
@@ -800,7 +800,12 @@ export default function SwipeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       {siteStatus.enabled && (
-        <View style={[styles.statusBanner, styles[`statusBanner${siteStatus.type.charAt(0).toUpperCase() + siteStatus.type.slice(1)}`]]}>
+        <View style={[
+          styles.statusBanner,
+          siteStatus.type === 'warning' && styles.statusBannerWarning,
+          siteStatus.type === 'info' && styles.statusBannerInfo,
+          siteStatus.type === 'error' && styles.statusBannerError,
+        ]}>
           <Text style={styles.statusText}>{siteStatus.message}</Text>
         </View>
       )}

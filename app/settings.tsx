@@ -129,7 +129,7 @@ export default function SettingsScreen() {
       }
     };
 
-    if (Platform.OS === "web") {
+    if (Platform.OS === "web" && typeof window !== 'undefined') {
       const confirmDelete = window.confirm(
         "Are you sure you want to delete your BlazeMates account? This cannot be undone."
       );

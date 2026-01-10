@@ -87,7 +87,12 @@ export default function ProfileEditScreen() {
         const base64 = await FileSystem.readAsStringAsync(localUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
-        bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+        // Simple base64 to Uint8Array conversion
+        const binaryLen = base64.length;
+        bytes = new Uint8Array(binaryLen);
+        for (let i = 0; i < binaryLen; i++) {
+          bytes[i] = base64.charCodeAt(i);
+        }
       }
 
       let { error: uploadErr } = await supabase.storage

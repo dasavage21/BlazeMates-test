@@ -2,6 +2,9 @@
  * SHA-1 hash implementation for React Native
  */
 async function sha1(message: string): Promise<string> {
+  if (typeof TextEncoder === 'undefined' || typeof crypto === 'undefined') {
+    throw new Error('TextEncoder or crypto not available in this environment');
+  }
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));

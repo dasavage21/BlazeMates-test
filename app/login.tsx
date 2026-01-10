@@ -167,7 +167,12 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {siteStatus.enabled && (
-        <View style={[styles.statusBanner, styles[`statusBanner${siteStatus.type.charAt(0).toUpperCase() + siteStatus.type.slice(1)}`]]}>
+        <View style={[
+          styles.statusBanner,
+          siteStatus.type === 'warning' && styles.statusBannerWarning,
+          siteStatus.type === 'info' && styles.statusBannerInfo,
+          siteStatus.type === 'error' && styles.statusBannerError,
+        ]}>
           <Text style={styles.statusText}>{siteStatus.message}</Text>
         </View>
       )}
