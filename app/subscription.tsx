@@ -372,7 +372,7 @@ export default function SubscriptionScreen() {
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>⭐</Text>
-              <Text style={styles.featureText}>Profile boost (1 per week) - Coming Soon</Text>
+              <Text style={styles.featureText}>Profile boost (1 per week)</Text>
             </View>
           </View>
 

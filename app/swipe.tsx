@@ -74,6 +74,7 @@ type Profile = {
   image: string;
   subscriptionTier: string | null;
   subscriptionStatus: string | null;
+  isBoosted: boolean;
 };
 
 type SupaUser = {
@@ -87,6 +88,7 @@ type SupaUser = {
   image_url: string | null;
   subscription_tier: string | null;
   subscription_status: string | null;
+  boost_active_until: string | null;
 };
 
 function SwipeCard({
@@ -207,6 +209,12 @@ function SwipeCard({
         <Animated.View style={[styles.nopeStamp, nopeOpacity]}>
           <Text style={styles.nopeText}>NOPE</Text>
         </Animated.View>
+
+        {profile.isBoosted && (
+          <View style={styles.boostBadge}>
+            <Text style={styles.boostBadgeText}>⚡ BOOSTED</Text>
+          </View>
+        )}
 
         <View style={styles.cardInfo}>
           <View style={styles.row}>
@@ -413,7 +421,7 @@ export default function SwipeScreen() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier,subscription_status")
+        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier,subscription_status,boost_active_until")
         .eq("is_suspended", false)
         .not("name", "is", null)
         .not("age", "is", null);
@@ -451,6 +459,7 @@ export default function SwipeScreen() {
             : PLACEHOLDER_300,
         subscriptionTier: u.subscription_tier,
         subscriptionStatus: u.subscription_status,
+        isBoosted: u.boost_active_until ? new Date(u.boost_active_until) > new Date() : false,
       }));
 
       const filtered = everyone
@@ -462,7 +471,12 @@ export default function SwipeScreen() {
             userLookingFor === "both" ||
             p.lookingFor === userLookingFor ||
             p.lookingFor === "both"
-        );
+        )
+        .sort((a, b) => {
+          if (a.isBoosted && !b.isBoosted) return -1;
+          if (!a.isBoosted && b.isBoosted) return 1;
+          return 0;
+        });
 
       setProfiles(filtered);
       setIndex(0);
@@ -519,6 +533,7 @@ export default function SwipeScreen() {
                   : PLACEHOLDER_300,
               subscriptionTier: newUser.subscription_tier,
               subscriptionStatus: newUser.subscription_status,
+              isBoosted: newUser.boost_active_until ? new Date(newUser.boost_active_until) > new Date() : false,
             };
 
             const lookingForMatches =
@@ -528,7 +543,14 @@ export default function SwipeScreen() {
 
             if (lookingForMatches) {
               console.log("Adding new user to profiles:", newProfile.name);
-              setProfiles((prev) => [...prev, newProfile]);
+              setProfiles((prev) => {
+                const updated = [...prev, newProfile];
+                return updated.sort((a, b) => {
+                  if (a.isBoosted && !b.isBoosted) return -1;
+                  if (!a.isBoosted && b.isBoosted) return 1;
+                  return 0;
+                });
+              });
             } else {
               console.log("Skipping - looking_for doesn't match");
             }
@@ -564,8 +586,8 @@ export default function SwipeScreen() {
               return;
             }
 
-            setProfiles((prev) =>
-              prev.map((profile) => {
+            setProfiles((prev) => {
+              const updated = prev.map((profile) => {
                 if (profile.id === updatedUser.id) {
                   console.log("Updating profile for:", updatedUser.name);
                   return {
@@ -583,11 +605,17 @@ export default function SwipeScreen() {
                         : PLACEHOLDER_300,
                     subscriptionTier: updatedUser.subscription_tier,
                     subscriptionStatus: updatedUser.subscription_status,
+                    isBoosted: updatedUser.boost_active_until ? new Date(updatedUser.boost_active_until) > new Date() : false,
                   };
                 }
                 return profile;
-              })
-            );
+              });
+              return updated.sort((a, b) => {
+                if (a.isBoosted && !b.isBoosted) return -1;
+                if (!a.isBoosted && b.isBoosted) return 1;
+                return 0;
+              });
+            });
           }
         )
         .subscribe((status) => {
@@ -1160,6 +1188,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FF3B5C",
     letterSpacing: 2,
+  },
+  boostBadge: {
+    position: "absolute",
+    top: isSmallPhone ? 12 : 16,
+    right: isSmallPhone ? 12 : 16,
+    backgroundColor: "rgba(255, 215, 0, 0.95)",
+    paddingHorizontal: isSmallPhone ? 8 : 10,
+    paddingVertical: isSmallPhone ? 4 : 6,
+    borderRadius: 12,
+    zIndex: 10,
+    borderWidth: 1,
+    borderColor: "#FFD700",
+  },
+  boostBadgeText: {
+    fontSize: isSmallPhone ? 10 : 11,
+    fontWeight: "bold",
+    color: "#000",
+    letterSpacing: 0.5,
   },
   buttonRow: {
     flexDirection: "row",
