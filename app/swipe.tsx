@@ -414,7 +414,9 @@ export default function SwipeScreen() {
       const { data, error } = await supabase
         .from("users")
         .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier,subscription_status")
-        .eq("is_suspended", false);
+        .eq("is_suspended", false)
+        .not("name", "is", null)
+        .not("age", "is", null);
 
       if (error) {
         console.error("Failed to fetch users:", error);
@@ -498,6 +500,11 @@ export default function SwipeScreen() {
               return;
             }
 
+            if (!newUser.name || !newUser.age) {
+              console.log("Skipping - incomplete profile (missing name or age)");
+              return;
+            }
+
             const newProfile: Profile = {
               id: newUser.id,
               name: newUser.name ?? "—",
@@ -547,6 +554,12 @@ export default function SwipeScreen() {
 
             if (updatedUser.is_suspended === true) {
               console.log("Removing suspended user from profiles");
+              setProfiles((prev) => prev.filter((p) => p.id !== updatedUser.id));
+              return;
+            }
+
+            if (!updatedUser.name || !updatedUser.age) {
+              console.log("Removing user with incomplete profile from feed");
               setProfiles((prev) => prev.filter((p) => p.id !== updatedUser.id));
               return;
             }
