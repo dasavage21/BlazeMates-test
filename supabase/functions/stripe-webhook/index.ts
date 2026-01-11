@@ -224,6 +224,10 @@ async function syncCustomerFromStripe(customerId: string) {
       const PRICE_ID_PLUS = Deno.env.get('STRIPE_PRICE_ID_PLUS');
       const PRICE_ID_PRO = Deno.env.get('STRIPE_PRICE_ID_PRO');
 
+      console.info(`[Webhook Debug] Price ID from subscription: ${priceId}`);
+      console.info(`[Webhook Debug] PRICE_ID_PLUS from env: ${PRICE_ID_PLUS}`);
+      console.info(`[Webhook Debug] PRICE_ID_PRO from env: ${PRICE_ID_PRO}`);
+
       let tier = 'free';
       if (isActive) {
         if (priceId === PRICE_ID_PLUS) {
@@ -232,6 +236,8 @@ async function syncCustomerFromStripe(customerId: string) {
           tier = 'pro';
         }
       }
+
+      console.info(`[Webhook Debug] Determined tier: ${tier}`);
 
       const { error: userError } = await supabase
         .from('users')
