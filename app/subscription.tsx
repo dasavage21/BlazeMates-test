@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import * as WebBrowser from "expo-web-browser";
 import { supabase } from "../supabaseClient";
 
@@ -30,76 +30,13 @@ export default function SubscriptionScreen() {
     expiresAt: null,
   });
   const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    loadCurrentSubscription();
-
-    // Check for success/cancel params from Stripe redirect (web only)
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const success = params.get('success');
-      const canceled = params.get('canceled');
-
-      if (success === 'true') {
-        // Poll for subscription update after successful payment
-        setPollingPayment(true);
-        let pollAttempts = 0;
-        const maxPolls = 10;
-
-        const pollSubscription = async () => {
-          pollAttempts++;
-          const { data: { session } } = await supabase.auth.getSession();
-
-          if (session) {
-            const { data: updatedUser } = await supabase
-              .from("users")
-              .select("subscription_status, subscription_tier")
-              .eq("id", session.user.id)
-              .maybeSingle();
-
-            if (updatedUser?.subscription_status === 'active') {
-              setPollingPayment(false);
-              await loadCurrentSubscription();
-              Alert.alert("Success!", "Your subscription is now active. Enjoy your premium features!");
-              // Clean URL
-              window.history.replaceState({}, '', '/subscription');
-              return;
-            }
-          }
-
-          if (pollAttempts < maxPolls) {
-            setTimeout(pollSubscription, 2000);
-          } else {
-            setPollingPayment(false);
-            await loadCurrentSubscription();
-            Alert.alert("Payment Processing", "Your payment is being processed. It may take a few minutes to activate. Please check back shortly.");
-            window.history.replaceState({}, '', '/subscription');
-          }
-        };
-
-        setTimeout(pollSubscription, 1000);
-      } else if (canceled === 'true') {
-        Alert.alert("Canceled", "Subscription checkout was canceled.");
-        window.history.replaceState({}, '', '/subscription');
-      }
-    }
-
-    // Reload subscription when screen comes back into focus (for mobile deep links)
-    const subscription = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        loadCurrentSubscription();
-      }
-    });
-
-    return () => {
-      subscription.data.subscription.unsubscribe();
-    };
-  }, []);
-
-  const loadCurrentSubscription = async () => {
+  const loadCurrentSubscription = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      if (!session || !isMountedRef.current) {
         setCheckingSubscription(false);
         return;
       }
@@ -110,7 +47,7 @@ export default function SubscriptionScreen() {
         .eq("id", session.user.id)
         .maybeSingle();
 
-      if (!error && data) {
+      if (!error && data && isMountedRef.current) {
         setCurrentSubscription({
           tier: data.subscription_tier,
           status: data.subscription_status,
@@ -120,9 +57,81 @@ export default function SubscriptionScreen() {
     } catch (error) {
       console.error("Error loading subscription:", error);
     } finally {
-      setCheckingSubscription(false);
+      if (isMountedRef.current) {
+        setCheckingSubscription(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    loadCurrentSubscription();
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const success = params.get('success');
+      const canceled = params.get('canceled');
+
+      if (success === 'true') {
+        setPollingPayment(true);
+        let pollAttempts = 0;
+        const maxPolls = 10;
+
+        const pollSubscription = async () => {
+          if (!isMountedRef.current) return;
+
+          pollAttempts++;
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (session && isMountedRef.current) {
+            const { data: updatedUser } = await supabase
+              .from("users")
+              .select("subscription_status, subscription_tier")
+              .eq("id", session.user.id)
+              .maybeSingle();
+
+            if (updatedUser?.subscription_status === 'active') {
+              if (isMountedRef.current) {
+                setPollingPayment(false);
+                await loadCurrentSubscription();
+                Alert.alert("Success!", "Your subscription is now active. Enjoy your premium features!");
+                window.history.replaceState({}, '', '/subscription');
+              }
+              return;
+            }
+          }
+
+          if (pollAttempts < maxPolls && isMountedRef.current) {
+            pollingTimeoutRef.current = setTimeout(pollSubscription, 2000);
+          } else if (isMountedRef.current) {
+            setPollingPayment(false);
+            await loadCurrentSubscription();
+            Alert.alert("Payment Processing", "Your payment is being processed. It may take a few minutes to activate. Please check back shortly.");
+            window.history.replaceState({}, '', '/subscription');
+          }
+        };
+
+        pollingTimeoutRef.current = setTimeout(pollSubscription, 1000);
+      } else if (canceled === 'true') {
+        Alert.alert("Canceled", "Subscription checkout was canceled.");
+        window.history.replaceState({}, '', '/subscription');
+      }
+    }
+
+    const subscription = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && isMountedRef.current) {
+        loadCurrentSubscription();
+      }
+    });
+
+    return () => {
+      isMountedRef.current = false;
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+      subscription.data.subscription.unsubscribe();
+    };
+  }, [loadCurrentSubscription]);
 
   const proceedWithSubscription = useCallback(async (tier: "plus" | "pro") => {
     try {
