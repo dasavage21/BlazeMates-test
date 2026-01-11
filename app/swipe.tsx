@@ -376,6 +376,13 @@ export default function SwipeScreen() {
   }, [PLACEHOLDER_50]);
 
   useEffect(() => {
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Profile loading timeout - forcing completion");
+        setLoading(false);
+      }
+    }, 10000);
+
     const init = async () => {
       const ageStored = await AsyncStorage.getItem("userAge");
       if (ageStored) setUserAge(parseInt(ageStored, 10));
@@ -637,7 +644,13 @@ export default function SwipeScreen() {
       console.error("Failed to initialize swipe screen:", err);
       setLoading(false);
       setProfiles([]);
+    }).finally(() => {
+      clearTimeout(loadingTimeout);
     });
+
+    return () => {
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   useEffect(() => {
