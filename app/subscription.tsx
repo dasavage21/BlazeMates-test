@@ -34,6 +34,56 @@ export default function SubscriptionScreen() {
   useEffect(() => {
     loadCurrentSubscription();
 
+    // Check for success/cancel params from Stripe redirect (web only)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const success = params.get('success');
+      const canceled = params.get('canceled');
+
+      if (success === 'true') {
+        // Poll for subscription update after successful payment
+        setPollingPayment(true);
+        let pollAttempts = 0;
+        const maxPolls = 10;
+
+        const pollSubscription = async () => {
+          pollAttempts++;
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (session) {
+            const { data: updatedUser } = await supabase
+              .from("users")
+              .select("subscription_status, subscription_tier")
+              .eq("id", session.user.id)
+              .maybeSingle();
+
+            if (updatedUser?.subscription_status === 'active') {
+              setPollingPayment(false);
+              await loadCurrentSubscription();
+              Alert.alert("Success!", "Your subscription is now active. Enjoy your premium features!");
+              // Clean URL
+              window.history.replaceState({}, '', '/subscription');
+              return;
+            }
+          }
+
+          if (pollAttempts < maxPolls) {
+            setTimeout(pollSubscription, 2000);
+          } else {
+            setPollingPayment(false);
+            await loadCurrentSubscription();
+            Alert.alert("Payment Processing", "Your payment is being processed. It may take a few minutes to activate. Please check back shortly.");
+            window.history.replaceState({}, '', '/subscription');
+          }
+        };
+
+        setTimeout(pollSubscription, 1000);
+      } else if (canceled === 'true') {
+        Alert.alert("Canceled", "Subscription checkout was canceled.");
+        window.history.replaceState({}, '', '/subscription');
+      }
+    }
+
     // Reload subscription when screen comes back into focus (for mobile deep links)
     const subscription = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -165,8 +215,10 @@ export default function SubscriptionScreen() {
       if (data.url) {
         console.log(`[Subscription] Opening checkout URL`);
         if (Platform.OS === 'web') {
-          // On web, use Linking to navigate
-          await Linking.openURL(data.url);
+          // On web, open in a new window so user can come back easily
+          if (typeof window !== 'undefined') {
+            window.open(data.url, '_blank');
+          }
         } else {
           // On mobile, use WebBrowser for in-app browser
           const result = await WebBrowser.openBrowserAsync(data.url, {
@@ -270,7 +322,13 @@ export default function SubscriptionScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.push('/profile');
+            }
+          }}
         >
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
