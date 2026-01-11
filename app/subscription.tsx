@@ -124,25 +124,11 @@ export default function SubscriptionScreen() {
     }
   };
 
-  const handleSubscribe = async (tier: "plus" | "pro") => {
-    console.log(`[Subscription] Starting subscription flow for tier: ${tier}`);
-
-    // Check if user already has an active subscription
-    if (currentSubscription.status === "active" &&
-        (currentSubscription.tier === "plus" || currentSubscription.tier === "pro" || currentSubscription.tier === "blaze_plus" || currentSubscription.tier === "blaze_og")) {
-      const currentTierName = currentSubscription.tier === "plus" || currentSubscription.tier === "blaze_plus" ? "Blaze+" : "Blaze Pro";
-      Alert.alert(
-        "Already Subscribed",
-        `You already have an active ${currentTierName} subscription. Please cancel your current subscription before subscribing to a different plan.`
-      );
-      return;
-    }
-
+  const proceedWithSubscription = useCallback(async (tier: "plus" | "pro") => {
     try {
       setLoading(tier);
 
       const { data: { session } } = await supabase.auth.getSession();
-      console.log(`[Subscription] Session check:`, session ? "Valid session" : "No session");
 
       if (!session) {
         Alert.alert("Error", "You must be logged in to subscribe");
@@ -154,16 +140,7 @@ export default function SubscriptionScreen() {
         pro: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PRO || "",
       };
 
-      console.log(`[Subscription] All env vars:`, {
-        plus: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PLUS,
-        pro: process.env.EXPO_PUBLIC_STRIPE_PRICE_ID_PRO,
-        supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-      });
-      console.log(`[Subscription] Price ID for ${tier}:`, priceIds[tier]);
-      console.log(`[Subscription] Price ID is empty?`, !priceIds[tier]);
-
       if (!priceIds[tier]) {
-        console.error("[Subscription] Price ID is empty - showing alert");
         Alert.alert(
           "Configuration Error",
           "Subscription pricing not configured. Please contact support."
@@ -171,18 +148,11 @@ export default function SubscriptionScreen() {
         return;
       }
 
-      // For mobile, use a web URL that can be opened in the in-app browser
-      // The user will close the browser manually after seeing the success message
       const baseUrl = Platform.OS === "web"
         ? (typeof window !== "undefined" ? window.location.origin : "")
         : `https://${process.env.EXPO_PUBLIC_SUPABASE_URL?.replace(/^https?:\/\//, '')}` || "";
 
-      console.log(`[Subscription] Base URL:`, baseUrl);
-
       const functionUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`;
-      console.log(`[Subscription] Calling edge function:`, functionUrl);
-
-      // Create success/cancel URLs
       const successUrl = Platform.OS === 'web'
         ? `${baseUrl}/profile?success=true`
         : `${baseUrl}/subscription?success=true&mobile=true`;
@@ -227,22 +197,18 @@ export default function SubscriptionScreen() {
             controlsColor: '#00FF7F',
           });
 
-          console.log('[Subscription] WebBrowser result:', result);
-
-          // After browser closes, poll for subscription status
-          // Stripe webhook can take several seconds to process
-          if (result.type === 'dismiss') {
+          if (result.type === 'dismiss' && isMountedRef.current) {
             setPollingPayment(true);
             let pollAttempts = 0;
             const maxPolls = 10;
-            const pollInterval = 2000;
 
             const pollSubscription = async () => {
-              pollAttempts++;
-              console.log(`[Subscription] Polling attempt ${pollAttempts}/${maxPolls}`);
+              if (!isMountedRef.current) return;
 
+              pollAttempts++;
               const { data: { session: checkSession } } = await supabase.auth.getSession();
-              if (checkSession) {
+
+              if (checkSession && isMountedRef.current) {
                 const { data: updatedUser } = await supabase
                   .from("users")
                   .select("subscription_status, subscription_tier")
@@ -250,22 +216,21 @@ export default function SubscriptionScreen() {
                   .maybeSingle();
 
                 if (updatedUser?.subscription_status === 'active') {
-                  console.log('[Subscription] Subscription activated!');
-                  setPollingPayment(false);
-                  await loadCurrentSubscription();
-                  Alert.alert(
-                    "Success!",
-                    "Your subscription is now active. Enjoy your premium features!"
-                  );
-                  return true;
+                  if (isMountedRef.current) {
+                    setPollingPayment(false);
+                    await loadCurrentSubscription();
+                    Alert.alert(
+                      "Success!",
+                      "Your subscription is now active. Enjoy your premium features!"
+                    );
+                  }
+                  return;
                 }
               }
 
-              // Continue polling if not active and haven't exceeded max attempts
-              if (pollAttempts < maxPolls) {
-                setTimeout(pollSubscription, pollInterval);
-              } else {
-                console.log('[Subscription] Max poll attempts reached');
+              if (pollAttempts < maxPolls && isMountedRef.current) {
+                pollingTimeoutRef.current = setTimeout(pollSubscription, 2000);
+              } else if (isMountedRef.current) {
                 setPollingPayment(false);
                 await loadCurrentSubscription();
                 Alert.alert(
@@ -273,22 +238,17 @@ export default function SubscriptionScreen() {
                   "Your payment is being processed. It may take a few minutes to activate. Please check back shortly."
                 );
               }
-              return false;
             };
 
-            // Start polling after 2 seconds
-            setTimeout(pollSubscription, 2000);
-          } else {
-            // User canceled, just refresh
+            pollingTimeoutRef.current = setTimeout(pollSubscription, 2000);
+          } else if (isMountedRef.current) {
             await loadCurrentSubscription();
           }
         }
       } else {
-        console.error("[Subscription] No URL in response");
         Alert.alert("Error", "No checkout URL returned from server");
       }
     } catch (error) {
-      console.error("[Subscription] Subscribe error:", error);
       Alert.alert(
         "Error",
         error instanceof Error ? error.message : "Failed to start checkout"
@@ -296,9 +256,47 @@ export default function SubscriptionScreen() {
     } finally {
       setLoading(null);
     }
-  };
+  }, [loadCurrentSubscription]);
 
-  const isCurrentlySubscribed = (tier: "plus" | "pro") => {
+  const handleSubscribe = useCallback(async (tier: "plus" | "pro") => {
+    if (currentSubscription.status === "active") {
+      const currentTier = currentSubscription.tier;
+
+      if ((tier === "plus" && (currentTier === "plus" || currentTier === "blaze_plus")) ||
+          (tier === "pro" && (currentTier === "pro" || currentTier === "blaze_og" || currentTier === "blaze_pro"))) {
+        const tierName = tier === "plus" ? "Blaze+" : "Blaze Pro";
+        Alert.alert(
+          "Already Subscribed",
+          `You already have an active ${tierName} subscription.`
+        );
+        return;
+      }
+
+      if (tier === "pro" && (currentTier === "plus" || currentTier === "blaze_plus")) {
+        Alert.alert(
+          "Upgrade to Blaze Pro",
+          "You'll be upgraded to Blaze Pro. Your Blaze+ subscription will be canceled and you'll be charged the Pro rate.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Upgrade", onPress: () => proceedWithSubscription(tier) }
+          ]
+        );
+        return;
+      }
+
+      if (tier === "plus" && (currentTier === "pro" || currentTier === "blaze_og" || currentTier === "blaze_pro")) {
+        Alert.alert(
+          "Cannot Downgrade",
+          "Please cancel your Blaze Pro subscription first before subscribing to Blaze+."
+        );
+        return;
+      }
+    }
+
+    await proceedWithSubscription(tier);
+  }, [currentSubscription, proceedWithSubscription]);
+
+  const isCurrentlySubscribed = useCallback((tier: "plus" | "pro") => {
     if (currentSubscription.status !== "active") return false;
 
     if (tier === "plus") {
@@ -306,7 +304,7 @@ export default function SubscriptionScreen() {
     } else {
       return currentSubscription.tier === "pro" || currentSubscription.tier === "blaze_og" || currentSubscription.tier === "blaze_pro";
     }
-  };
+  }, [currentSubscription]);
 
   if (checkingSubscription) {
     return (
