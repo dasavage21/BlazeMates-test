@@ -110,9 +110,36 @@ Deno.serve(async (req: Request) => {
       apiVersion: "2024-12-18.acacia",
     });
 
+    console.log("[Edge Function] Checking for existing subscription...");
+
+    // Check if user has an existing active subscription
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("subscription_status, subscription_tier, stripe_customer_id, stripe_subscription_id")
+      .eq("id", tokenUser.user.id)
+      .maybeSingle();
+
+    if (userError) {
+      console.error("[Edge Function] Error fetching user data:", userError);
+    }
+
+    console.log("[Edge Function] User subscription data:", userData);
+
+    // If user has an active subscription, cancel it before creating new one
+    if (userData?.subscription_status === "active" && userData?.stripe_subscription_id) {
+      console.log("[Edge Function] Canceling existing subscription:", userData.stripe_subscription_id);
+      try {
+        await stripe.subscriptions.cancel(userData.stripe_subscription_id);
+        console.log("[Edge Function] Existing subscription canceled successfully");
+      } catch (cancelError: any) {
+        console.error("[Edge Function] Error canceling subscription:", cancelError);
+        // Continue anyway - the subscription might already be canceled in Stripe
+      }
+    }
+
     console.log("[Edge Function] Creating Stripe checkout session...");
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: any = {
       payment_method_types: ["card"],
       line_items: [
         {
@@ -123,7 +150,6 @@ Deno.serve(async (req: Request) => {
       mode: "subscription",
       success_url: payload.successUrl,
       cancel_url: payload.cancelUrl,
-      customer_email: tokenUser.user.email,
       metadata: {
         user_id: tokenUser.user.id,
       },
@@ -132,7 +158,16 @@ Deno.serve(async (req: Request) => {
           user_id: tokenUser.user.id,
         },
       },
-    });
+    };
+
+    // If user already has a Stripe customer ID, reuse it
+    if (userData?.stripe_customer_id) {
+      sessionParams.customer = userData.stripe_customer_id;
+    } else {
+      sessionParams.customer_email = tokenUser.user.email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log("[Edge Function] Checkout session created:", session.id);
 
