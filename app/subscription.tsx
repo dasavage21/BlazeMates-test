@@ -267,6 +267,9 @@ export default function SubscriptionScreen() {
   }, [loadCurrentSubscription]);
 
   const handleSubscribe = useCallback(async (tier: "plus" | "pro") => {
+    console.log("[Subscription] handleSubscribe called with tier:", tier);
+    console.log("[Subscription] Current subscription:", currentSubscription);
+
     if (currentSubscription.status === "active") {
       const currentTier = currentSubscription.tier;
 
@@ -281,14 +284,22 @@ export default function SubscriptionScreen() {
       }
 
       if (tier === "pro" && (currentTier === "plus" || currentTier === "blaze_plus")) {
-        Alert.alert(
-          "Upgrade to Blaze Pro",
-          "You'll be upgraded to Blaze Pro. Your Blaze+ subscription will be canceled and you'll be charged the Pro rate.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Upgrade", onPress: () => proceedWithSubscription(tier) }
-          ]
-        );
+        console.log("[Subscription] Showing upgrade confirmation dialog");
+        if (Platform.OS === 'web') {
+          const confirmed = confirm("You'll be upgraded to Blaze Pro. Your Blaze+ subscription will be canceled and you'll be charged the Pro rate. Continue?");
+          if (confirmed) {
+            await proceedWithSubscription(tier);
+          }
+        } else {
+          Alert.alert(
+            "Upgrade to Blaze Pro",
+            "You'll be upgraded to Blaze Pro. Your Blaze+ subscription will be canceled and you'll be charged the Pro rate.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Upgrade", onPress: () => proceedWithSubscription(tier) }
+            ]
+          );
+        }
         return;
       }
 
@@ -301,6 +312,7 @@ export default function SubscriptionScreen() {
       }
     }
 
+    console.log("[Subscription] Proceeding with subscription");
     await proceedWithSubscription(tier);
   }, [currentSubscription, proceedWithSubscription]);
 
