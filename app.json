@@ -38,8 +38,12 @@
         "WRITE_EXTERNAL_STORAGE"
       ]
     },
-    "web": {
-      "output": "static"
+    "icon": "./app/assets/icon.png",
+"web": {
+  "output": "static",
+  "favicon": "./app/assets/icon.png"
+}
+
     },
     "owner": "hawkc13",
     "extra": {
