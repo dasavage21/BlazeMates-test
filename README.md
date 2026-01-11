@@ -1,70 +1,177 @@
-# BlazeMates
+# Supabase CLI
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/d4397514-1116-4d42-bc06-b7d42b100402/deploy-status)](https://app.netlify.com/projects/musical-sundae-407d59/deploys)
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
+](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
-BlazeMates is an Expo/React Native social discovery app built around cannabis-friendly connections. The project uses [Expo Router](https://docs.expo.dev/router/introduction/) for navigation and Supabase for authentication and data access.
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-## Platform Support
+This repository contains all the functionality for Supabase CLI.
 
-BlazeMates works on:
-- **Web browsers** - Chrome, Firefox, Safari, Edge
-- **iOS** - iPhone and iPad (iOS 13.4+)
-- **Android** - Phones and tablets (API 21+)
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-See [CROSS_PLATFORM.md](./CROSS_PLATFORM.md) for detailed compatibility information.
+## Getting started
 
-## Development
+### Install the CLI
 
-### Install Dependencies
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+
 ```bash
-npm install
+npm i supabase --save-dev
 ```
 
-### Run on Different Platforms
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
 
-**Web Browser:**
-```bash
-npm run web
 ```
-Opens at http://localhost:8081
-
-**iOS Simulator:**
-```bash
-npm run ios
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
 ```
-Requires macOS with Xcode
 
-**Android Emulator:**
+> **Note**
+For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+
+<details>
+  <summary><b>macOS</b></summary>
+
+  Available via [Homebrew](https://brew.sh). To install:
+
+  ```sh
+  brew install supabase/tap/supabase
+  ```
+
+  To install the beta release channel:
+  
+  ```sh
+  brew install supabase/tap/supabase-beta
+  brew link --overwrite supabase-beta
+  ```
+  
+  To upgrade:
+
+  ```sh
+  brew upgrade supabase
+  ```
+</details>
+
+<details>
+  <summary><b>Windows</b></summary>
+
+  Available via [Scoop](https://scoop.sh). To install:
+
+  ```powershell
+  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+  scoop install supabase
+  ```
+
+  To upgrade:
+
+  ```powershell
+  scoop update supabase
+  ```
+</details>
+
+<details>
+  <summary><b>Linux</b></summary>
+
+  Available via [Homebrew](https://brew.sh) and Linux packages.
+
+  #### via Homebrew
+
+  To install:
+
+  ```sh
+  brew install supabase/tap/supabase
+  ```
+
+  To upgrade:
+
+  ```sh
+  brew upgrade supabase
+  ```
+
+  #### via Linux packages
+
+  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
+
+  ```sh
+  sudo apk add --allow-untrusted <...>.apk
+  ```
+
+  ```sh
+  sudo dpkg -i <...>.deb
+  ```
+
+  ```sh
+  sudo rpm -i <...>.rpm
+  ```
+
+  ```sh
+  sudo pacman -U <...>.pkg.tar.zst
+  ```
+</details>
+
+<details>
+  <summary><b>Other Platforms</b></summary>
+
+  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+  ```sh
+  go install github.com/supabase/cli@latest
+  ```
+
+  Add a symlink to the binary in `$PATH` for easier access:
+
+  ```sh
+  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
+  ```
+
+  This works on other non-standard Linux distros.
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+  To install in your working directory:
+
+  ```bash
+  pkgx install supabase
+  ```
+
+  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
+</details>
+
+### Run the CLI
+
 ```bash
-npm run android
+supabase bootstrap
 ```
-Requires Android Studio
 
-**Choose Platform:**
+Or using npx:
+
 ```bash
-npm start
+npx supabase bootstrap
 ```
-Opens Expo Dev Tools
 
-### Additional Commands
-- Lint code: `npm run lint`
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
 
-The app source lives inside the `app/` directory and follows Expo Router's file-based routing conventions.
+## Docs
 
-## Policy & Compliance
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
 
-BlazeMates includes matchmaking features and must comply with Google Play's **Age-Restricted Content and Functionality** policy. The codebase now enforces an in-app age gate (`app/age-check.tsx`) and blocks any account identified as underage (`app/underage-blocked.tsx`), but you must also finish the required steps in Play Console so distribution is limited to verified adults.
+## Breaking changes
 
-### Configure Google Play to block minors
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
 
-1. Sign in to the [Google Play Console](https://play.google.com/console) and select the BlazeMates application.
-2. Navigate to **Policy > App content > Age-restricted content and functionality** and complete the new declaration. Answer **Yes** for matchmaking functionality and select **Block users below the legal age**.
-3. Still within **App content**, open **Target audience and content**, choose **Adults only (18+)**, and add a note under **Age-restricted content details** that BlazeMates is restricted to users 21 and older in supported regions.
-4. Under **Store presence > Main store listing**, highlight the 21+ restriction so the storefront clearly communicates it to users.
-5. In **Publishing overview**, submit the updated declarations after Google Play confirms that the age-based block is enabled.
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
 
-Document proof of compliance (screenshots or policy confirmation emails) alongside `child-safety.html` whenever you submit new builds.
+## Developing
 
-## Legal
+To run from source:
 
-This project is Copyright 2025 Benjamin Hawk. All rights reserved. See `LICENSE` for additional details.
+```sh
+# Go >= 1.22
+go run . help
+```
