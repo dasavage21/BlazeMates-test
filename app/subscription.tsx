@@ -30,7 +30,7 @@ export default function SubscriptionScreen() {
     expiresAt: null,
   });
   const [checkingSubscription, setCheckingSubscription] = useState(true);
-  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
 
   const loadCurrentSubscription = useCallback(async () => {
@@ -163,7 +163,7 @@ export default function SubscriptionScreen() {
 
       const functionUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`;
       const successUrl = Platform.OS === 'web'
-        ? `${baseUrl}/profile?success=true`
+        ? `${baseUrl}/subscription?success=true`
         : `${baseUrl}/subscription?success=true&mobile=true`;
 
       const cancelUrl = Platform.OS === 'web'
@@ -194,9 +194,8 @@ export default function SubscriptionScreen() {
       if (data.url) {
         console.log(`[Subscription] Opening checkout URL`);
         if (Platform.OS === 'web') {
-          // On web, open in a new window so user can come back easily
           if (typeof window !== 'undefined') {
-            window.open(data.url, '_blank');
+            window.location.href = data.url;
           }
         } else {
           // On mobile, use WebBrowser for in-app browser

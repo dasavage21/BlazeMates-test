@@ -106,34 +106,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if user already has an active subscription
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("subscription_tier, subscription_status")
-      .eq("id", tokenUser.user.id)
-      .maybeSingle();
-
-    if (userError) {
-      console.error("[Edge Function] Error checking user subscription:", userError);
-    }
-
-    if (userData?.subscription_status === "active" &&
-        (userData.subscription_tier === "plus" ||
-         userData.subscription_tier === "pro" ||
-         userData.subscription_tier === "blaze_plus" ||
-         userData.subscription_tier === "blaze_og")) {
-      console.log("[Edge Function] User already has an active subscription");
-      return new Response(
-        JSON.stringify({
-          error: "You already have an active subscription. Please cancel your current subscription before subscribing to a different plan."
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2024-12-18.acacia",
     });
