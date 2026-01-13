@@ -105,6 +105,43 @@ export default function EventsScreen() {
   useEffect(() => {
     loadEvents();
     updateUserActivity();
+
+    // Subscribe to realtime updates for smoke_sessions
+    const eventsSubscription = supabase
+      .channel("smoke_sessions_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "smoke_sessions",
+        },
+        () => {
+          loadEvents();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to realtime updates for session_attendees
+    const attendeesSubscription = supabase
+      .channel("session_attendees_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "session_attendees",
+        },
+        () => {
+          loadEvents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      eventsSubscription.unsubscribe();
+      attendeesSubscription.unsubscribe();
+    };
   }, [loadEvents]);
 
   const handleCreateEvent = async () => {
