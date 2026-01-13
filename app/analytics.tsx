@@ -20,10 +20,59 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadAnalytics();
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const analyticsChannel = supabase
+      .channel('analytics-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscription_analytics',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          loadAnalytics();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'likes',
+          filter: `liked_user_id=eq.${userId}`,
+        },
+        () => {
+          loadAnalytics();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'profile_views',
+          filter: `viewed_user_id=eq.${userId}`,
+        },
+        () => {
+          loadAnalytics();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(analyticsChannel);
+    };
+  }, [userId]);
 
   const loadAnalytics = async () => {
     try {
@@ -34,6 +83,10 @@ export default function Analytics() {
       if (!authUser) {
         router.replace('/login');
         return;
+      }
+
+      if (!userId) {
+        setUserId(authUser.id);
       }
 
       const { data: userData, error: userError } = await supabase
