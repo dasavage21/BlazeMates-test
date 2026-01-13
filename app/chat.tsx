@@ -1051,7 +1051,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   headerSubtitle: {
-    color: "#888",
+    color: "#00FF7F",
     marginTop: 4,
     fontSize: 13,
   },
@@ -1159,7 +1159,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     letterSpacing: 0.3,
   },
-  metaOther: { color: "#999" },
+  metaOther: { color: "#bbb" },
   metaSelf: { color: "#ffffff", opacity: 0.75 },
   receiptRow: {
     flexDirection: "row",
@@ -1221,7 +1221,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f0f",
   },
   lockedText: {
-    color: "#999",
+    color: "#ddd",
     fontSize: 16,
     textAlign: "center",
     lineHeight: 24,
@@ -1235,7 +1235,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   empty: {
-    color: "#666",
+    color: "#999",
     textAlign: "center",
     marginVertical: 24,
     fontSize: 15,
