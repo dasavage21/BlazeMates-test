@@ -694,7 +694,7 @@ export default function SwipeScreen() {
             viewed_user_id: current.id,
           });
 
-        if (error && !error.message.includes('duplicate')) {
+        if (error && !error.message.includes('duplicate') && !error.code?.includes('23505')) {
           console.error('Failed to track profile view:', error);
         }
       } catch (err) {
