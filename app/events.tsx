@@ -113,7 +113,21 @@ export default function EventsScreen() {
       return;
     }
     if (!newEventDate.trim() || !newEventTime.trim()) {
-      Alert.alert("Error", "Please enter date and time (YYYY-MM-DD HH:MM)");
+      Alert.alert("Error", "Please enter both date and time");
+      return;
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(newEventDate)) {
+      Alert.alert("Invalid Date", "Please use format: YYYY-MM-DD\nExample: 2026-02-15");
+      return;
+    }
+
+    // Validate time format (HH:MM in 24h)
+    const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
+    if (!timeRegex.test(newEventTime)) {
+      Alert.alert("Invalid Time", "Please use 24-hour format: HH:MM\nExample: 14:30 (for 2:30 PM)\nHours: 00-23, Minutes: 00-59");
       return;
     }
 
@@ -129,7 +143,13 @@ export default function EventsScreen() {
       const scheduledAt = `${newEventDate}T${newEventTime}:00`;
       const scheduledDate = new Date(scheduledAt);
       if (isNaN(scheduledDate.getTime())) {
-        Alert.alert("Error", "Invalid date/time format");
+        Alert.alert("Error", "Invalid date or time entered");
+        return;
+      }
+
+      // Check if date is in the past
+      if (scheduledDate < new Date()) {
+        Alert.alert("Error", "Cannot create events in the past");
         return;
       }
 
@@ -335,20 +355,41 @@ export default function EventsScreen() {
                 onChangeText={setNewEventLocation}
               />
               <Text style={styles.inputLabel}>Date & Time:</Text>
+              <Text style={styles.helperText}>Use 24-hour format. Example: 14:30 = 2:30 PM</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Date (YYYY-MM-DD)"
+                placeholder="Date: 2026-02-15"
                 placeholderTextColor="#888"
                 value={newEventDate}
                 onChangeText={setNewEventDate}
+                autoCapitalize="none"
+                keyboardType="numbers-and-punctuation"
               />
               <TextInput
                 style={styles.input}
-                placeholder="Time (HH:MM in 24h format)"
+                placeholder="Time: 14:30 (hours 00-23)"
                 placeholderTextColor="#888"
                 value={newEventTime}
                 onChangeText={setNewEventTime}
+                autoCapitalize="none"
+                keyboardType="numbers-and-punctuation"
+                maxLength={5}
               />
+              <TouchableOpacity
+                style={styles.quickFillButton}
+                onPress={() => {
+                  const now = new Date();
+                  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                  const dateStr = tomorrow.toISOString().split('T')[0];
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const timeStr = `${hours}:${minutes}`;
+                  setNewEventDate(dateStr);
+                  setNewEventTime(timeStr);
+                }}
+              >
+                <Text style={styles.quickFillText}>📅 Set to Tomorrow at Current Time</Text>
+              </TouchableOpacity>
               <View style={styles.modalButtons}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -518,8 +559,14 @@ const styles = StyleSheet.create({
     color: "#00FF7F",
     fontSize: 14,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 4,
     marginTop: 8,
+  },
+  helperText: {
+    color: "#888",
+    fontSize: 12,
+    marginBottom: 8,
+    fontStyle: "italic",
   },
   input: {
     backgroundColor: "#121212",
@@ -530,6 +577,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#333",
+  },
+  quickFillButton: {
+    backgroundColor: "#2a2a2a",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  quickFillText: {
+    color: "#00FF7F",
+    fontSize: 13,
+    fontWeight: "500",
+    textAlign: "center",
   },
   textArea: {
     height: 80,
