@@ -275,9 +275,7 @@ export default function SwipeScreen() {
   const [skipCount, setSkipCount] = useState(0);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
-  const [swipesRemaining, setSwipesRemaining] = useState<number>(-1);
   const [isPremium, setIsPremium] = useState(false);
-  const [showLimitReached, setShowLimitReached] = useState(false);
   const [lastSwipeAction, setLastSwipeAction] = useState<{
     type: "like" | "pass";
     userId: string;
@@ -319,31 +317,32 @@ export default function SwipeScreen() {
     fetchSiteStatus().then(setSiteStatus);
   }, []);
 
-  const checkDailyLimit = useCallback(async () => {
+  const checkPremiumStatus = useCallback(async () => {
     try {
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
 
       if (!myUserId) return;
 
-      const { data, error } = await supabase.rpc("check_and_reset_daily_swipes", {
-        p_user_id: myUserId,
-      });
+      const { data, error } = await supabase
+        .from("users")
+        .select("subscription_tier, subscription_status")
+        .eq("id", myUserId)
+        .maybeSingle();
 
       if (error) {
-        console.error("Failed to check daily limit:", error);
+        console.error("Failed to check premium status:", error);
         return;
       }
 
-      if (data && data.length > 0) {
-        const { swipes_remaining, is_premium } = data[0];
-        setSwipesRemaining(swipes_remaining);
+      if (data) {
+        const is_premium = data.subscription_status === "active" &&
+          (data.subscription_tier === "supporter" || data.subscription_tier === "enthusiast");
         setIsPremium(is_premium);
-        setShowLimitReached(!is_premium && swipes_remaining <= 0);
         setCanUndo(is_premium);
       }
     } catch (error) {
-      console.error("Error checking daily limit:", error);
+      console.error("Error checking premium status:", error);
     }
   }, []);
 
@@ -645,8 +644,8 @@ export default function SwipeScreen() {
 
   useEffect(() => {
     loadHeaderPhoto();
-    checkDailyLimit();
-  }, [loadHeaderPhoto, checkDailyLimit]);
+    checkPremiumStatus();
+  }, [loadHeaderPhoto, checkPremiumStatus]);
 
   useFocusEffect(
     useCallback(() => {
@@ -701,11 +700,6 @@ export default function SwipeScreen() {
     const current = profiles[index];
     if (!current) return;
 
-    if (!isPremium && swipesRemaining <= 0) {
-      setShowLimitReached(true);
-      return;
-    }
-
     if (!likedUsers.includes(current.id)) {
       const { data: authData } = await supabase.auth.getUser();
       const myUserId = authData?.user?.id;
@@ -723,11 +717,6 @@ export default function SwipeScreen() {
 
         setLikedUsers((prev) => [...prev, current.id]);
         setLastSwipeAction({ type: "like", userId: current.id });
-
-        if (!isPremium) {
-          await supabase.rpc("increment_daily_swipes", { p_user_id: myUserId });
-          setSwipesRemaining((prev) => Math.max(0, prev - 1));
-        }
 
         const { data: theirLike } = await supabase
           .from("likes")
@@ -752,11 +741,6 @@ export default function SwipeScreen() {
 
     const current = profiles[index];
     if (!current) return;
-
-    if (!isPremium && swipesRemaining <= 0) {
-      setShowLimitReached(true);
-      return;
-    }
 
     const next = skipCount + 1;
     setSkipCount(next);
@@ -785,11 +769,6 @@ export default function SwipeScreen() {
         } else {
           setPassedUsers((prev) => [...prev, current.id]);
           setLastSwipeAction({ type: "pass", userId: current.id });
-
-          if (!isPremium) {
-            await supabase.rpc("increment_daily_swipes", { p_user_id: myUserId });
-            setSwipesRemaining((prev) => Math.max(0, prev - 1));
-          }
         }
       }
     }
@@ -936,7 +915,7 @@ export default function SwipeScreen() {
             <ActivityIndicator size="large" color="#00FF7F" />
             <Text style={styles.loadingText}>Loading profiles...</Text>
           </View>
-        ) : visibleProfiles.length > 0 && !showLimitReached ? (
+        ) : visibleProfiles.length > 0 ? (
           <>
             {visibleProfiles
               .slice()
@@ -966,7 +945,7 @@ export default function SwipeScreen() {
                 );
               })}
           </>
-        ) : !showLimitReached ? (
+        ) : (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Text style={styles.emptyIconText}>🔥</Text>
@@ -982,10 +961,10 @@ export default function SwipeScreen() {
                 : "You've seen all available profiles. New people join all the time, so check back later!"}
             </Text>
           </View>
-        ) : null}
+        )}
       </View>
 
-      {!initialLoad && visibleProfiles.length > 0 && !showLimitReached && (
+      {!initialLoad && visibleProfiles.length > 0 && (
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[
@@ -1022,37 +1001,6 @@ export default function SwipeScreen() {
           <Text style={styles.cooldownText}>
             ⏳ Slow down! You're swiping too fast.
           </Text>
-        </View>
-      )}
-
-      {!initialLoad && !isPremium && swipesRemaining >= 0 && swipesRemaining <= 10 && !showLimitReached && (
-        <View style={styles.swipeCounterBanner}>
-          <Text style={styles.swipeCounterText}>
-            {swipesRemaining} connections remaining today
-          </Text>
-        </View>
-      )}
-
-      {showLimitReached && (
-        <View style={styles.limitReachedOverlay}>
-          <View style={styles.limitReachedModal}>
-            <Text style={styles.limitReachedTitle}>Daily Limit Reached</Text>
-            <Text style={styles.limitReachedText}>
-              You've reached your daily connection limit. Upgrade to connect with unlimited community members!
-            </Text>
-            <TouchableOpacity
-              style={styles.upgradeButton}
-              onPress={() => router.push("/subscription")}
-            >
-              <Text style={styles.upgradeButtonText}>Support the Community</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.dismissButton}
-              onPress={() => setShowLimitReached(false)}
-            >
-              <Text style={styles.dismissButtonText}>Maybe Later</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       )}
 
@@ -1371,79 +1319,6 @@ const styles = StyleSheet.create({
     paddingVertical: isSmallPhone ? 16 : 20,
     paddingHorizontal: 16,
     fontSize: isSmallPhone ? 10 : 12,
-    textAlign: "center",
-  },
-  swipeCounterBanner: {
-    marginTop: isSmallPhone ? 8 : 12,
-    backgroundColor: "#2e2e2e",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    marginHorizontal: 16,
-    alignSelf: "center",
-  },
-  swipeCounterText: {
-    color: "#00FF7F",
-    fontSize: isSmallPhone ? 11 : 13,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  limitReachedOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  limitReachedModal: {
-    backgroundColor: "#1e1e1e",
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    maxWidth: 400,
-    width: "90%",
-    borderWidth: 2,
-    borderColor: "#00FF7F",
-  },
-  limitReachedTitle: {
-    fontSize: isSmallPhone ? 20 : 24,
-    fontWeight: "bold",
-    color: "#00FF7F",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  limitReachedText: {
-    fontSize: isSmallPhone ? 14 : 16,
-    color: "#ccc",
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  upgradeButton: {
-    backgroundColor: "#00FF7F",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    marginBottom: 12,
-  },
-  upgradeButtonText: {
-    color: "#121212",
-    fontSize: isSmallPhone ? 15 : 16,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  dismissButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  dismissButtonText: {
-    color: "#888",
-    fontSize: isSmallPhone ? 14 : 15,
-    fontWeight: "600",
     textAlign: "center",
   },
   statusBanner: {
