@@ -17,31 +17,38 @@ interface AnalyticsData {
 }
 
 export default function Analytics() {
+  console.log('Analytics component rendering');
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const user = userStore((state) => state.user);
 
   useEffect(() => {
+    console.log('useEffect triggered');
     loadAnalytics();
   }, []);
 
   const loadAnalytics = async () => {
     try {
+      console.log('Starting loadAnalytics...');
       setLoading(true);
       setError(null);
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
+      console.log('Auth user:', authUser?.id);
       if (!authUser) {
         router.replace('/login');
         return;
       }
 
-      const { data: userData } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('subscription_tier, subscription_status')
         .eq('id', authUser.id)
         .maybeSingle();
+
+      console.log('User data:', userData);
+      console.log('User error:', userError);
 
       if (!userData ||
           userData.subscription_status !== 'active' ||
@@ -119,7 +126,10 @@ export default function Analytics() {
     }
   };
 
+  console.log('Loading state:', loading, 'Error state:', error, 'Analytics:', analytics);
+
   if (loading) {
+    console.log('Rendering loading view');
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -137,6 +147,7 @@ export default function Analytics() {
   }
 
   if (error) {
+    console.log('Rendering error view');
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -160,6 +171,7 @@ export default function Analytics() {
     );
   }
 
+  console.log('Rendering main analytics view');
   return (
     <View style={styles.container}>
       <View style={styles.header}>
