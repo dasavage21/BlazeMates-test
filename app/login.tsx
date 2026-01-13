@@ -77,7 +77,7 @@ export default function LoginScreen() {
 
       const { data: profileData, error } = await supabase
         .from('users')
-        .select('name,bio,strain,style,looking_for,image_url,age,username')
+        .select('name,bio,strain,style,image_url,age,username')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -110,7 +110,6 @@ export default function LoginScreen() {
         bio: profileData.bio ?? existing.bio ?? '',
         strain: profileData.strain ?? existing.strain ?? '',
         style: profileData.style ?? existing.style ?? '',
-        lookingFor: profileData.looking_for ?? existing.lookingFor ?? 'smoke',
         profileImage: profileData.image_url ?? existing.profileImage ?? null,
         age: resolvedAge,
         username: profileData.username ?? existing.username ?? null,
@@ -131,14 +130,22 @@ export default function LoginScreen() {
   const signIn = async () => {
     try {
       setBusy(true);
+      console.log('Starting sign in...');
+
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
+        console.error('Sign in error:', error);
         Alert.alert('Sign in failed', error.message);
         return;
       }
+
+      console.log('Sign in successful, syncing avatar...');
       await syncPendingAvatarIfAuthed();
+
+      console.log('Hydrating profile cache...');
       await hydrateProfileCache();
 
+      console.log('Checking username...');
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
 
@@ -149,14 +156,22 @@ export default function LoginScreen() {
           .eq('id', user.id)
           .maybeSingle();
 
+        console.log('Username check result:', userData);
+
         if (!userData?.username) {
+          console.log('No username, redirecting to username-setup');
           router.replace('/username-setup');
           return;
         }
       }
 
+      console.log('Login complete, redirecting to profile');
       router.replace('/profile');
+    } catch (error) {
+      console.error('Unexpected error during sign in:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
+      console.log('Resetting busy state');
       setBusy(false);
     }
   };
