@@ -273,8 +273,8 @@ export default function SubscriptionScreen() {
     if (currentSubscription.status === "active") {
       const currentTier = currentSubscription.tier;
 
-      if ((tier === "plus" && (currentTier === "plus" || currentTier === "blaze_plus")) ||
-          (tier === "pro" && (currentTier === "pro" || currentTier === "blaze_og" || currentTier === "blaze_pro"))) {
+      if ((tier === "plus" && currentTier === "plus") ||
+          (tier === "pro" && currentTier === "pro")) {
         const tierName = tier === "plus" ? "Blaze+" : "Blaze Pro";
         Alert.alert(
           "Already Subscribed",
@@ -303,7 +303,7 @@ export default function SubscriptionScreen() {
         return;
       }
 
-      if (tier === "plus" && (currentTier === "pro" || currentTier === "blaze_og" || currentTier === "blaze_pro")) {
+      if (tier === "plus" && currentTier === "pro") {
         Alert.alert(
           "Cannot Downgrade",
           "Please cancel your Blaze Pro subscription first before subscribing to Blaze+."
@@ -320,9 +320,9 @@ export default function SubscriptionScreen() {
     if (currentSubscription.status !== "active") return false;
 
     if (tier === "plus") {
-      return currentSubscription.tier === "plus" || currentSubscription.tier === "blaze_plus";
+      return currentSubscription.tier === "plus";
     } else {
-      return currentSubscription.tier === "pro" || currentSubscription.tier === "blaze_og" || currentSubscription.tier === "blaze_pro";
+      return currentSubscription.tier === "pro";
     }
   }, [currentSubscription]);
 

@@ -105,7 +105,7 @@ export default function Analytics() {
       }
 
       if (userData.subscription_status !== 'active' ||
-          !['pro', 'blaze_og', 'blaze_pro'].includes(userData.subscription_tier)) {
+          userData.subscription_tier !== 'pro') {
         setError('Profile analytics is a Blaze Pro feature. Upgrade to unlock!');
         setLoading(false);
         return;

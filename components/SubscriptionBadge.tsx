@@ -11,8 +11,8 @@ export function SubscriptionBadge({ tier, status, size = 'medium' }: Subscriptio
     return null;
   }
 
-  const isPlus = tier === 'plus' || tier === 'blaze_plus';
-  const isPro = tier === 'pro' || tier === 'blaze_og' || tier === 'blaze_pro';
+  const isPlus = tier === 'plus';
+  const isPro = tier === 'pro';
 
   if (!isPlus && !isPro) {
     return null;

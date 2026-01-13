@@ -64,7 +64,7 @@ export default function MatchesScreen() {
         .maybeSingle();
 
       const userIsPremium =
-        userData?.subscription_tier === "blaze_og" &&
+        (userData?.subscription_tier === "plus" || userData?.subscription_tier === "pro") &&
         userData?.subscription_status === "active";
       setIsPremium(userIsPremium);
 

@@ -110,7 +110,7 @@ export default function ProfileScreen() {
     }, [])
   );
 
-  const isPremium = subscriptionStatus === "active" && (subscriptionTier === "plus" || subscriptionTier === "pro" || subscriptionTier === "blaze_plus" || subscriptionTier === "blaze_og" || subscriptionTier === "blaze_pro");
+  const isPremium = subscriptionStatus === "active" && (subscriptionTier === "plus" || subscriptionTier === "pro");
   const isBoostActive = boostActiveUntil ? new Date(boostActiveUntil) > new Date() : false;
 
   const canBoost = () => {
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
       const now = new Date();
       const hoursSinceLastBoost = (now.getTime() - lastBoost.getTime()) / (1000 * 60 * 60);
 
-      const isPro = subscriptionTier === "pro" || subscriptionTier === "blaze_og" || subscriptionTier === "blaze_pro";
+      const isPro = subscriptionTier === "pro";
       const cooldownHours = isPro ? 24 : 168;
 
       if (hoursSinceLastBoost < cooldownHours) {
@@ -221,7 +221,7 @@ export default function ProfileScreen() {
           <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
 
-        {(subscriptionTier === "pro" || subscriptionTier === "blaze_og" || subscriptionTier === "blaze_pro") && subscriptionStatus === "active" && (
+        {subscriptionTier === "pro" && subscriptionStatus === "active" && (
           <TouchableOpacity
             style={styles.analyticsButton}
             onPress={() => router.push("/analytics")}
@@ -256,7 +256,7 @@ export default function ProfileScreen() {
                   </Text>
                   <Text style={styles.boostButtonSubtitle}>
                     {canBoost().can
-                      ? subscriptionTier === "pro" || subscriptionTier === "blaze_og" || subscriptionTier === "blaze_pro"
+                      ? subscriptionTier === "pro"
                         ? "Available daily • Lasts 24 hours"
                         : "Available weekly • Lasts 24 hours"
                       : canBoost().reason}
