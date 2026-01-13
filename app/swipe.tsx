@@ -33,18 +33,18 @@ import { BlazeLevelBadge } from "../components/BlazeLevelBadge";
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
-const isSmallPhone = screenWidth <= 360;
-const isMediumPhone = screenWidth > 360 && screenWidth < 414;
+const isSmallPhone = screenWidth <= 390;
+const isMediumPhone = screenWidth > 390 && screenWidth < 414;
 const isLargePhone = screenWidth >= 414 && screenWidth < 768;
 const isDesktop = screenWidth >= 768;
 
 const cardWidth = Math.min(screenWidth * 0.92, 440);
-const navPadding = isSmallPhone ? 10 : (isMediumPhone ? 14 : (isDesktop ? 40 : 16));
-const navGap = isSmallPhone ? 12 : (isMediumPhone ? 16 : (isDesktop ? 24 : 16));
-const navFontSize = isSmallPhone ? 12 : (isDesktop ? 15 : 13);
-const logoSize = isSmallPhone ? 22 : 28;
-const brandFontSize = isSmallPhone ? 14 : 20;
-const navProfilePicSize = isSmallPhone ? 28 : 36;
+const navPadding = isSmallPhone ? 8 : (isMediumPhone ? 14 : (isDesktop ? 40 : 16));
+const navGap = isSmallPhone ? 6 : (isMediumPhone ? 16 : (isDesktop ? 24 : 16));
+const navFontSize = isSmallPhone ? 11 : (isDesktop ? 15 : 13);
+const logoSize = isSmallPhone ? 20 : 28;
+const brandFontSize = isSmallPhone ? 13 : 20;
+const navProfilePicSize = isSmallPhone ? 26 : 36;
 
 const profilePicSize = isDesktop ? 90 : 70;
 const titleFontSize = isDesktop ? 26 : 22;
@@ -872,7 +872,7 @@ export default function SwipeScreen() {
           <View style={styles.navbar}>
         <View style={styles.navLeft}>
           <Text style={styles.logo}>🔥</Text>
-          <Text style={styles.brandName} numberOfLines={1}>BlazeMates</Text>
+          {!isSmallPhone && <Text style={styles.brandName} numberOfLines={1}>BlazeMates</Text>}
         </View>
 
         <View style={styles.navCenter}>
@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: isSmallPhone ? 4 : 8,
-    flex: isSmallPhone ? 0.9 : 1,
+    flex: isSmallPhone ? 0.3 : 1,
     minWidth: 0,
   },
   logo: {
@@ -1059,15 +1059,15 @@ const styles = StyleSheet.create({
   navCenter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: isSmallPhone ? 8 : navGap,
-    flex: isSmallPhone ? 2 : 2,
+    gap: isSmallPhone ? 6 : navGap,
+    flex: isSmallPhone ? 3 : 2,
     justifyContent: "center",
     minWidth: 0,
   },
   navRight: {
     flexDirection: "row",
     alignItems: "center",
-    flex: isSmallPhone ? 0.5 : undefined,
+    flex: isSmallPhone ? 0.7 : undefined,
     justifyContent: "flex-end",
     minWidth: isSmallPhone ? 32 : 0,
   },
