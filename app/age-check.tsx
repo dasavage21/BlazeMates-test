@@ -81,7 +81,7 @@ export default function AgeCheck() {
     <View style={styles.container}>
       <Text style={styles.title}>Adult-only experience</Text>
       <Text style={styles.subhead}>
-        BlazeMates includes matchmaking features and complies with Google
+        BlazeMates includes community connection features and complies with Google
         Play&apos;s Age-Restricted Content policy. You must confirm you are 21
         or older to continue.
       </Text>

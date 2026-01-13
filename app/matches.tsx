@@ -244,10 +244,10 @@ export default function MatchesScreen() {
 
   const emptyMessage =
     activeTab === "matches"
-      ? "No mutual matches yet. Keep swiping!"
+      ? "No connections yet. Keep exploring the community!"
       : activeTab === "likes"
-      ? "You haven't liked anyone yet. Start swiping!"
-      : "No one has liked you yet. Keep swiping!";
+      ? "You haven't connected with anyone yet. Start browsing!"
+      : "No interest yet. Keep building your profile!";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -255,7 +255,7 @@ export default function MatchesScreen() {
         <TouchableOpacity onPress={() => router.push('/swipe')} style={styles.backButton}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Your Matches</Text>
+        <Text style={styles.title}>Your Connections</Text>
       </View>
 
       <View style={styles.tabContainer}>
@@ -266,7 +266,7 @@ export default function MatchesScreen() {
           <Text
             style={[styles.tabText, activeTab === "matches" && styles.activeTabText]}
           >
-            Matches ({mutualMatches.length})
+            Connected ({mutualMatches.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -276,7 +276,7 @@ export default function MatchesScreen() {
           <Text
             style={[styles.tabText, activeTab === "likes" && styles.activeTabText]}
           >
-            Likes ({pendingLikes.length})
+            Interested ({pendingLikes.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -286,7 +286,7 @@ export default function MatchesScreen() {
           <Text
             style={[styles.tabText, activeTab === "wholiked" && styles.activeTabText]}
           >
-            Who Liked You ({whoLikedYou.length})
+            Interested in You ({whoLikedYou.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -354,7 +354,7 @@ export default function MatchesScreen() {
                         ? "Tap to message"
                         : activeTab === "wholiked" && isBlurred
                         ? "Tap to upgrade"
-                        : "Waiting for them to match"}
+                        : "Waiting for mutual interest"}
                     </Text>
                   </View>
                 </TouchableOpacity>

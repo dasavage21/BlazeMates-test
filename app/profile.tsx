@@ -174,7 +174,7 @@ export default function ProfileScreen() {
       } else {
         setBoostActiveUntil(boostExpiresAt.toISOString());
         setLastBoostUsedAt(now.toISOString());
-        alert("Boost activated! Your profile will appear first in the swipe feed for 24 hours.");
+        alert("Boost activated! Your profile will be featured in the community for 24 hours.");
       }
     } catch (error) {
       console.error("Boost activation exception:", error);

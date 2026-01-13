@@ -38,10 +38,10 @@ export default function AboutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>What We Offer</Text>
           <Text style={styles.paragraph}>
-            Our platform provides a modern, intuitive way to discover potential matches in
-            your area. With features like location-based matching, instant messaging, and
-            advanced filtering options, we make it easy to find people who truly align with
-            what you're looking for.
+            Our platform provides a modern, intuitive way to discover cannabis community members in
+            your area. With features like location-based connections, instant messaging, and
+            advanced filtering options, we make it easy to find like-minded people who share your
+            cannabis interests and preferences.
           </Text>
         </View>
 
@@ -77,9 +77,9 @@ export default function AboutScreen() {
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
-              <Text style={styles.stepTitle}>Discover Matches</Text>
+              <Text style={styles.stepTitle}>Discover Community</Text>
               <Text style={styles.stepDescription}>
-                Browse profiles and swipe right on people you're interested in
+                Browse member profiles and connect with people you're interested in meeting
               </Text>
             </View>
 
@@ -89,7 +89,7 @@ export default function AboutScreen() {
               </View>
               <Text style={styles.stepTitle}>Start Chatting</Text>
               <Text style={styles.stepDescription}>
-                When you both like each other, start a conversation and get to know them
+                When there's mutual interest, start a conversation and connect
               </Text>
             </View>
           </View>
@@ -98,9 +98,9 @@ export default function AboutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Premium Features</Text>
           <Text style={styles.paragraph}>
-            Upgrade to BlazeMates+ or BlazeMates Pro to unlock advanced features like
-            unlimited swipes, see who liked you, undo swipes, profile boosts, and more.
-            Premium members get the best experience with priority placement and exclusive features.
+            Upgrade to Blaze+ or Blaze Pro to unlock advanced features like
+            unlimited connections, see who's interested in you, undo actions, profile boosts, and more.
+            Premium members get the best experience with priority visibility and exclusive features.
           </Text>
         </View>
 

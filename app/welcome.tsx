@@ -48,7 +48,7 @@ export default function WelcomeScreen() {
           <View style={styles.featureGrid}>
             <View style={styles.featureCard}>
               <Heart color="#00FF7F" size={32} strokeWidth={2} />
-              <Text style={styles.featureTitle}>Smart Matching</Text>
+              <Text style={styles.featureTitle}>Smart Connections</Text>
               <Text style={styles.featureDescription}>
                 Find compatible smoke buddies based on strains, consumption methods, and experience level
               </Text>

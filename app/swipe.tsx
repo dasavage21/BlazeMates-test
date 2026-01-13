@@ -933,7 +933,7 @@ export default function SwipeScreen() {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/matches")}>
             <Text style={styles.navLink}>
-              {isSmallPhone ? "Matches" : "💚 Matches"}
+              {isSmallPhone ? "Connections" : "💚 Connections"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1045,7 +1045,7 @@ export default function SwipeScreen() {
       {!initialLoad && !isPremium && swipesRemaining >= 0 && swipesRemaining <= 10 && !showLimitReached && (
         <View style={styles.swipeCounterBanner}>
           <Text style={styles.swipeCounterText}>
-            {swipesRemaining} swipes remaining today
+            {swipesRemaining} connections remaining today
           </Text>
         </View>
       )}
@@ -1055,7 +1055,7 @@ export default function SwipeScreen() {
           <View style={styles.limitReachedModal}>
             <Text style={styles.limitReachedTitle}>Daily Limit Reached</Text>
             <Text style={styles.limitReachedText}>
-              You've used all your swipes for today. Upgrade to BlazeMates Premium for unlimited swipes!
+              You've reached your daily connection limit. Upgrade to connect with unlimited community members!
             </Text>
             <TouchableOpacity
               style={styles.upgradeButton}
