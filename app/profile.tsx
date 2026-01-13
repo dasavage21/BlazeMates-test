@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,7 @@ import { BlazeLevelBadge } from "../components/BlazeLevelBadge";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [age, setAge] = useState<number | null>(null);
   const [profile, setProfile] = useState({
     name: "",
@@ -36,68 +38,41 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     const load = async () => {
-      let localAge: number | null = null;
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData?.user?.id;
 
-      const stored = await AsyncStorage.getItem("userProfile");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setProfile(parsed);
-        if (parsed?.age !== null && parsed?.age !== undefined) {
-          const parsedAge = Number(parsed.age);
-          if (!Number.isNaN(parsedAge)) {
-            localAge = parsedAge;
-            setAge(parsedAge);
+        if (userId) {
+          const { data, error } = await supabase
+            .from("users")
+            .select("age, name, bio, strain, style, looking_for, image_url, subscription_tier, subscription_status, boost_active_until, last_boost_used_at, blaze_level, activity_points")
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (!error && data) {
+            setAge(data.age || null);
+            setProfile({
+              name: data.name || "",
+              bio: data.bio || "",
+              strain: data.strain || "",
+              style: data.style || "",
+              lookingFor: data.looking_for || "",
+            });
+            if (data.image_url) {
+              setProfileImage(data.image_url);
+            }
+            setSubscriptionTier(data.subscription_tier);
+            setSubscriptionStatus(data.subscription_status);
+            setBoostActiveUntil(data.boost_active_until);
+            setLastBoostUsedAt(data.last_boost_used_at);
+            setBlazeLevel(data.blaze_level || 1);
+            setActivityPoints(data.activity_points || 0);
           }
         }
-      }
-
-      const storedAge = await AsyncStorage.getItem("userAge");
-      if (storedAge) {
-        const parsedAge = parseInt(storedAge);
-        if (!Number.isNaN(parsedAge)) {
-          localAge = parsedAge;
-          setAge(parsedAge);
-        }
-      }
-
-      const { data: authData } = await supabase.auth.getUser();
-      const userId = authData?.user?.id;
-
-      if (userId) {
-        const { data, error } = await supabase
-          .from("users")
-          .select("age, name, bio, strain, style, looking_for, image_url, subscription_tier, subscription_status, boost_active_until, last_boost_used_at, blaze_level, activity_points")
-          .eq("id", userId)
-          .maybeSingle();
-
-        if (!error && data) {
-          if (data.age !== null && data.age !== undefined) {
-            setAge(data.age);
-          } else if (localAge !== null) {
-            await supabase
-              .from("users")
-              .update({ age: localAge })
-              .eq("id", userId);
-            setAge(localAge);
-          }
-
-          setProfile({
-            name: data.name || "",
-            bio: data.bio || "",
-            strain: data.strain || "",
-            style: data.style || "",
-            lookingFor: data.looking_for || "",
-          });
-          if (data.image_url) {
-            setProfileImage(data.image_url);
-          }
-          setSubscriptionTier(data.subscription_tier);
-          setSubscriptionStatus(data.subscription_status);
-          setBoostActiveUntil(data.boost_active_until);
-          setLastBoostUsedAt(data.last_boost_used_at);
-          setBlazeLevel(data.blaze_level || 1);
-          setActivityPoints(data.activity_points || 0);
-        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setLoading(false);
       }
     };
     load();
@@ -106,10 +81,27 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const stored = await AsyncStorage.getItem("userProfile");
-        if (stored) {
-          const data = JSON.parse(stored);
-          setProfileImage(data.profileImage ?? null);
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          const userId = authData?.user?.id;
+
+          if (userId) {
+            const { data, error } = await supabase
+              .from("users")
+              .select("blaze_level, activity_points, boost_active_until, subscription_tier, subscription_status")
+              .eq("id", userId)
+              .maybeSingle();
+
+            if (!error && data) {
+              setBlazeLevel(data.blaze_level || 1);
+              setActivityPoints(data.activity_points || 0);
+              setBoostActiveUntil(data.boost_active_until);
+              setSubscriptionTier(data.subscription_tier);
+              setSubscriptionStatus(data.subscription_status);
+            }
+          }
+        } catch (error) {
+          console.error("Error refreshing profile data:", error);
         }
       })();
     }, [])
@@ -187,6 +179,15 @@ export default function ProfileScreen() {
       setActivatingBoost(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00FF7F" />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -337,6 +338,18 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#0f0f0f",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#00FF7F",
+    fontSize: 16,
+    marginTop: 16,
+    fontWeight: "600",
+  },
   container: {
     flexGrow: 1,
     backgroundColor: "#0f0f0f",
