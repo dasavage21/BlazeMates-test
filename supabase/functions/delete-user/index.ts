@@ -114,9 +114,42 @@ Deno.serve(async (req: Request) => {
     await supabase.from("likes").delete().eq("liked_user_id", targetUserId);
     console.log("Deleted likes");
 
+    await supabase.from("passes").delete().eq("user_id", targetUserId);
+    await supabase.from("passes").delete().eq("passed_user_id", targetUserId);
+    console.log("Deleted passes");
+
+    await supabase.from("blocks").delete().eq("user_id", targetUserId);
+    await supabase.from("blocks").delete().eq("blocked_user_id", targetUserId);
+    console.log("Deleted blocks");
+
+    await supabase.from("reports").delete().eq("reporter_id", targetUserId);
+    await supabase.from("reports").delete().eq("reported_user_id", targetUserId);
+    console.log("Deleted reports");
+
+    await supabase.from("super_likes").delete().eq("from_user_id", targetUserId);
+    await supabase.from("super_likes").delete().eq("to_user_id", targetUserId);
+    console.log("Deleted super likes");
+
+    await supabase.from("subscription_analytics").delete().eq("user_id", targetUserId);
+    console.log("Deleted subscription analytics");
+
     await supabase.from("threads").delete().eq("user1_id", targetUserId);
     await supabase.from("threads").delete().eq("user2_id", targetUserId);
     console.log("Deleted threads (messages cascade)");
+
+    const { data: stripeCustomer } = await supabase
+      .from("stripe_customers")
+      .select("customer_id")
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
+    if (stripeCustomer?.customer_id) {
+      await supabase.from("stripe_subscriptions").delete().eq("customer_id", stripeCustomer.customer_id);
+      console.log("Deleted stripe subscriptions");
+    }
+
+    await supabase.from("stripe_customers").delete().eq("user_id", targetUserId);
+    console.log("Deleted stripe customers");
 
     const { error: userRowError } = await supabase.from("users").delete().eq("id", targetUserId);
     if (userRowError) {
