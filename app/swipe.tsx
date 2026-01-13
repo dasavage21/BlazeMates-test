@@ -62,16 +62,16 @@ const actionButtonGap = isSmallPhone ? 24 : 40;
 
 const SWIPE_THRESHOLD = 120;
 
-type Looking = "smoke" | "hookup" | "both";
-
 type Profile = {
   id: string;
   name: string;
   age: number;
   strain: string;
-  style: string;
+  experienceLevel: string;
   bio: string;
-  lookingFor: Looking;
+  preferredStrains: string[];
+  consumptionMethods: string[];
+  cultivationInterest: boolean;
   image: string;
   subscriptionTier: string | null;
   subscriptionStatus: string | null;
@@ -85,8 +85,10 @@ type SupaUser = {
   age: number | null;
   bio: string | null;
   strain: string | null;
-  style: string | null;
-  looking_for: Looking | null;
+  experience_level: string | null;
+  preferred_strains: string[] | null;
+  consumption_methods: string[] | null;
+  cultivation_interest: boolean | null;
   image_url: string | null;
   subscription_tier: string | null;
   subscription_status: string | null;
@@ -181,14 +183,15 @@ function SwipeCard({
     ),
   }));
 
-  const renderLookingForTag = (type: Looking) => {
-    if (type === "smoke")
-      return <Text style={styles.lookingForTag}>🌿 Just Wanna Smoke</Text>;
-    if (type === "hookup")
-      return (
-        <Text style={styles.lookingForTag}>🍑 Just Looking to Hook Up</Text>
-      );
-    return <Text style={styles.lookingForTag}>🌿+🍑 Both</Text>;
+  const renderExperienceBadge = (level: string) => {
+    const badges: Record<string, string> = {
+      "Cannabis Curious": "🌱",
+      "Beginner": "🌿",
+      "Intermediate": "🔥",
+      "Expert": "💎"
+    };
+    const emoji = badges[level] || "🌿";
+    return <Text style={styles.experienceTag}>{emoji} {level}</Text>;
   };
 
   return (
@@ -240,13 +243,21 @@ function SwipeCard({
             </View>
           </View>
 
-          {renderLookingForTag(profile.lookingFor)}
+          {renderExperienceBadge(profile.experienceLevel)}
 
           <Text style={styles.bio} numberOfLines={2}>
             {profile.bio}
           </Text>
+          <View style={styles.tagsContainer}>
+            {profile.preferredStrains.slice(0, 2).map((strain, idx) => (
+              <Text key={idx} style={styles.tag}>{strain}</Text>
+            ))}
+            {profile.cultivationInterest && (
+              <Text style={styles.tag}>🌱 Grower</Text>
+            )}
+          </View>
           <Text style={styles.meta}>
-            {profile.strain} • {profile.style}
+            {profile.strain} • {profile.consumptionMethods.slice(0, 2).join(", ")}
           </Text>
         </View>
       </Animated.View>
@@ -399,10 +410,8 @@ export default function SwipeScreen() {
       if (ageStored) setUserAge(parseInt(ageStored, 10));
 
       const profileData = await AsyncStorage.getItem("userProfile");
-      let userLookingFor: Looking = "both";
       if (profileData) {
         const parsed = JSON.parse(profileData);
-        userLookingFor = (parsed.lookingFor as Looking) || "both";
         if (parsed.profileImage) setProfilePhoto(parsed.profileImage);
       }
 
@@ -439,7 +448,7 @@ export default function SwipeScreen() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier,subscription_status,boost_active_until,blaze_level")
+        .select("id,name,age,bio,strain,experience_level,preferred_strains,consumption_methods,cultivation_interest,image_url,subscription_tier,subscription_status,boost_active_until,blaze_level")
         .eq("is_suspended", false)
         .not("name", "is", null)
         .not("age", "is", null);
@@ -469,9 +478,11 @@ export default function SwipeScreen() {
         name: u.name ?? "—",
         age: u.age ?? 0,
         strain: u.strain ?? "—",
-        style: u.style ?? "—",
+        experienceLevel: u.experience_level ?? "Beginner",
         bio: u.bio ?? "",
-        lookingFor: (u.looking_for ?? "both") as Looking,
+        preferredStrains: u.preferred_strains ?? [],
+        consumptionMethods: u.consumption_methods ?? [],
+        cultivationInterest: u.cultivation_interest ?? false,
         image:
           u.image_url && u.image_url.trim().length > 0
             ? u.image_url
@@ -486,12 +497,6 @@ export default function SwipeScreen() {
         .filter((p) => !myUserId || p.id !== myUserId)
         .filter((p) => !alreadyLiked.includes(p.id))
         .filter((p) => !alreadyPassed.includes(p.id))
-        .filter(
-          (p) =>
-            userLookingFor === "both" ||
-            p.lookingFor === userLookingFor ||
-            p.lookingFor === "both"
-        )
         .sort((a, b) => {
           if (a.isBoosted && !b.isBoosted) return -1;
           if (!a.isBoosted && b.isBoosted) return 1;
@@ -545,9 +550,11 @@ export default function SwipeScreen() {
               name: newUser.name ?? "—",
               age: newUser.age ?? 0,
               strain: newUser.strain ?? "—",
-              style: newUser.style ?? "—",
+              experienceLevel: newUser.experience_level ?? "Beginner",
               bio: newUser.bio ?? "",
-              lookingFor: (newUser.looking_for ?? "both") as Looking,
+              preferredStrains: newUser.preferred_strains ?? [],
+              consumptionMethods: newUser.consumption_methods ?? [],
+              cultivationInterest: newUser.cultivation_interest ?? false,
               image:
                 newUser.image_url && newUser.image_url.trim().length > 0
                   ? newUser.image_url
@@ -555,26 +562,18 @@ export default function SwipeScreen() {
               subscriptionTier: newUser.subscription_tier,
               subscriptionStatus: newUser.subscription_status,
               isBoosted: newUser.boost_active_until ? new Date(newUser.boost_active_until) > new Date() : false,
+              blazeLevel: newUser.blaze_level ?? 1,
             };
 
-            const lookingForMatches =
-              userLookingFor === "both" ||
-              newProfile.lookingFor === userLookingFor ||
-              newProfile.lookingFor === "both";
-
-            if (lookingForMatches) {
-              console.log("Adding new user to profiles:", newProfile.name);
-              setProfiles((prev) => {
-                const updated = [...prev, newProfile];
-                return updated.sort((a, b) => {
-                  if (a.isBoosted && !b.isBoosted) return -1;
-                  if (!a.isBoosted && b.isBoosted) return 1;
-                  return 0;
-                });
+            console.log("Adding new user to profiles:", newProfile.name);
+            setProfiles((prev) => {
+              const updated = [...prev, newProfile];
+              return updated.sort((a, b) => {
+                if (a.isBoosted && !b.isBoosted) return -1;
+                if (!a.isBoosted && b.isBoosted) return 1;
+                return 0;
               });
-            } else {
-              console.log("Skipping - looking_for doesn't match");
-            }
+            });
           }
         )
         .on(
@@ -616,9 +615,11 @@ export default function SwipeScreen() {
                     name: updatedUser.name ?? "—",
                     age: updatedUser.age ?? 0,
                     strain: updatedUser.strain ?? "—",
-                    style: updatedUser.style ?? "—",
+                    experienceLevel: updatedUser.experience_level ?? "Beginner",
                     bio: updatedUser.bio ?? "",
-                    lookingFor: (updatedUser.looking_for ?? "both") as Looking,
+                    preferredStrains: updatedUser.preferred_strains ?? [],
+                    consumptionMethods: updatedUser.consumption_methods ?? [],
+                    cultivationInterest: updatedUser.cultivation_interest ?? false,
                     image:
                       updatedUser.image_url &&
                       updatedUser.image_url.trim().length > 0
@@ -627,6 +628,7 @@ export default function SwipeScreen() {
                     subscriptionTier: updatedUser.subscription_tier,
                     subscriptionStatus: updatedUser.subscription_status,
                     isBoosted: updatedUser.boost_active_until ? new Date(updatedUser.boost_active_until) > new Date() : false,
+                    blazeLevel: updatedUser.blaze_level ?? 1,
                   };
                 }
                 return profile;
@@ -1212,7 +1214,7 @@ const styles = StyleSheet.create({
     color: "#aaa",
     marginTop: 4,
   },
-  lookingForTag: {
+  experienceTag: {
     backgroundColor: "#2e2e2e",
     color: "#00FF7F",
     paddingVertical: isSmallPhone ? 3 : 4,
@@ -1222,6 +1224,24 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     overflow: "hidden",
     alignSelf: "flex-start",
+    marginBottom: 8,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 8,
+  },
+  tag: {
+    backgroundColor: "#1a1a1a",
+    color: "#ccc",
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    fontSize: isSmallPhone ? 10 : 11,
+    fontWeight: "500",
+    borderWidth: 1,
+    borderColor: "#333",
   },
   likeStamp: {
     position: "absolute",

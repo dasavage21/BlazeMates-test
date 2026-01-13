@@ -20,9 +20,9 @@ export default function WelcomeScreen() {
             <Text style={styles.logo}>🔥</Text>
           </View>
           <Text style={styles.title}>BlazeMates</Text>
-          <Text style={styles.tagline}>Find Your Perfect Match</Text>
+          <Text style={styles.tagline}>Find Your Smoke Buddies</Text>
           <Text style={styles.description}>
-            Connect with like-minded people in your area. Swipe, match, and start meaningful conversations.
+            Connect with the cannabis community in your area. Find people to smoke with, share strains, and discuss cultivation.
           </Text>
 
           <View style={styles.buttonContainer}>
@@ -50,7 +50,7 @@ export default function WelcomeScreen() {
               <Heart color="#00FF7F" size={32} strokeWidth={2} />
               <Text style={styles.featureTitle}>Smart Matching</Text>
               <Text style={styles.featureDescription}>
-                Our algorithm helps you find compatible matches based on your preferences
+                Find compatible smoke buddies based on strains, consumption methods, and experience level
               </Text>
             </View>
 
@@ -58,15 +58,15 @@ export default function WelcomeScreen() {
               <MapPin color="#00FF7F" size={32} strokeWidth={2} />
               <Text style={styles.featureTitle}>Location Based</Text>
               <Text style={styles.featureDescription}>
-                Connect with people nearby and expand your social circle
+                Connect with cannabis enthusiasts nearby for sessions and events
               </Text>
             </View>
 
             <View style={styles.featureCard}>
               <MessageCircle color="#00FF7F" size={32} strokeWidth={2} />
-              <Text style={styles.featureTitle}>Real Conversations</Text>
+              <Text style={styles.featureTitle}>Community Chat</Text>
               <Text style={styles.featureDescription}>
-                Start chatting instantly when you match with someone
+                Share strain recommendations, cultivation tips, and organize smoke sessions
               </Text>
             </View>
 
@@ -82,7 +82,7 @@ export default function WelcomeScreen() {
               <Users color="#00FF7F" size={32} strokeWidth={2} />
               <Text style={styles.featureTitle}>Growing Community</Text>
               <Text style={styles.featureDescription}>
-                Join thousands of active users looking to connect
+                Join a thriving cannabis community of enthusiasts, growers, and advocates
               </Text>
             </View>
 
@@ -90,22 +90,22 @@ export default function WelcomeScreen() {
               <Zap color="#00FF7F" size={32} strokeWidth={2} />
               <Text style={styles.featureTitle}>Premium Features</Text>
               <Text style={styles.featureDescription}>
-                Unlock unlimited swipes, see who liked you, and more
+                Unlock unlimited connections, profile boost, and advanced filters
               </Text>
             </View>
           </View>
         </View>
 
         <View style={styles.ctaSection}>
-          <Text style={styles.ctaTitle}>Ready to Get Started?</Text>
+          <Text style={styles.ctaTitle}>Ready to Connect?</Text>
           <Text style={styles.ctaDescription}>
-            Create your profile and start meeting amazing people today
+            Create your profile and start connecting with the cannabis community today
           </Text>
           <TouchableOpacity
             style={styles.ctaButton}
             onPress={() => router.push("/create-account")}
           >
-            <Text style={styles.ctaButtonText}>Join BlazeMates</Text>
+            <Text style={styles.ctaButtonText}>Join the Community</Text>
           </TouchableOpacity>
         </View>
 

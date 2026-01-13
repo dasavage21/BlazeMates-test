@@ -23,9 +23,16 @@ import {
 import { supabase } from "../supabaseClient";
 import { handleRefreshTokenError } from "../lib/authSession";
 import { mergeUserRow } from "../lib/userStore";
-type Looking = "smoke" | "hookup" | "both";
+
 const PENDING_KEY = "pendingAvatarUri";
 const PROFILE_KEY = "userProfile";
+
+const STRAIN_TYPES = ["Indica", "Sativa", "Hybrid"];
+const CONSUMPTION_METHODS = ["Flower", "Edibles", "Concentrates", "Vape", "Dabs", "Tinctures"];
+const EXPERIENCE_LEVELS = ["Cannabis Curious", "Beginner", "Intermediate", "Expert"];
+const ACTIVITIES = ["Music", "Gaming", "Hiking", "Art", "Cooking", "Movies", "Sports", "Socializing"];
+const SESSION_PREFS = ["Solo", "Small Group", "Large Group", "Events"];
+const INTERESTS = ["Cultivation", "Strains", "Edibles", "Medical", "Activism", "Business"];
 
 export default function ProfileEditScreen() {
   const router = useRouter();
@@ -34,9 +41,14 @@ export default function ProfileEditScreen() {
   // form state
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
-  const [strain, setStrain] = useState("");
-  const [style, setStyle] = useState("");
-  const [lookingFor, setLookingFor] = useState<Looking>("smoke");
+  const [favoriteStrain, setFavoriteStrain] = useState("");
+  const [preferredStrains, setPreferredStrains] = useState<string[]>([]);
+  const [consumptionMethods, setConsumptionMethods] = useState<string[]>([]);
+  const [experienceLevel, setExperienceLevel] = useState<string>("Beginner");
+  const [cultivationInterest, setCultivationInterest] = useState(false);
+  const [favoriteActivities, setFavoriteActivities] = useState<string[]>([]);
+  const [sessionPreferences, setSessionPreferences] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>([]);
   const [age, setAge] = useState<number | null>(null);
 
   // image can be a public URL (after upload) or a local file:// for preview
@@ -198,9 +210,14 @@ export default function ProfileEditScreen() {
           const data = JSON.parse(stored);
           setName(data.name ?? "");
           setBio(data.bio ?? "");
-          setStrain(data.strain ?? "");
-          setStyle(data.style ?? "");
-          setLookingFor((data.lookingFor as Looking) ?? "smoke");
+          setFavoriteStrain(data.favoriteStrain ?? data.strain ?? "");
+          setPreferredStrains(data.preferredStrains ?? []);
+          setConsumptionMethods(data.consumptionMethods ?? []);
+          setExperienceLevel(data.experienceLevel ?? "Beginner");
+          setCultivationInterest(data.cultivationInterest ?? false);
+          setFavoriteActivities(data.favoriteActivities ?? []);
+          setSessionPreferences(data.sessionPreferences ?? []);
+          setInterests(data.interests ?? []);
           setProfileImage(data.profileImage ?? null);
         }
       } catch (e) {
@@ -304,9 +321,14 @@ export default function ProfileEditScreen() {
       const newProfile = {
         name,
         bio,
-        strain,
-        style,
-        lookingFor,
+        favoriteStrain,
+        preferredStrains,
+        consumptionMethods,
+        experienceLevel,
+        cultivationInterest,
+        favoriteActivities,
+        sessionPreferences,
+        interests,
         profileImage,
         age,
       };
@@ -329,9 +351,14 @@ export default function ProfileEditScreen() {
           const { error } = await mergeUserRow(supabase, authedUser.id, {
             name,
             bio,
-            strain,
-            style,
-            looking_for: lookingFor,
+            strain: favoriteStrain,
+            preferred_strains: preferredStrains,
+            consumption_methods: consumptionMethods,
+            experience_level: experienceLevel,
+            cultivation_interest: cultivationInterest,
+            favorite_activities: favoriteActivities,
+            session_preferences: sessionPreferences,
+            interests: interests,
             age: age ?? null,
             image_url: profileImage ?? null,
           });
@@ -373,7 +400,7 @@ export default function ProfileEditScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Edit Your Profile</Text>
         <Text style={styles.subtitle}>
-          {syncing ? "Syncing photo..." : "Update your information"}
+          {syncing ? "Syncing photo..." : "Tell the community about yourself"}
         </Text>
       </View>
 
@@ -422,7 +449,7 @@ export default function ProfileEditScreen() {
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>About You</Text>
           <TextInput
-            placeholder="Tell people about yourself..."
+            placeholder="Tell the community about yourself..."
             placeholderTextColor="#666"
             value={bio}
             onChangeText={setBio}
@@ -439,39 +466,184 @@ export default function ProfileEditScreen() {
           <TextInput
             placeholder="e.g., Blue Dream, OG Kush..."
             placeholderTextColor="#666"
-            value={strain}
-            onChangeText={setStrain}
+            value={favoriteStrain}
+            onChangeText={setFavoriteStrain}
             maxLength={50}
             style={styles.input}
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Blaze Style</Text>
-          <TextInput
-            placeholder="e.g., Joint, Bong, Vape..."
-            placeholderTextColor="#666"
-            value={style}
-            onChangeText={setStyle}
-            maxLength={50}
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Looking For</Text>
+          <Text style={styles.fieldLabel}>Experience Level</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={lookingFor}
-              onValueChange={(value: Looking) => setLookingFor(value)}
+              selectedValue={experienceLevel}
+              onValueChange={(value: string) => setExperienceLevel(value)}
               style={styles.picker}
               dropdownIconColor="#00FF7F"
             >
-              <Picker.Item label="🌿 Just Wanna Smoke" value="smoke" />
-              <Picker.Item label="🍑 Just Looking to Hook Up" value="hookup" />
-              <Picker.Item label="🌿+🍑 Both" value="both" />
+              {EXPERIENCE_LEVELS.map((level) => (
+                <Picker.Item key={level} label={level} value={level} />
+              ))}
             </Picker>
           </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Preferred Strain Types</Text>
+          <View style={styles.checkboxGroup}>
+            {STRAIN_TYPES.map((strain) => (
+              <TouchableOpacity
+                key={strain}
+                style={[
+                  styles.checkboxItem,
+                  preferredStrains.includes(strain) && styles.checkboxItemActive
+                ]}
+                onPress={() => {
+                  if (preferredStrains.includes(strain)) {
+                    setPreferredStrains(preferredStrains.filter(s => s !== strain));
+                  } else {
+                    setPreferredStrains([...preferredStrains, strain]);
+                  }
+                }}
+              >
+                <Text style={[
+                  styles.checkboxText,
+                  preferredStrains.includes(strain) && styles.checkboxTextActive
+                ]}>
+                  {strain}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Consumption Methods</Text>
+          <View style={styles.checkboxGroup}>
+            {CONSUMPTION_METHODS.map((method) => (
+              <TouchableOpacity
+                key={method}
+                style={[
+                  styles.checkboxItem,
+                  consumptionMethods.includes(method) && styles.checkboxItemActive
+                ]}
+                onPress={() => {
+                  if (consumptionMethods.includes(method)) {
+                    setConsumptionMethods(consumptionMethods.filter(m => m !== method));
+                  } else {
+                    setConsumptionMethods([...consumptionMethods, method]);
+                  }
+                }}
+              >
+                <Text style={[
+                  styles.checkboxText,
+                  consumptionMethods.includes(method) && styles.checkboxTextActive
+                ]}>
+                  {method}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Session Preferences</Text>
+          <View style={styles.checkboxGroup}>
+            {SESSION_PREFS.map((pref) => (
+              <TouchableOpacity
+                key={pref}
+                style={[
+                  styles.checkboxItem,
+                  sessionPreferences.includes(pref) && styles.checkboxItemActive
+                ]}
+                onPress={() => {
+                  if (sessionPreferences.includes(pref)) {
+                    setSessionPreferences(sessionPreferences.filter(p => p !== pref));
+                  } else {
+                    setSessionPreferences([...sessionPreferences, pref]);
+                  }
+                }}
+              >
+                <Text style={[
+                  styles.checkboxText,
+                  sessionPreferences.includes(pref) && styles.checkboxTextActive
+                ]}>
+                  {pref}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Favorite Activities While High</Text>
+          <View style={styles.checkboxGroup}>
+            {ACTIVITIES.map((activity) => (
+              <TouchableOpacity
+                key={activity}
+                style={[
+                  styles.checkboxItem,
+                  favoriteActivities.includes(activity) && styles.checkboxItemActive
+                ]}
+                onPress={() => {
+                  if (favoriteActivities.includes(activity)) {
+                    setFavoriteActivities(favoriteActivities.filter(a => a !== activity));
+                  } else {
+                    setFavoriteActivities([...favoriteActivities, activity]);
+                  }
+                }}
+              >
+                <Text style={[
+                  styles.checkboxText,
+                  favoriteActivities.includes(activity) && styles.checkboxTextActive
+                ]}>
+                  {activity}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Cannabis Interests</Text>
+          <View style={styles.checkboxGroup}>
+            {INTERESTS.map((interest) => (
+              <TouchableOpacity
+                key={interest}
+                style={[
+                  styles.checkboxItem,
+                  interests.includes(interest) && styles.checkboxItemActive
+                ]}
+                onPress={() => {
+                  if (interests.includes(interest)) {
+                    setInterests(interests.filter(i => i !== interest));
+                  } else {
+                    setInterests([...interests, interest]);
+                  }
+                }}
+              >
+                <Text style={[
+                  styles.checkboxText,
+                  interests.includes(interest) && styles.checkboxTextActive
+                ]}>
+                  {interest}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <TouchableOpacity
+            style={[styles.switchRow]}
+            onPress={() => setCultivationInterest(!cultivationInterest)}
+          >
+            <Text style={styles.fieldLabel}>Interested in Cultivation</Text>
+            <View style={[styles.switch, cultivationInterest && styles.switchActive]}>
+              <View style={[styles.switchThumb, cultivationInterest && styles.switchThumbActive]} />
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -629,6 +801,59 @@ const styles = StyleSheet.create({
   },
   picker: {
     color: "#fff",
+  },
+  checkboxGroup: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  checkboxItem: {
+    backgroundColor: "#1a1a1a",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  checkboxItemActive: {
+    backgroundColor: "#00FF7F",
+    borderColor: "#00FF7F",
+  },
+  checkboxText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  checkboxTextActive: {
+    color: "#121212",
+    fontWeight: "600",
+  },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  switch: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#2a2a2a",
+    padding: 2,
+    justifyContent: "center",
+  },
+  switchActive: {
+    backgroundColor: "#00FF7F",
+  },
+  switchThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#666",
+    alignSelf: "flex-start",
+  },
+  switchThumbActive: {
+    backgroundColor: "#121212",
+    alignSelf: "flex-end",
   },
   footer: {
     paddingHorizontal: 24,

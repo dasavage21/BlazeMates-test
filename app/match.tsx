@@ -13,8 +13,10 @@ type UserProfile = {
   age: number | null;
   bio: string | null;
   strain: string | null;
-  style: string | null;
-  looking_for: string | null;
+  experience_level: string | null;
+  preferred_strains: string[] | null;
+  consumption_methods: string[] | null;
+  cultivation_interest: boolean | null;
   subscription_tier: string | null;
   subscription_status: string | null;
 };
@@ -33,7 +35,7 @@ export default function MatchScreen() {
 
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, image_url, age, bio, strain, style, looking_for, subscription_tier, subscription_status')
+        .select('id, name, image_url, age, bio, strain, experience_level, preferred_strains, consumption_methods, cultivation_interest, subscription_tier, subscription_status')
         .eq('id', matchId)
         .maybeSingle();
 
@@ -130,7 +132,7 @@ export default function MatchScreen() {
         )}
 
         <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Details</Text>
+          <Text style={styles.cardTitle}>Cannabis Profile</Text>
 
           {matchUser.strain && (
             <View style={styles.infoRow}>
@@ -139,25 +141,31 @@ export default function MatchScreen() {
             </View>
           )}
 
-          {matchUser.style && (
+          {matchUser.experience_level && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Blaze Style</Text>
-              <Text style={styles.infoValue}>{matchUser.style}</Text>
+              <Text style={styles.infoLabel}>Experience Level</Text>
+              <Text style={styles.infoValue}>{matchUser.experience_level}</Text>
             </View>
           )}
 
-          {matchUser.looking_for && (
+          {matchUser.preferred_strains && matchUser.preferred_strains.length > 0 && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Looking For</Text>
-              <Text style={styles.infoValue}>
-                {matchUser.looking_for === 'smoke'
-                  ? '🌿 Just Wanna Smoke'
-                  : matchUser.looking_for === 'hookup'
-                  ? '🍑 Just Looking to Hook Up'
-                  : matchUser.looking_for === 'both'
-                  ? '🌿+🍑 Both'
-                  : 'Not set'}
-              </Text>
+              <Text style={styles.infoLabel}>Preferred Types</Text>
+              <Text style={styles.infoValue}>{matchUser.preferred_strains.join(', ')}</Text>
+            </View>
+          )}
+
+          {matchUser.consumption_methods && matchUser.consumption_methods.length > 0 && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Consumption Methods</Text>
+              <Text style={styles.infoValue}>{matchUser.consumption_methods.join(', ')}</Text>
+            </View>
+          )}
+
+          {matchUser.cultivation_interest && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Grower</Text>
+              <Text style={styles.infoValue}>🌱 Interested in Cultivation</Text>
             </View>
           )}
         </View>

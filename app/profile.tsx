@@ -24,8 +24,10 @@ export default function ProfileScreen() {
     name: "",
     bio: "",
     strain: "",
-    style: "",
-    lookingFor: "",
+    experienceLevel: "",
+    preferredStrains: [] as string[],
+    consumptionMethods: [] as string[],
+    cultivationInterest: false,
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function ProfileScreen() {
         if (userId) {
           const { data, error } = await supabase
             .from("users")
-            .select("age, name, bio, strain, style, looking_for, image_url, subscription_tier, subscription_status, boost_active_until, last_boost_used_at, blaze_level, activity_points")
+            .select("age, name, bio, strain, experience_level, preferred_strains, consumption_methods, cultivation_interest, image_url, subscription_tier, subscription_status, boost_active_until, last_boost_used_at, blaze_level, activity_points")
             .eq("id", userId)
             .maybeSingle();
 
@@ -55,8 +57,10 @@ export default function ProfileScreen() {
               name: data.name || "",
               bio: data.bio || "",
               strain: data.strain || "",
-              style: data.style || "",
-              lookingFor: data.looking_for || "",
+              experienceLevel: data.experience_level || "Beginner",
+              preferredStrains: data.preferred_strains || [],
+              consumptionMethods: data.consumption_methods || [],
+              cultivationInterest: data.cultivation_interest || false,
             });
             if (data.image_url) {
               setProfileImage(data.image_url);
@@ -292,7 +296,7 @@ export default function ProfileScreen() {
         )}
 
         <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Details</Text>
+          <Text style={styles.cardTitle}>Cannabis Profile</Text>
 
           {profile.strain && (
             <View style={styles.infoRow}>
@@ -301,25 +305,31 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {profile.style && (
+          {profile.experienceLevel && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Blaze Style</Text>
-              <Text style={styles.infoValue}>{profile.style}</Text>
+              <Text style={styles.infoLabel}>Experience Level</Text>
+              <Text style={styles.infoValue}>{profile.experienceLevel}</Text>
             </View>
           )}
 
-          {profile.lookingFor && (
+          {profile.preferredStrains.length > 0 && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Looking For</Text>
-              <Text style={styles.infoValue}>
-                {profile.lookingFor === "smoke"
-                  ? "🌿 Just Wanna Smoke"
-                  : profile.lookingFor === "hookup"
-                  ? "🍑 Just Looking to Hook Up"
-                  : profile.lookingFor === "both"
-                  ? "🌿+🍑 Both"
-                  : "Not set"}
-              </Text>
+              <Text style={styles.infoLabel}>Preferred Types</Text>
+              <Text style={styles.infoValue}>{profile.preferredStrains.join(", ")}</Text>
+            </View>
+          )}
+
+          {profile.consumptionMethods.length > 0 && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Consumption Methods</Text>
+              <Text style={styles.infoValue}>{profile.consumptionMethods.join(", ")}</Text>
+            </View>
+          )}
+
+          {profile.cultivationInterest && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Grower</Text>
+              <Text style={styles.infoValue}>🌱 Interested in Cultivation</Text>
             </View>
           )}
         </View>
@@ -330,7 +340,7 @@ export default function ProfileScreen() {
           style={styles.backButton}
           onPress={() => router.replace("/swipe")}
         >
-          <Text style={styles.backButtonText}>Back to Swiping</Text>
+          <Text style={styles.backButtonText}>Back to Finding Smoke Buddies</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
