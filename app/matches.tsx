@@ -346,7 +346,7 @@ export default function MatchesScreen() {
                     </View>
                     <Text style={styles.matchBio} numberOfLines={2}>
                       {isBlurred
-                        ? "Upgrade to Premium to see who liked you!"
+                        ? "Upgrade to see who's interested in connecting!"
                         : item.bio || "No bio"}
                     </Text>
                     <Text style={styles.messagePrompt}>

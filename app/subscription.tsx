@@ -358,7 +358,7 @@ export default function SubscriptionScreen() {
           </View>
         )}
 
-        <Text style={styles.title}>Upgrade to Premium</Text>
+        <Text style={styles.title}>Support the Community</Text>
 
         {currentSubscription.status === "active" && currentSubscription.tier && currentSubscription.tier !== "free" && (
           <View style={styles.currentSubBanner}>
@@ -381,34 +381,34 @@ export default function SubscriptionScreen() {
           </View>
 
           <Text style={styles.freePrice}>$0/month</Text>
-          <Text style={styles.subtitle}>Gets users hooked first.</Text>
+          <Text style={styles.subtitle}>Join the community for free.</Text>
 
           <View style={styles.divider} />
 
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>✏️</Text>
-              <Text style={styles.featureText}>Create profile</Text>
+              <Text style={styles.featureText}>Create cannabis profile</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>💚</Text>
-              <Text style={styles.featureText}>Swipe & match (daily limit)</Text>
+              <Text style={styles.featureText}>Find smoke buddies (daily limit)</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>💬</Text>
-              <Text style={styles.featureText}>Basic chat after match</Text>
+              <Text style={styles.featureText}>Connect after matching</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>👤</Text>
-              <Text style={styles.featureText}>View profiles</Text>
+              <Text style={styles.featureText}>View community profiles</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>🎯</Text>
-              <Text style={styles.featureText}>Limited filters (age + distance)</Text>
+              <Text style={styles.featureText}>Basic filters (age + location)</Text>
             </View>
           </View>
         </View>
@@ -424,26 +424,26 @@ export default function SubscriptionScreen() {
           </View>
 
           <Text style={styles.price}>$4.99/month</Text>
-          <Text style={styles.subtitle}>Enhanced Experience</Text>
+          <Text style={styles.subtitle}>Enhanced Community Access</Text>
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionTitle}>More control + visibility.</Text>
+          <Text style={styles.sectionTitle}>Connect with more people.</Text>
 
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>🔁</Text>
-              <Text style={styles.featureText}>Unlimited swipes</Text>
+              <Text style={styles.featureText}>Unlimited connections</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>👀</Text>
-              <Text style={styles.featureText}>See who liked you</Text>
+              <Text style={styles.featureText}>See who's interested</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>🧊</Text>
-              <Text style={styles.featureText}>Undo last swipe</Text>
+              <Text style={styles.featureText}>Undo last pass</Text>
             </View>
 
             <View style={styles.featureItem}>
@@ -478,7 +478,7 @@ export default function SubscriptionScreen() {
           </View>
 
           <Text style={styles.price}>$12.99/month</Text>
-          <Text style={styles.subtitle}>Power User Tier</Text>
+          <Text style={styles.subtitle}>Community Leader</Text>
 
           <View style={styles.divider} />
 
@@ -492,17 +492,17 @@ export default function SubscriptionScreen() {
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>⏪</Text>
-              <Text style={styles.featureText}>Rewind last swipe</Text>
+              <Text style={styles.featureText}>Rewind last pass</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>🚀</Text>
-              <Text style={styles.featureText}>Priority placement in swipe queue</Text>
+              <Text style={styles.featureText}>Priority visibility</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>🟢</Text>
-              <Text style={styles.featureText}>See "recently active"</Text>
+              <Text style={styles.featureText}>See recently active members</Text>
             </View>
 
             <View style={styles.featureItem}>
@@ -511,13 +511,13 @@ export default function SubscriptionScreen() {
             </View>
 
             <View style={styles.subFeaturesList}>
-              <Text style={styles.subFeatureText}>○ Views</Text>
-              <Text style={styles.subFeatureText}>○ Likes per day</Text>
+              <Text style={styles.subFeatureText}>○ Profile views</Text>
+              <Text style={styles.subFeatureText}>○ Interest per day</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>🎨</Text>
-              <Text style={styles.featureText}>Custom profile badges (cosmetic)</Text>
+              <Text style={styles.featureText}>Custom profile badges</Text>
             </View>
           </View>
 

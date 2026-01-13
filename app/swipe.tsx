@@ -1061,7 +1061,7 @@ export default function SwipeScreen() {
               style={styles.upgradeButton}
               onPress={() => router.push("/subscription")}
             >
-              <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+              <Text style={styles.upgradeButtonText}>Support the Community</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.dismissButton}

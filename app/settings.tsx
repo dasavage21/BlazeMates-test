@@ -170,7 +170,7 @@ export default function SettingsScreen() {
         style={styles.button}
         onPress={() => router.push("/subscription")}
       >
-        <Text style={styles.buttonText}>Upgrade to Premium</Text>
+        <Text style={styles.buttonText}>Support the Community</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
