@@ -259,6 +259,7 @@ export default function SwipeScreen() {
     "https://via.placeholder.com/50"
   );
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [skipCount, setSkipCount] = useState(0);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
@@ -380,6 +381,7 @@ export default function SwipeScreen() {
       if (loading) {
         console.warn("Profile loading timeout - forcing completion");
         setLoading(false);
+        setInitialLoad(false);
       }
     }, 10000);
 
@@ -438,6 +440,7 @@ export default function SwipeScreen() {
         setProfiles([]);
         setIndex(0);
         setLoading(false);
+        setInitialLoad(false);
         return;
       }
 
@@ -488,6 +491,7 @@ export default function SwipeScreen() {
       setProfiles(filtered);
       setIndex(0);
       setLoading(false);
+      setInitialLoad(false);
 
       const channel = supabase
         .channel("users-realtime")
@@ -643,6 +647,7 @@ export default function SwipeScreen() {
     init().catch((err) => {
       console.error("Failed to initialize swipe screen:", err);
       setLoading(false);
+      setInitialLoad(false);
       setProfiles([]);
     }).finally(() => {
       clearTimeout(loadingTimeout);
@@ -931,7 +936,12 @@ export default function SwipeScreen() {
       </View>
 
       <View style={styles.cardContainer}>
-        {visibleProfiles.length > 0 && !showLimitReached ? (
+        {initialLoad ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#00FF7F" />
+            <Text style={styles.loadingText}>Loading profiles...</Text>
+          </View>
+        ) : visibleProfiles.length > 0 && !showLimitReached ? (
           <>
             {visibleProfiles
               .slice()
@@ -980,7 +990,7 @@ export default function SwipeScreen() {
         ) : null}
       </View>
 
-      {visibleProfiles.length > 0 && !showLimitReached && (
+      {!initialLoad && visibleProfiles.length > 0 && !showLimitReached && (
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[
@@ -1012,7 +1022,7 @@ export default function SwipeScreen() {
         </View>
       )}
 
-      {cooldownActive && (
+      {!initialLoad && cooldownActive && (
         <View style={styles.cooldownBanner}>
           <Text style={styles.cooldownText}>
             ⏳ Slow down! You're swiping too fast.
@@ -1020,7 +1030,7 @@ export default function SwipeScreen() {
         </View>
       )}
 
-      {!isPremium && swipesRemaining >= 0 && swipesRemaining <= 10 && !showLimitReached && (
+      {!initialLoad && !isPremium && swipesRemaining >= 0 && swipesRemaining <= 10 && !showLimitReached && (
         <View style={styles.swipeCounterBanner}>
           <Text style={styles.swipeCounterText}>
             {swipesRemaining} swipes remaining today
