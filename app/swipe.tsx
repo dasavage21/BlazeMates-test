@@ -677,6 +677,36 @@ export default function SwipeScreen() {
     }
   }, [skipCount]);
 
+  useEffect(() => {
+    const trackProfileView = async () => {
+      const current = profiles[index];
+      const myUserId = myUserIdRef.current;
+
+      if (!current || !myUserId || current.id === myUserId) {
+        return;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('profile_views')
+          .insert({
+            viewer_id: myUserId,
+            viewed_user_id: current.id,
+          });
+
+        if (error && !error.message.includes('duplicate')) {
+          console.error('Failed to track profile view:', error);
+        }
+      } catch (err) {
+        console.error('Error tracking profile view:', err);
+      }
+    };
+
+    if (profiles.length > 0 && index < profiles.length) {
+      trackProfileView();
+    }
+  }, [index, profiles]);
+
   const handleSwipeRight = async () => {
     const current = profiles[index];
     if (!current) return;

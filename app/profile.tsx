@@ -221,6 +221,15 @@ export default function ProfileScreen() {
           <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
 
+        {(subscriptionTier === "pro" || subscriptionTier === "blaze_og" || subscriptionTier === "blaze_pro") && subscriptionStatus === "active" && (
+          <TouchableOpacity
+            style={styles.analyticsButton}
+            onPress={() => router.push("/analytics")}
+          >
+            <Text style={styles.analyticsButtonText}>View Profile Analytics</Text>
+          </TouchableOpacity>
+        )}
+
         {isPremium && (
           <View style={styles.boostSection}>
             {isBoostActive ? (
@@ -396,6 +405,21 @@ const styles = StyleSheet.create({
     color: "#00FF7F",
     fontWeight: "600",
     fontSize: 15,
+  },
+  analyticsButton: {
+    backgroundColor: "rgba(255, 215, 0, 0.1)",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#FFD700",
+    marginTop: 12,
+  },
+  analyticsButtonText: {
+    color: "#FFD700",
+    fontWeight: "600",
+    fontSize: 15,
+    textAlign: "center",
   },
   boostSection: {
     marginTop: 16,
