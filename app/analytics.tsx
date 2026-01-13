@@ -35,14 +35,22 @@ export default function Analytics() {
         return;
       }
 
-      const { data: userData } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('subscription_tier, subscription_status')
         .eq('id', authUser.id)
         .maybeSingle();
 
-      if (!userData ||
-          userData.subscription_status !== 'active' ||
+      console.log('User subscription data:', userData);
+      console.log('User error:', userError);
+
+      if (!userData) {
+        setError('Unable to load user data. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (userData.subscription_status !== 'active' ||
           !['pro', 'blaze_og', 'blaze_pro'].includes(userData.subscription_tier)) {
         setError('Profile analytics is a Blaze Pro feature. Upgrade to unlock!');
         setLoading(false);
@@ -55,7 +63,10 @@ export default function Analytics() {
         .eq('user_id', authUser.id)
         .maybeSingle();
 
+      console.log('Analytics data fetch result:', analyticsData);
+
       if (!analyticsData.data) {
+        console.log('No analytics data, creating new row...');
         const { error: insertError } = await supabase
           .from('subscription_analytics')
           .insert({
@@ -70,6 +81,7 @@ export default function Analytics() {
 
         if (insertError) {
           console.error('Failed to create analytics row:', insertError);
+          throw new Error('Failed to create analytics: ' + insertError.message);
         }
 
         analyticsData = await supabase
@@ -77,22 +89,28 @@ export default function Analytics() {
           .select('*')
           .eq('user_id', authUser.id)
           .maybeSingle();
+
+        console.log('Analytics data after insert:', analyticsData);
       }
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      const { count: viewsLast7Days } = await supabase
+      const { count: viewsLast7Days, error: viewsError } = await supabase
         .from('profile_views')
         .select('*', { count: 'exact', head: true })
         .eq('viewed_user_id', authUser.id)
         .gte('viewed_at', sevenDaysAgo.toISOString());
 
-      const { count: likesLast7Days } = await supabase
+      console.log('Views last 7 days:', viewsLast7Days, 'Error:', viewsError);
+
+      const { count: likesLast7Days, error: likesError } = await supabase
         .from('likes')
         .select('*', { count: 'exact', head: true })
         .eq('liked_user_id', authUser.id)
         .gte('created_at', sevenDaysAgo.toISOString());
+
+      console.log('Likes last 7 days:', likesLast7Days, 'Error:', likesError);
 
       setAnalytics({
         totalProfileViews: analyticsData.data?.total_profile_views || 0,
@@ -111,7 +129,8 @@ export default function Analytics() {
 
     } catch (err) {
       console.error('Error loading analytics:', err);
-      setError('Failed to load analytics data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load analytics data';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -135,6 +154,7 @@ export default function Analytics() {
   }
 
   if (error) {
+    const isPremiumError = error.includes('Blaze Pro feature') || error.includes('Upgrade');
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -147,12 +167,21 @@ export default function Analytics() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorEmoji}>📊</Text>
           <Text style={styles.errorTitle}>{error}</Text>
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={() => router.push('/subscription')}
-          >
-            <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
-          </TouchableOpacity>
+          {isPremiumError ? (
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => router.push('/subscription')}
+            >
+              <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={loadAnalytics}
+            >
+              <Text style={styles.upgradeButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
