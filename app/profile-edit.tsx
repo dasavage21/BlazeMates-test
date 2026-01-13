@@ -644,10 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#00FF7F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    boxShadow: "0 4px 12px rgba(0, 255, 127, 0.3)",
     elevation: 8,
   },
   saveButtonDisabled: {
