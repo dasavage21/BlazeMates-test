@@ -392,22 +392,22 @@ export default function SubscriptionScreen() {
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>💚</Text>
-              <Text style={styles.featureText}>Find smoke buddies (daily limit)</Text>
+              <Text style={styles.featureIcon}>👥</Text>
+              <Text style={styles.featureText}>Join public groups</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>💬</Text>
-              <Text style={styles.featureText}>Connect after matching</Text>
+              <Text style={styles.featureText}>Send direct messages</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>👤</Text>
-              <Text style={styles.featureText}>View community profiles</Text>
+              <Text style={styles.featureIcon}>🌿</Text>
+              <Text style={styles.featureText}>Browse community members</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🎯</Text>
+              <Text style={styles.featureIcon}>📍</Text>
               <Text style={styles.featureText}>Basic filters (age + location)</Text>
             </View>
           </View>
@@ -424,31 +424,36 @@ export default function SubscriptionScreen() {
           </View>
 
           <Text style={styles.price}>$4.99/month</Text>
-          <Text style={styles.subtitle}>Enhanced Community Access</Text>
+          <Text style={styles.subtitle}>Enhanced Community Features</Text>
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionTitle}>Connect with more people.</Text>
+          <Text style={styles.sectionTitle}>Level up your community experience.</Text>
 
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🔁</Text>
-              <Text style={styles.featureText}>Unlimited connections</Text>
+              <Text style={styles.featureIcon}>🎪</Text>
+              <Text style={styles.featureText}>Create private groups</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>👀</Text>
-              <Text style={styles.featureText}>See who's interested</Text>
+              <Text style={styles.featureIcon}>📅</Text>
+              <Text style={styles.featureText}>Priority event registration</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🧊</Text>
-              <Text style={styles.featureText}>Undo last pass</Text>
+              <Text style={styles.featureIcon}>🌱</Text>
+              <Text style={styles.featureText}>Advanced strain database</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>⭐</Text>
-              <Text style={styles.featureText}>Profile boost (1 per week)</Text>
+              <Text style={styles.featureIcon}>🎓</Text>
+              <Text style={styles.featureText}>Access to educational content</Text>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🏷️</Text>
+              <Text style={styles.featureText}>Custom profile badge</Text>
             </View>
           </View>
 
@@ -486,38 +491,38 @@ export default function SubscriptionScreen() {
 
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>⭐</Text>
-              <Text style={styles.featureText}>Daily profile boost</Text>
+              <Text style={styles.featureIcon}>🎉</Text>
+              <Text style={styles.featureText}>Host unlimited events</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>⏪</Text>
-              <Text style={styles.featureText}>Rewind last pass</Text>
+              <Text style={styles.featureIcon}>👑</Text>
+              <Text style={styles.featureText}>Premium profile badge</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🚀</Text>
-              <Text style={styles.featureText}>Priority visibility</Text>
+              <Text style={styles.featureIcon}>📚</Text>
+              <Text style={styles.featureText}>Exclusive cultivation guides</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🟢</Text>
-              <Text style={styles.featureText}>See recently active members</Text>
+              <Text style={styles.featureIcon}>🌟</Text>
+              <Text style={styles.featureText}>Featured in community directory</Text>
             </View>
 
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>📊</Text>
-              <Text style={styles.featureText}>Profile analytics</Text>
+              <Text style={styles.featureText}>Community analytics</Text>
             </View>
 
             <View style={styles.subFeaturesList}>
               <Text style={styles.subFeatureText}>○ Profile views</Text>
-              <Text style={styles.subFeatureText}>○ Interest per day</Text>
+              <Text style={styles.subFeatureText}>○ Engagement metrics</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🎨</Text>
-              <Text style={styles.featureText}>Custom profile badges</Text>
+              <Text style={styles.featureIcon}>💎</Text>
+              <Text style={styles.featureText}>Early access to new features</Text>
             </View>
           </View>
 
