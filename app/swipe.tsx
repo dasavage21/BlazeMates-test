@@ -28,6 +28,7 @@ import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 import { fetchSiteStatus, SiteStatus } from "../lib/siteStatus";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
+import { BlazeLevelBadge } from "../components/BlazeLevelBadge";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -75,6 +76,7 @@ type Profile = {
   subscriptionTier: string | null;
   subscriptionStatus: string | null;
   isBoosted: boolean;
+  blazeLevel: number;
 };
 
 type SupaUser = {
@@ -89,6 +91,7 @@ type SupaUser = {
   subscription_tier: string | null;
   subscription_status: string | null;
   boost_active_until: string | null;
+  blaze_level: number | null;
 };
 
 function SwipeCard({
@@ -224,11 +227,17 @@ function SwipeCard({
                 <Text style={styles.verified}> ✅</Text>
               )}
             </Text>
-            <SubscriptionBadge
-              tier={profile.subscriptionTier}
-              status={profile.subscriptionStatus}
-              size="small"
-            />
+            <View style={styles.badgeRow}>
+              <SubscriptionBadge
+                tier={profile.subscriptionTier}
+                status={profile.subscriptionStatus}
+                size="small"
+              />
+              <BlazeLevelBadge
+                level={profile.blazeLevel}
+                size="small"
+              />
+            </View>
           </View>
 
           {renderLookingForTag(profile.lookingFor)}
@@ -430,7 +439,7 @@ export default function SwipeScreen() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier,subscription_status,boost_active_until")
+        .select("id,name,age,bio,strain,style,looking_for,image_url,subscription_tier,subscription_status,boost_active_until,blaze_level")
         .eq("is_suspended", false)
         .not("name", "is", null)
         .not("age", "is", null);
@@ -470,6 +479,7 @@ export default function SwipeScreen() {
         subscriptionTier: u.subscription_tier,
         subscriptionStatus: u.subscription_status,
         isBoosted: u.boost_active_until ? new Date(u.boost_active_until) > new Date() : false,
+        blazeLevel: u.blaze_level ?? 1,
       }));
 
       const filtered = everyone
@@ -1179,6 +1189,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: isSmallPhone ? 4 : 6,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   name: {
     fontSize: cardNameFontSize,

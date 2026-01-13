@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
+import { BlazeLevelBadge } from "../components/BlazeLevelBadge";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -30,6 +31,8 @@ export default function ProfileScreen() {
   const [boostActiveUntil, setBoostActiveUntil] = useState<string | null>(null);
   const [lastBoostUsedAt, setLastBoostUsedAt] = useState<string | null>(null);
   const [activatingBoost, setActivatingBoost] = useState(false);
+  const [blazeLevel, setBlazeLevel] = useState<number>(1);
+  const [activityPoints, setActivityPoints] = useState<number>(0);
 
   useEffect(() => {
     const load = async () => {
@@ -63,7 +66,7 @@ export default function ProfileScreen() {
       if (userId) {
         const { data, error } = await supabase
           .from("users")
-          .select("age, name, bio, strain, style, looking_for, image_url, subscription_tier, subscription_status, boost_active_until, last_boost_used_at")
+          .select("age, name, bio, strain, style, looking_for, image_url, subscription_tier, subscription_status, boost_active_until, last_boost_used_at, blaze_level, activity_points")
           .eq("id", userId)
           .maybeSingle();
 
@@ -92,6 +95,8 @@ export default function ProfileScreen() {
           setSubscriptionStatus(data.subscription_status);
           setBoostActiveUntil(data.boost_active_until);
           setLastBoostUsedAt(data.last_boost_used_at);
+          setBlazeLevel(data.blaze_level || 1);
+          setActivityPoints(data.activity_points || 0);
         }
       }
     };
@@ -207,6 +212,15 @@ export default function ProfileScreen() {
             tier={subscriptionTier}
             status={subscriptionStatus}
             size="medium"
+          />
+        </View>
+
+        <View style={styles.blazeLevelContainer}>
+          <BlazeLevelBadge
+            level={blazeLevel}
+            activityPoints={activityPoints}
+            showProgress={true}
+            size="large"
           />
         </View>
 
@@ -386,6 +400,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     backgroundColor: "rgba(0, 255, 127, 0.1)",
     borderRadius: 6,
+  },
+  blazeLevelContainer: {
+    marginTop: 16,
+    marginBottom: 8,
   },
   ageText: {
     fontSize: 18,

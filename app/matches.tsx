@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
+import { BlazeLevelBadge } from "../components/BlazeLevelBadge";
 
 type Match = {
   id: string;
@@ -24,6 +25,7 @@ type Match = {
   last_active_at: string | null;
   subscription_tier: string | null;
   subscription_status: string | null;
+  blaze_level: number;
 };
 
 type TabType = "matches" | "likes" | "wholiked";
@@ -132,7 +134,7 @@ export default function MatchesScreen() {
 
       const { data: usersData, error: usersError } = await supabase
         .from("users")
-        .select("id, name, age, bio, image_url, last_active_at, subscription_tier, subscription_status")
+        .select("id, name, age, bio, image_url, last_active_at, subscription_tier, subscription_status, blaze_level")
         .in("id", allUserIds);
 
       if (usersError) {
@@ -329,11 +331,17 @@ export default function MatchesScreen() {
                         {isActive && !isBlurred && <Text style={styles.activeText}> • Active</Text>}
                       </Text>
                       {!isBlurred && (
-                        <SubscriptionBadge
-                          tier={item.subscription_tier}
-                          status={item.subscription_status}
-                          size="small"
-                        />
+                        <View style={styles.badgeContainer}>
+                          <SubscriptionBadge
+                            tier={item.subscription_tier}
+                            status={item.subscription_status}
+                            size="small"
+                          />
+                          <BlazeLevelBadge
+                            level={item.blaze_level || 1}
+                            size="small"
+                          />
+                        </View>
                       )}
                     </View>
                     <Text style={styles.matchBio} numberOfLines={2}>
@@ -476,6 +484,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginBottom: 4,
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   activeText: {
     fontSize: 14,
