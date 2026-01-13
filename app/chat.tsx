@@ -8,7 +8,9 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -59,6 +61,9 @@ export default function ChatScreen() {
   const [userImages, setUserImages] = useState<Record<string, string>>({});
   const [isBlocked, setIsBlocked] = useState(false);
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReportReason, setSelectedReportReason] = useState<string | null>(null);
+  const [reportDetails, setReportDetails] = useState("");
 
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -747,24 +752,10 @@ export default function ChatScreen() {
       return;
     }
 
-    let reason: string | null = null;
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const choice = window.prompt(
-        "Why are you reporting this user?\n\n1 - Harassment\n2 - Spam\n3 - Inappropriate Content\n\nEnter the number (1-3):"
-      );
-
-      if (!choice) return;
-
-      if (choice === '1') reason = 'harassment';
-      else if (choice === '2') reason = 'spam';
-      else if (choice === '3') reason = 'inappropriate_content';
-      else {
-        window.alert("Invalid choice. Please try again.");
-        return;
-      }
+    if (Platform.OS === 'web') {
+      setShowReportModal(true);
     } else {
-      reason = await new Promise<string | null>((resolve) => {
+      const reason = await new Promise<string | null>((resolve) => {
         Alert.alert(
           "Report User",
           "Why are you reporting this user?",
@@ -776,46 +767,68 @@ export default function ChatScreen() {
           ]
         );
       });
-    }
 
-    if (!reason) return;
+      if (!reason) return;
 
-    try {
-      const { data: reportData, error } = await supabase
-        .from("reports")
-        .insert({
-          reporter_id: userId,
-          reported_id: otherUserId,
-          reason: reason,
-          context: `Reported from chat thread: ${threadId}`,
-        })
-        .select()
-        .maybeSingle();
+      try {
+        const { error } = await supabase
+          .from("reports")
+          .insert({
+            reporter_id: userId,
+            reported_id: otherUserId,
+            reason: reason,
+            context: `Reported from chat thread: ${threadId}`,
+          });
 
-      if (error) {
-        console.error("Report error:", error);
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.alert("Failed to submit report. Please try again.");
-        } else {
+        if (error) {
+          console.error("Report error:", error);
           Alert.alert("Error", "Failed to submit report. Please try again.");
+          return;
         }
-        return;
-      }
 
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert("Thank you for helping keep BlazeMates safe.");
-      } else {
         Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe.");
-      }
-    } catch (error) {
-      console.error("Failed to report user:", error);
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert("Something went wrong. Please try again.");
-      } else {
+      } catch (error) {
+        console.error("Failed to report user:", error);
         Alert.alert("Error", "Something went wrong. Please try again.");
       }
     }
   }, [userId, otherUserId, threadId]);
+
+  const submitReport = useCallback(async () => {
+    if (!selectedReportReason) {
+      Alert.alert("Error", "Please select a reason for reporting.");
+      return;
+    }
+
+    try {
+      const contextText = reportDetails.trim()
+        ? `Reported from chat thread: ${threadId}. Details: ${reportDetails}`
+        : `Reported from chat thread: ${threadId}`;
+
+      const { error } = await supabase
+        .from("reports")
+        .insert({
+          reporter_id: userId!,
+          reported_id: otherUserId!,
+          reason: selectedReportReason,
+          context: contextText,
+        });
+
+      if (error) {
+        console.error("Report error:", error);
+        Alert.alert("Error", "Failed to submit report. Please try again.");
+        return;
+      }
+
+      setShowReportModal(false);
+      setSelectedReportReason(null);
+      setReportDetails("");
+      Alert.alert("Report Submitted", "Thank you for helping keep BlazeMates safe. Our team will review your report.");
+    } catch (error) {
+      console.error("Failed to report user:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    }
+  }, [selectedReportReason, reportDetails, userId, otherUserId, threadId]);
 
   if (loadingUser) {
     return (
@@ -1018,6 +1031,222 @@ export default function ChatScreen() {
           </View>
         </KeyboardAvoidingView>
       </View>
+
+      <Modal
+        visible={showReportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowReportModal(false);
+          setSelectedReportReason(null);
+          setReportDetails("");
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Report User</Text>
+                <Text style={styles.modalSubtitle}>
+                  Help us keep BlazeMates safe for everyone
+                </Text>
+              </View>
+
+              <View style={styles.reportSection}>
+                <Text style={styles.sectionLabel}>Why are you reporting {otherUserName}?</Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.reportOption,
+                    selectedReportReason === 'harassment' && styles.reportOptionSelected
+                  ]}
+                  onPress={() => setSelectedReportReason('harassment')}
+                >
+                  <View style={styles.reportOptionIcon}>
+                    <Text style={styles.reportIconText}>⚠️</Text>
+                  </View>
+                  <View style={styles.reportOptionContent}>
+                    <Text style={[
+                      styles.reportOptionTitle,
+                      selectedReportReason === 'harassment' && styles.reportOptionTitleSelected
+                    ]}>
+                      Harassment
+                    </Text>
+                    <Text style={styles.reportOptionDescription}>
+                      Bullying, threats, or unwanted contact
+                    </Text>
+                  </View>
+                  {selectedReportReason === 'harassment' && (
+                    <View style={styles.checkMark}>
+                      <Text style={styles.checkMarkText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.reportOption,
+                    selectedReportReason === 'spam' && styles.reportOptionSelected
+                  ]}
+                  onPress={() => setSelectedReportReason('spam')}
+                >
+                  <View style={styles.reportOptionIcon}>
+                    <Text style={styles.reportIconText}>📧</Text>
+                  </View>
+                  <View style={styles.reportOptionContent}>
+                    <Text style={[
+                      styles.reportOptionTitle,
+                      selectedReportReason === 'spam' && styles.reportOptionTitleSelected
+                    ]}>
+                      Spam
+                    </Text>
+                    <Text style={styles.reportOptionDescription}>
+                      Repeated unwanted messages or advertising
+                    </Text>
+                  </View>
+                  {selectedReportReason === 'spam' && (
+                    <View style={styles.checkMark}>
+                      <Text style={styles.checkMarkText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.reportOption,
+                    selectedReportReason === 'inappropriate_content' && styles.reportOptionSelected
+                  ]}
+                  onPress={() => setSelectedReportReason('inappropriate_content')}
+                >
+                  <View style={styles.reportOptionIcon}>
+                    <Text style={styles.reportIconText}>🚫</Text>
+                  </View>
+                  <View style={styles.reportOptionContent}>
+                    <Text style={[
+                      styles.reportOptionTitle,
+                      selectedReportReason === 'inappropriate_content' && styles.reportOptionTitleSelected
+                    ]}>
+                      Inappropriate Content
+                    </Text>
+                    <Text style={styles.reportOptionDescription}>
+                      Explicit, offensive, or harmful content
+                    </Text>
+                  </View>
+                  {selectedReportReason === 'inappropriate_content' && (
+                    <View style={styles.checkMark}>
+                      <Text style={styles.checkMarkText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.reportOption,
+                    selectedReportReason === 'fake_profile' && styles.reportOptionSelected
+                  ]}
+                  onPress={() => setSelectedReportReason('fake_profile')}
+                >
+                  <View style={styles.reportOptionIcon}>
+                    <Text style={styles.reportIconText}>👤</Text>
+                  </View>
+                  <View style={styles.reportOptionContent}>
+                    <Text style={[
+                      styles.reportOptionTitle,
+                      selectedReportReason === 'fake_profile' && styles.reportOptionTitleSelected
+                    ]}>
+                      Fake Profile
+                    </Text>
+                    <Text style={styles.reportOptionDescription}>
+                      Impersonation or fraudulent account
+                    </Text>
+                  </View>
+                  {selectedReportReason === 'fake_profile' && (
+                    <View style={styles.checkMark}>
+                      <Text style={styles.checkMarkText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.reportOption,
+                    selectedReportReason === 'other' && styles.reportOptionSelected
+                  ]}
+                  onPress={() => setSelectedReportReason('other')}
+                >
+                  <View style={styles.reportOptionIcon}>
+                    <Text style={styles.reportIconText}>💬</Text>
+                  </View>
+                  <View style={styles.reportOptionContent}>
+                    <Text style={[
+                      styles.reportOptionTitle,
+                      selectedReportReason === 'other' && styles.reportOptionTitleSelected
+                    ]}>
+                      Other
+                    </Text>
+                    <Text style={styles.reportOptionDescription}>
+                      Something else that concerns you
+                    </Text>
+                  </View>
+                  {selectedReportReason === 'other' && (
+                    <View style={styles.checkMark}>
+                      <Text style={styles.checkMarkText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.detailsSection}>
+                <Text style={styles.sectionLabel}>Additional Details (Optional)</Text>
+                <TextInput
+                  style={styles.detailsInput}
+                  placeholder="Provide any additional context that might help us..."
+                  placeholderTextColor="#666"
+                  value={reportDetails}
+                  onChangeText={setReportDetails}
+                  multiline
+                  numberOfLines={4}
+                  maxLength={500}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.characterCount}>{reportDetails.length}/500</Text>
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowReportModal(false);
+                    setSelectedReportReason(null);
+                    setReportDetails("");
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    !selectedReportReason && styles.submitButtonDisabled
+                  ]}
+                  onPress={submitReport}
+                  disabled={!selectedReportReason}
+                >
+                  <Text style={[
+                    styles.submitButtonText,
+                    !selectedReportReason && styles.submitButtonTextDisabled
+                  ]}>
+                    Submit Report
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1240,5 +1469,189 @@ const styles = StyleSheet.create({
     marginVertical: 24,
     fontSize: 15,
     fontStyle: "italic",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 20,
+    width: "100%",
+    maxWidth: 540,
+    maxHeight: "90%",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  modalContent: {
+    padding: 24,
+  },
+  modalHeader: {
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    color: "#00FF7F",
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+  reportSection: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 16,
+    letterSpacing: 0.3,
+  },
+  reportOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#262626",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: "#333",
+    transition: "all 0.2s ease",
+  },
+  reportOptionSelected: {
+    backgroundColor: "#1a3a2e",
+    borderColor: "#00FF7F",
+    shadowColor: "#00FF7F",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  reportOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#1f1f1f",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  reportIconText: {
+    fontSize: 24,
+  },
+  reportOptionContent: {
+    flex: 1,
+  },
+  reportOptionTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  reportOptionTitleSelected: {
+    color: "#00FF7F",
+  },
+  reportOptionDescription: {
+    fontSize: 13,
+    color: "#999",
+    lineHeight: 18,
+  },
+  checkMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#00FF7F",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 12,
+  },
+  checkMarkText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#121212",
+  },
+  detailsSection: {
+    marginBottom: 24,
+  },
+  detailsInput: {
+    backgroundColor: "#262626",
+    borderRadius: 12,
+    padding: 16,
+    color: "#fff",
+    fontSize: 15,
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: "#333",
+    lineHeight: 22,
+  },
+  characterCount: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "right",
+    marginTop: 8,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#3a3a3a",
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: "#00FF7F",
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    shadowColor: "#00FF7F",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#2a2a2a",
+    shadowOpacity: 0,
+  },
+  submitButtonText: {
+    color: "#121212",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  submitButtonTextDisabled: {
+    color: "#666",
   },
 });
