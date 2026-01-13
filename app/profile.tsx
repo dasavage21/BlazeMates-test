@@ -340,7 +340,7 @@ export default function ProfileScreen() {
           style={styles.backButton}
           onPress={() => router.replace("/swipe")}
         >
-          <Text style={styles.backButtonText}>Back to Finding Smoke Buddies</Text>
+          <Text style={styles.backButtonText}>Back to Community</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

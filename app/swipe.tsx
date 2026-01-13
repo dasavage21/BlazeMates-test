@@ -933,7 +933,17 @@ export default function SwipeScreen() {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/matches")}>
             <Text style={styles.navLink}>
-              {isSmallPhone ? "Connections" : "💚 Connections"}
+              {isSmallPhone ? "👥" : "👥 DMs"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/groups")}>
+            <Text style={styles.navLink}>
+              {isSmallPhone ? "💬" : "💬 Groups"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/events")}>
+            <Text style={styles.navLink}>
+              {isSmallPhone ? "📅" : "📅 Events"}
             </Text>
           </TouchableOpacity>
         </View>

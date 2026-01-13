@@ -255,7 +255,7 @@ export default function MatchesScreen() {
         <TouchableOpacity onPress={() => router.push('/swipe')} style={styles.backButton}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Your Connections</Text>
+        <Text style={styles.title}>Direct Messages</Text>
       </View>
 
       <View style={styles.tabContainer}>
