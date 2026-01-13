@@ -37,12 +37,15 @@ export default function GroupsScreen() {
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [creating, setCreating] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadGroups = useCallback(async () => {
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
+      console.log("Loading groups for user:", userId);
       if (!userId) {
+        console.log("No user ID, stopping load");
         setLoading(false);
         return;
       }
@@ -54,8 +57,11 @@ export default function GroupsScreen() {
         .eq("is_public", true)
         .order("created_at", { ascending: false });
 
+      console.log("Groups query result:", { groupsData, error });
+
       if (error) {
         console.error("Error loading groups:", error);
+        Alert.alert("Error", `Failed to load groups: ${error.message}`);
         setLoading(false);
         return;
       }
@@ -98,7 +104,23 @@ export default function GroupsScreen() {
   useEffect(() => {
     loadGroups();
     updateUserActivity();
+
+    // Subscribe to auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      console.log("Auth state changed, reloading groups");
+      loadGroups();
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, [loadGroups]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadGroups();
+    setRefreshing(false);
+  };
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
@@ -248,6 +270,8 @@ export default function GroupsScreen() {
         <FlatList
           data={groups}
           keyExtractor={(item) => item.id}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.groupCard}
