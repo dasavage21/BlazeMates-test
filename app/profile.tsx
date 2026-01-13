@@ -32,9 +32,6 @@ export default function ProfileScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
-  const [boostActiveUntil, setBoostActiveUntil] = useState<string | null>(null);
-  const [lastBoostUsedAt, setLastBoostUsedAt] = useState<string | null>(null);
-  const [activatingBoost, setActivatingBoost] = useState(false);
   const [blazeLevel, setBlazeLevel] = useState<number>(1);
   const [activityPoints, setActivityPoints] = useState<number>(0);
 
@@ -47,7 +44,7 @@ export default function ProfileScreen() {
         if (userId) {
           const { data, error } = await supabase
             .from("users")
-            .select("age, name, bio, strain, experience_level, preferred_strains, consumption_methods, cultivation_interest, image_url, subscription_tier, subscription_status, boost_active_until, last_boost_used_at, blaze_level, activity_points")
+            .select("age, name, bio, strain, experience_level, preferred_strains, consumption_methods, cultivation_interest, image_url, subscription_tier, subscription_status, blaze_level, activity_points")
             .eq("id", userId)
             .maybeSingle();
 
@@ -67,8 +64,6 @@ export default function ProfileScreen() {
             }
             setSubscriptionTier(data.subscription_tier);
             setSubscriptionStatus(data.subscription_status);
-            setBoostActiveUntil(data.boost_active_until);
-            setLastBoostUsedAt(data.last_boost_used_at);
             setBlazeLevel(data.blaze_level || 1);
             setActivityPoints(data.activity_points || 0);
           }
@@ -92,14 +87,13 @@ export default function ProfileScreen() {
           if (userId) {
             const { data, error } = await supabase
               .from("users")
-              .select("blaze_level, activity_points, boost_active_until, subscription_tier, subscription_status")
+              .select("blaze_level, activity_points, subscription_tier, subscription_status")
               .eq("id", userId)
               .maybeSingle();
 
             if (!error && data) {
               setBlazeLevel(data.blaze_level || 1);
               setActivityPoints(data.activity_points || 0);
-              setBoostActiveUntil(data.boost_active_until);
               setSubscriptionTier(data.subscription_tier);
               setSubscriptionStatus(data.subscription_status);
             }
@@ -112,77 +106,6 @@ export default function ProfileScreen() {
   );
 
   const isPremium = subscriptionStatus === "active" && (subscriptionTier === "plus" || subscriptionTier === "pro");
-  const isBoostActive = boostActiveUntil ? new Date(boostActiveUntil) > new Date() : false;
-
-  const canBoost = () => {
-    if (!isPremium) return { can: false, reason: "Premium required" };
-    if (isBoostActive) return { can: false, reason: "Boost already active" };
-
-    if (lastBoostUsedAt) {
-      const lastBoost = new Date(lastBoostUsedAt);
-      const now = new Date();
-      const hoursSinceLastBoost = (now.getTime() - lastBoost.getTime()) / (1000 * 60 * 60);
-
-      const isPro = subscriptionTier === "pro";
-      const cooldownHours = isPro ? 24 : 168;
-
-      if (hoursSinceLastBoost < cooldownHours) {
-        const hoursRemaining = Math.ceil(cooldownHours - hoursSinceLastBoost);
-        const daysRemaining = Math.floor(hoursRemaining / 24);
-        const hoursRemainingInDay = hoursRemaining % 24;
-        const timeRemaining = daysRemaining > 0
-          ? `${daysRemaining}d ${hoursRemainingInDay}h`
-          : `${hoursRemainingInDay}h`;
-        return { can: false, reason: `Available in ${timeRemaining}` };
-      }
-    }
-
-    return { can: true, reason: "" };
-  };
-
-  const handleActivateBoost = async () => {
-    const boostCheck = canBoost();
-    if (!boostCheck.can) {
-      alert(boostCheck.reason);
-      return;
-    }
-
-    setActivatingBoost(true);
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      const userId = authData?.user?.id;
-
-      if (!userId) {
-        alert("You must be logged in to activate boost");
-        return;
-      }
-
-      const now = new Date();
-      const boostExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-      const { error } = await supabase
-        .from("users")
-        .update({
-          boost_active_until: boostExpiresAt.toISOString(),
-          last_boost_used_at: now.toISOString(),
-        })
-        .eq("id", userId);
-
-      if (error) {
-        console.error("Error activating boost:", error);
-        alert("Failed to activate boost. Please try again.");
-      } else {
-        setBoostActiveUntil(boostExpiresAt.toISOString());
-        setLastBoostUsedAt(now.toISOString());
-        alert("Boost activated! Your profile will be featured in the community for 24 hours.");
-      }
-    } catch (error) {
-      console.error("Boost activation exception:", error);
-      alert("Something went wrong. Please try again.");
-    } finally {
-      setActivatingBoost(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -245,45 +168,8 @@ export default function ProfileScreen() {
             style={styles.analyticsButton}
             onPress={() => router.push("/analytics")}
           >
-            <Text style={styles.analyticsButtonText}>View Profile Analytics</Text>
+            <Text style={styles.analyticsButtonText}>View Analytics</Text>
           </TouchableOpacity>
-        )}
-
-        {isPremium && (
-          <View style={styles.boostSection}>
-            {isBoostActive ? (
-              <View style={styles.boostActiveCard}>
-                <Text style={styles.boostActiveTitle}>⚡ Boost Active</Text>
-                <Text style={styles.boostActiveText}>
-                  Your profile is boosted until{" "}
-                  {new Date(boostActiveUntil!).toLocaleString()}
-                </Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.boostButton,
-                  !canBoost().can && styles.boostButtonDisabled,
-                ]}
-                onPress={handleActivateBoost}
-                disabled={!canBoost().can || activatingBoost}
-              >
-                <Text style={styles.boostButtonIcon}>⚡</Text>
-                <View style={styles.boostButtonTextContainer}>
-                  <Text style={styles.boostButtonTitle}>
-                    {activatingBoost ? "Activating..." : "Activate Profile Boost"}
-                  </Text>
-                  <Text style={styles.boostButtonSubtitle}>
-                    {canBoost().can
-                      ? subscriptionTier === "pro"
-                        ? "Available daily • Lasts 24 hours"
-                        : "Available weekly • Lasts 24 hours"
-                      : canBoost().reason}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
         )}
       </View>
 
@@ -460,59 +346,6 @@ const styles = StyleSheet.create({
     color: "#FFD700",
     fontWeight: "600",
     fontSize: 15,
-    textAlign: "center",
-  },
-  boostSection: {
-    marginTop: 16,
-    width: "100%",
-  },
-  boostButton: {
-    backgroundColor: "rgba(255, 215, 0, 0.15)",
-    borderWidth: 2,
-    borderColor: "#FFD700",
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  boostButtonDisabled: {
-    opacity: 0.5,
-    borderColor: "#666",
-  },
-  boostButtonIcon: {
-    fontSize: 32,
-  },
-  boostButtonTextContainer: {
-    flex: 1,
-  },
-  boostButtonTitle: {
-    color: "#FFD700",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  boostButtonSubtitle: {
-    color: "#aaa",
-    fontSize: 13,
-  },
-  boostActiveCard: {
-    backgroundColor: "rgba(255, 215, 0, 0.15)",
-    borderWidth: 2,
-    borderColor: "#FFD700",
-    borderRadius: 16,
-    padding: 16,
-    alignItems: "center",
-  },
-  boostActiveTitle: {
-    color: "#FFD700",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  boostActiveText: {
-    color: "#fff",
-    fontSize: 14,
     textAlign: "center",
   },
   contentSection: {

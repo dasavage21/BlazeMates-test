@@ -199,7 +199,7 @@ export default function Analytics() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ArrowLeft size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile Analytics</Text>
+          <Text style={styles.headerTitle}>Community Analytics</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -217,7 +217,7 @@ export default function Analytics() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ArrowLeft size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile Analytics</Text>
+          <Text style={styles.headerTitle}>Community Analytics</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.errorContainer}>
