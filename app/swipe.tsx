@@ -207,11 +207,11 @@ function SwipeCard({
         />
 
         <Animated.View style={[styles.likeStamp, likeOpacity]}>
-          <Text style={styles.likeText}>LIKE</Text>
+          <Text style={styles.likeText}>CONNECT</Text>
         </Animated.View>
 
         <Animated.View style={[styles.nopeStamp, nopeOpacity]}>
-          <Text style={styles.nopeText}>NOPE</Text>
+          <Text style={styles.nopeText}>PASS</Text>
         </Animated.View>
 
         <View style={styles.cardInfo}>

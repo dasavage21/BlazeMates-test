@@ -28,17 +28,11 @@ type Match = {
   blaze_level: number;
 };
 
-type TabType = "matches" | "likes" | "wholiked";
-
 export default function MatchesScreen() {
   const router = useRouter();
-  const [mutualMatches, setMutualMatches] = useState<Match[]>([]);
-  const [pendingLikes, setPendingLikes] = useState<Match[]>([]);
-  const [whoLikedYou, setWhoLikedYou] = useState<Match[]>([]);
+  const [connections, setConnections] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>("matches");
-  const [isPremium, setIsPremium] = useState(false);
 
   const isUserActive = useCallback((lastActiveAt: string | null): boolean => {
     if (!lastActiveAt) return false;
@@ -59,17 +53,6 @@ export default function MatchesScreen() {
 
       setCurrentUserId(myUserId);
 
-      const { data: userData } = await supabase
-        .from("users")
-        .select("subscription_tier, subscription_status")
-        .eq("id", myUserId)
-        .maybeSingle();
-
-      const userIsPremium =
-        (userData?.subscription_tier === "plus" || userData?.subscription_tier === "pro") &&
-        userData?.subscription_status === "active";
-      setIsPremium(userIsPremium);
-
       const { data: myLikes, error: likesError } = await supabase
         .from("likes")
         .select("liked_user_id")
@@ -83,24 +66,8 @@ export default function MatchesScreen() {
 
       const likedUserIds = (myLikes || []).map((like) => like.liked_user_id);
 
-      const { data: likesReceived, error: likesReceivedError } = await supabase
-        .from("likes")
-        .select("user_id")
-        .eq("liked_user_id", myUserId);
-
-      if (likesReceivedError) {
-        console.error("Failed to fetch likes received:", likesReceivedError);
-      }
-
-      const receivedLikeUserIds = (likesReceived || []).map((like) => like.user_id);
-      const whoLikedMeIds = receivedLikeUserIds.filter(
-        (id) => !likedUserIds.includes(id)
-      );
-
-      if (likedUserIds.length === 0 && whoLikedMeIds.length === 0) {
-        setMutualMatches([]);
-        setPendingLikes([]);
-        setWhoLikedYou([]);
+      if (likedUserIds.length === 0) {
+        setConnections([]);
         setLoading(false);
         return;
       }
@@ -118,16 +85,9 @@ export default function MatchesScreen() {
       }
 
       const mutualUserIds = (theirLikes || []).map((like) => like.user_id);
-      const pendingUserIds = likedUserIds.filter(
-        (id) => !mutualUserIds.includes(id)
-      );
 
-      const allUserIds = [...new Set([...likedUserIds, ...whoLikedMeIds])];
-
-      if (allUserIds.length === 0) {
-        setMutualMatches([]);
-        setPendingLikes([]);
-        setWhoLikedYou([]);
+      if (mutualUserIds.length === 0) {
+        setConnections([]);
         setLoading(false);
         return;
       }
@@ -135,7 +95,7 @@ export default function MatchesScreen() {
       const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select("id, name, age, bio, image_url, last_active_at, subscription_tier, subscription_status, blaze_level")
-        .in("id", allUserIds);
+        .in("id", mutualUserIds);
 
       if (usersError) {
         console.error("Failed to fetch users:", usersError);
@@ -143,17 +103,10 @@ export default function MatchesScreen() {
         return;
       }
 
-      const allUsers = usersData || [];
-      const mutual = allUsers.filter((user) => mutualUserIds.includes(user.id));
-      const pending = allUsers.filter((user) => pendingUserIds.includes(user.id));
-      const whoLiked = allUsers.filter((user) => whoLikedMeIds.includes(user.id));
-
-      setMutualMatches(mutual);
-      setPendingLikes(pending);
-      setWhoLikedYou(whoLiked);
+      setConnections(usersData || []);
       setLoading(false);
     } catch (error) {
-      console.error("Error loading matches:", error);
+      console.error("Error loading connections:", error);
       setLoading(false);
     }
   }, []);
@@ -208,21 +161,17 @@ export default function MatchesScreen() {
     async (matchId: string) => {
       if (!currentUserId) return;
 
-      if (activeTab === "matches") {
-        const threadId = createThreadId(currentUserId, matchId);
+      const threadId = createThreadId(currentUserId, matchId);
 
-        try {
-          await supabase.from("threads").upsert({ id: threadId }, { onConflict: "id" });
-        } catch (e: any) {
-          console.warn("Failed to create chat thread", e);
-        }
-
-        router.push({ pathname: "/chat", params: { threadId } });
-      } else if (activeTab === "wholiked" && !isPremium) {
-        router.push("/subscription");
+      try {
+        await supabase.from("threads").upsert({ id: threadId }, { onConflict: "id" });
+      } catch (e: any) {
+        console.warn("Failed to create chat thread", e);
       }
+
+      router.push({ pathname: "/chat", params: { threadId } });
     },
-    [currentUserId, createThreadId, router, activeTab, isPremium]
+    [currentUserId, createThreadId, router]
   );
 
   if (loading) {
@@ -235,20 +184,6 @@ export default function MatchesScreen() {
     );
   }
 
-  const displayedMatches =
-    activeTab === "matches"
-      ? mutualMatches
-      : activeTab === "likes"
-      ? pendingLikes
-      : whoLikedYou;
-
-  const emptyMessage =
-    activeTab === "matches"
-      ? "No connections yet. Keep exploring the community!"
-      : activeTab === "likes"
-      ? "You haven't connected with anyone yet. Start browsing!"
-      : "No interest yet. Keep building your profile!";
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -258,51 +193,19 @@ export default function MatchesScreen() {
         <Text style={styles.title}>Direct Messages</Text>
       </View>
 
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "matches" && styles.activeTab]}
-          onPress={() => setActiveTab("matches")}
-        >
-          <Text
-            style={[styles.tabText, activeTab === "matches" && styles.activeTabText]}
-          >
-            Connected ({mutualMatches.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "likes" && styles.activeTab]}
-          onPress={() => setActiveTab("likes")}
-        >
-          <Text
-            style={[styles.tabText, activeTab === "likes" && styles.activeTabText]}
-          >
-            Interested ({pendingLikes.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "wholiked" && styles.activeTab]}
-          onPress={() => setActiveTab("wholiked")}
-        >
-          <Text
-            style={[styles.tabText, activeTab === "wholiked" && styles.activeTabText]}
-          >
-            Interested in You ({whoLikedYou.length})
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {displayedMatches.length === 0 ? (
+      {connections.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{emptyMessage}</Text>
+          <Text style={styles.emptyText}>
+            No connections yet. Keep exploring the community!
+          </Text>
         </View>
       ) : (
         <FlatList
-          data={displayedMatches}
+          data={connections}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
             const isActive = isUserActive(item.last_active_at);
-            const isBlurred = activeTab === "wholiked" && !isPremium;
             return (
               <View style={styles.matchCard}>
                 <TouchableOpacity
@@ -314,66 +217,40 @@ export default function MatchesScreen() {
                       source={{
                         uri: item.image_url || "https://via.placeholder.com/80",
                       }}
-                      style={[styles.matchImage, isBlurred && styles.blurredImage]}
-                      blurRadius={isBlurred ? 20 : 0}
+                      style={styles.matchImage}
                     />
-                    {isActive && !isBlurred && <View style={styles.activeIndicator} />}
-                    {isBlurred && (
-                      <View style={styles.premiumOverlay}>
-                        <Text style={styles.premiumIcon}>👀</Text>
-                      </View>
-                    )}
+                    {isActive && <View style={styles.activeIndicator} />}
                   </View>
                   <View style={styles.matchInfo}>
                     <View style={styles.nameRow}>
                       <Text style={styles.matchName}>
-                        {isBlurred ? "Premium User" : `${item.name || "Unknown"}, ${item.age || "?"}`}
-                        {isActive && !isBlurred && <Text style={styles.activeText}> • Active</Text>}
+                        {`${item.name || "Unknown"}, ${item.age || "?"}`}
+                        {isActive && <Text style={styles.activeText}> • Active</Text>}
                       </Text>
-                      {!isBlurred && (
-                        <View style={styles.badgeContainer}>
-                          <SubscriptionBadge
-                            tier={item.subscription_tier}
-                            status={item.subscription_status}
-                            size="small"
-                          />
-                          <BlazeLevelBadge
-                            level={item.blaze_level || 1}
-                            size="small"
-                          />
-                        </View>
-                      )}
+                      <View style={styles.badgeContainer}>
+                        <SubscriptionBadge
+                          tier={item.subscription_tier}
+                          status={item.subscription_status}
+                          size="small"
+                        />
+                        <BlazeLevelBadge
+                          level={item.blaze_level || 1}
+                          size="small"
+                        />
+                      </View>
                     </View>
                     <Text style={styles.matchBio} numberOfLines={2}>
-                      {isBlurred
-                        ? "Upgrade to see who's interested in connecting!"
-                        : item.bio || "No bio"}
+                      {item.bio || "No bio"}
                     </Text>
-                    <Text style={styles.messagePrompt}>
-                      {activeTab === "matches"
-                        ? "Tap to message"
-                        : activeTab === "wholiked" && isBlurred
-                        ? "Tap to upgrade"
-                        : "Waiting for mutual interest"}
-                    </Text>
+                    <Text style={styles.messagePrompt}>Tap to message</Text>
                   </View>
                 </TouchableOpacity>
-                {!isBlurred && (
-                  <TouchableOpacity
-                    style={styles.viewProfileButton}
-                    onPress={() => router.push(`/match?matchId=${item.id}`)}
-                  >
-                    <Text style={styles.viewProfileText}>View Profile</Text>
-                  </TouchableOpacity>
-                )}
-                {isBlurred && (
-                  <TouchableOpacity
-                    style={styles.upgradeProfileButton}
-                    onPress={() => router.push("/subscription")}
-                  >
-                    <Text style={styles.upgradeProfileText}>Upgrade to See</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={styles.viewProfileButton}
+                  onPress={() => router.push(`/match?matchId=${item.id}`)}
+                >
+                  <Text style={styles.viewProfileText}>View Profile</Text>
+                </TouchableOpacity>
               </View>
             );
           }}
@@ -413,30 +290,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "#fff",
     fontWeight: "bold",
-  },
-  tabContainer: {
-    flexDirection: "row",
-    backgroundColor: "#1a1a1a",
-    borderBottomWidth: 1,
-    borderBottomColor: "#2f2f2f",
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  activeTab: {
-    borderBottomColor: "#00FF7F",
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#888",
-  },
-  activeTabText: {
-    color: "#00FF7F",
   },
   list: {
     padding: 16,
@@ -535,34 +388,5 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
     lineHeight: 24,
-  },
-  blurredImage: {
-    opacity: 0.6,
-  },
-  premiumOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: 40,
-  },
-  premiumIcon: {
-    fontSize: 32,
-  },
-  upgradeProfileButton: {
-    backgroundColor: "#FFD700",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  upgradeProfileText: {
-    color: "#121212",
-    fontSize: 14,
-    fontWeight: "700",
   },
 });
