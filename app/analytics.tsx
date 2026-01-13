@@ -51,11 +51,35 @@ export default function Analytics() {
         return;
       }
 
-      const { data: analyticsData } = await supabase
+      let analyticsData = await supabase
         .from('subscription_analytics')
         .select('*')
         .eq('user_id', authUser.id)
         .maybeSingle();
+
+      if (!analyticsData.data) {
+        const { error: insertError } = await supabase
+          .from('subscription_analytics')
+          .insert({
+            user_id: authUser.id,
+            swipe_through_rate: 0,
+            match_likelihood_score: 0,
+            total_swipes: 0,
+            total_likes_sent: 0,
+            total_likes_received: 0,
+            total_profile_views: 0,
+          });
+
+        if (insertError) {
+          console.error('Failed to create analytics row:', insertError);
+        }
+
+        analyticsData = await supabase
+          .from('subscription_analytics')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .maybeSingle();
+      }
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -73,17 +97,19 @@ export default function Analytics() {
         .gte('created_at', sevenDaysAgo.toISOString());
 
       setAnalytics({
-        totalProfileViews: analyticsData?.total_profile_views || 0,
-        totalLikesReceived: analyticsData?.total_likes_received || 0,
-        totalLikesSent: analyticsData?.total_likes_sent || 0,
-        totalSwipes: analyticsData?.total_swipes || 0,
-        swipeThroughRate: analyticsData?.swipe_through_rate || 0,
-        matchLikelihoodScore: analyticsData?.match_likelihood_score || 0,
+        totalProfileViews: analyticsData.data?.total_profile_views || 0,
+        totalLikesReceived: analyticsData.data?.total_likes_received || 0,
+        totalLikesSent: analyticsData.data?.total_likes_sent || 0,
+        totalSwipes: analyticsData.data?.total_swipes || 0,
+        swipeThroughRate: analyticsData.data?.swipe_through_rate || 0,
+        matchLikelihoodScore: analyticsData.data?.match_likelihood_score || 0,
         viewsLast7Days: viewsLast7Days || 0,
         likesLast7Days: likesLast7Days || 0,
       });
 
-      await supabase.rpc('update_profile_view_analytics');
+      await supabase.rpc('update_profile_view_analytics').catch(err => {
+        console.error('Failed to update analytics:', err);
+      });
 
     } catch (err) {
       console.error('Error loading analytics:', err);
