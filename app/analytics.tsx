@@ -123,9 +123,11 @@ export default function Analytics() {
         likesLast7Days: likesLast7Days || 0,
       });
 
-      await supabase.rpc('update_profile_view_analytics').catch(err => {
-        console.error('Failed to update analytics:', err);
-      });
+      try {
+        await supabase.rpc('update_profile_view_analytics');
+      } catch (rpcErr) {
+        console.error('Failed to update analytics:', rpcErr);
+      }
 
     } catch (err) {
       console.error('Error loading analytics:', err);
