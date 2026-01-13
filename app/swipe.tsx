@@ -872,7 +872,7 @@ export default function SwipeScreen() {
           <View style={styles.navbar}>
         <View style={styles.navLeft}>
           <Text style={styles.logo}>🔥</Text>
-          {!isSmallPhone && <Text style={styles.brandName} numberOfLines={1}>BlazeMates</Text>}
+          <Text style={styles.brandName} numberOfLines={1}>BlazeMates</Text>
         </View>
 
         <View style={styles.navCenter}>
@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: isSmallPhone ? 4 : 8,
-    flex: isSmallPhone ? 0.3 : 1,
+    flex: 1,
     minWidth: 0,
   },
   logo: {
@@ -1060,16 +1060,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: isSmallPhone ? 6 : navGap,
-    flex: isSmallPhone ? 3 : 2,
+    flex: 2,
     justifyContent: "center",
     minWidth: 0,
   },
   navRight: {
     flexDirection: "row",
     alignItems: "center",
-    flex: isSmallPhone ? 0.7 : undefined,
+    flex: 1,
     justifyContent: "flex-end",
-    minWidth: isSmallPhone ? 32 : 0,
+    minWidth: 0,
   },
   navLink: {
     color: "#fff",
