@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Platform,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -40,6 +41,7 @@ type Post = {
   user_image: string | null;
   like_count: number;
   comment_count: number;
+  is_liked: boolean;
 };
 
 export default function FeedScreen() {
@@ -94,6 +96,9 @@ export default function FeedScreen() {
 
   const loadPosts = useCallback(async () => {
     try {
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData?.user?.id;
+
       const { data: postsData, error } = await supabase
         .from("feed_posts")
         .select(`
@@ -127,7 +132,7 @@ export default function FeedScreen() {
       const postIds = postsData.map(p => p.id);
       const { data: likesData } = await supabase
         .from("post_likes")
-        .select("post_id")
+        .select("post_id, user_id")
         .in("post_id", postIds);
 
       const { data: commentsData } = await supabase
@@ -136,8 +141,13 @@ export default function FeedScreen() {
         .in("post_id", postIds);
 
       const likeCounts = new Map<string, number>();
+      const userLikes = new Set<string>();
+
       likesData?.forEach(like => {
         likeCounts.set(like.post_id, (likeCounts.get(like.post_id) || 0) + 1);
+        if (like.user_id === currentUserId) {
+          userLikes.add(like.post_id);
+        }
       });
 
       const commentCounts = new Map<string, number>();
@@ -157,6 +167,7 @@ export default function FeedScreen() {
           user_image: user?.image_url || null,
           like_count: likeCounts.get(post.id) || 0,
           comment_count: commentCounts.get(post.id) || 0,
+          is_liked: userLikes.has(post.id),
         };
       });
 
@@ -188,6 +199,28 @@ export default function FeedScreen() {
           loadPosts();
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "post_likes",
+        },
+        () => {
+          loadPosts();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "post_comments",
+        },
+        () => {
+          loadPosts();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -205,6 +238,54 @@ export default function FeedScreen() {
     setRefreshing(true);
     loadPosts();
   }, [loadPosts]);
+
+  const handleLikeToggle = async (postId: string) => {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+
+      if (!userId) return;
+
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.is_liked) {
+        const { error } = await supabase
+          .from("post_likes")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", userId);
+
+        if (error) {
+          console.error("Error unliking post:", error);
+          return;
+        }
+
+        setPosts(posts.map(p =>
+          p.id === postId
+            ? { ...p, is_liked: false, like_count: p.like_count - 1 }
+            : p
+        ));
+      } else {
+        const { error } = await supabase
+          .from("post_likes")
+          .insert({ post_id: postId, user_id: userId });
+
+        if (error) {
+          console.error("Error liking post:", error);
+          return;
+        }
+
+        setPosts(posts.map(p =>
+          p.id === postId
+            ? { ...p, is_liked: true, like_count: p.like_count + 1 }
+            : p
+        ));
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
+  };
 
   const formatTime = (timestamp: string) => {
     const now = new Date();
@@ -327,14 +408,26 @@ export default function FeedScreen() {
                   )}
 
                   <View style={styles.postActions}>
-                    <View style={styles.actionItem}>
-                      <Heart size={20} color="#888" />
-                      <Text style={styles.actionText}>{post.like_count}</Text>
-                    </View>
-                    <View style={styles.actionItem}>
+                    <TouchableOpacity
+                      style={styles.actionItem}
+                      onPress={() => handleLikeToggle(post.id)}
+                    >
+                      <Heart
+                        size={20}
+                        color={post.is_liked ? "#FF4444" : "#888"}
+                        fill={post.is_liked ? "#FF4444" : "none"}
+                      />
+                      <Text style={[
+                        styles.actionText,
+                        post.is_liked && styles.actionTextActive
+                      ]}>
+                        {post.like_count}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionItem}>
                       <MessageCircle size={20} color="#888" />
                       <Text style={styles.actionText}>{post.comment_count}</Text>
-                    </View>
+                    </TouchableOpacity>
                   </View>
                 </View>
               ))
@@ -501,11 +594,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
   },
   actionText: {
     fontSize: 14,
     color: "#888",
     fontWeight: "500",
+  },
+  actionTextActive: {
+    color: "#FF4444",
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
