@@ -205,6 +205,8 @@ export default function FeedScreen() {
   }, [loadHeaderPhoto, loadPosts]);
 
   useEffect(() => {
+    let likesDebounceTimer: NodeJS.Timeout | null = null;
+
     const channel = supabase
       .channel("feed_posts_changes")
       .on(
@@ -226,7 +228,12 @@ export default function FeedScreen() {
           table: "post_likes",
         },
         () => {
-          loadPosts();
+          if (likesDebounceTimer) {
+            clearTimeout(likesDebounceTimer);
+          }
+          likesDebounceTimer = setTimeout(() => {
+            loadPosts();
+          }, 2000);
         }
       )
       .on(
@@ -243,6 +250,9 @@ export default function FeedScreen() {
       .subscribe();
 
     return () => {
+      if (likesDebounceTimer) {
+        clearTimeout(likesDebounceTimer);
+      }
       supabase.removeChannel(channel);
     };
   }, [loadPosts]);
