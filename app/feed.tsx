@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
-import { Heart, MessageCircle } from "lucide-react-native";
+import { Heart, MessageCircle, Plus } from "lucide-react-native";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -325,6 +325,13 @@ export default function FeedScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/create-post")}
+      >
+        <Plus size={28} color="#121212" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -531,5 +538,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: isSmallPhone ? 10 : 12,
     textAlign: "center",
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#00FF7F",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#00FF7F",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

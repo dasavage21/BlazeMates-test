@@ -883,6 +883,11 @@ export default function SwipeScreen() {
               style={styles.navProfilePic}
             />
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/feed")}>
+            <Text style={styles.navLink}>
+              {isSmallPhone ? "📰" : "📰 Feed"}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/matches")}>
             <Text style={styles.navLink}>
               {isSmallPhone ? "👥" : "👥 DMs"}
