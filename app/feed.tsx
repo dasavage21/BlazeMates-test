@@ -5,18 +5,21 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Keyboard,
+  Modal,
   Platform,
   RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
-import { Heart, MessageCircle, Plus } from "lucide-react-native";
+import { Heart, MessageCircle, Plus, Send, X } from "lucide-react-native";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -44,6 +47,16 @@ type Post = {
   is_liked: boolean;
 };
 
+type Comment = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user_name: string;
+  user_image: string | null;
+};
+
 export default function FeedScreen() {
   const router = useRouter();
   const PLACEHOLDER_50 = "https://via.placeholder.com/50";
@@ -52,6 +65,12 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(PLACEHOLDER_50);
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   const loadHeaderPhoto = useCallback(async () => {
     try {
@@ -249,6 +268,16 @@ export default function FeedScreen() {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
 
+      setPosts(posts.map(p =>
+        p.id === postId
+          ? {
+              ...p,
+              is_liked: !post.is_liked,
+              like_count: post.is_liked ? p.like_count - 1 : p.like_count + 1
+            }
+          : p
+      ));
+
       if (post.is_liked) {
         const { error } = await supabase
           .from("post_likes")
@@ -258,14 +287,12 @@ export default function FeedScreen() {
 
         if (error) {
           console.error("Error unliking post:", error);
-          return;
+          setPosts(posts.map(p =>
+            p.id === postId
+              ? { ...p, is_liked: true, like_count: p.like_count + 1 }
+              : p
+          ));
         }
-
-        setPosts(posts.map(p =>
-          p.id === postId
-            ? { ...p, is_liked: false, like_count: p.like_count - 1 }
-            : p
-        ));
       } else {
         const { error } = await supabase
           .from("post_likes")
@@ -273,17 +300,106 @@ export default function FeedScreen() {
 
         if (error) {
           console.error("Error liking post:", error);
-          return;
+          setPosts(posts.map(p =>
+            p.id === postId
+              ? { ...p, is_liked: false, like_count: p.like_count - 1 }
+              : p
+          ));
         }
-
-        setPosts(posts.map(p =>
-          p.id === postId
-            ? { ...p, is_liked: true, like_count: p.like_count + 1 }
-            : p
-        ));
       }
     } catch (error) {
       console.error("Error toggling like:", error);
+    }
+  };
+
+  const loadComments = async (postId: string) => {
+    setLoadingComments(true);
+    try {
+      const { data: commentsData, error } = await supabase
+        .from("post_comments")
+        .select("id, post_id, user_id, content, created_at")
+        .eq("post_id", postId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error loading comments:", error);
+        return;
+      }
+
+      if (!commentsData || commentsData.length === 0) {
+        setComments([]);
+        return;
+      }
+
+      const userIds = [...new Set(commentsData.map(c => c.user_id))];
+      const { data: usersData } = await supabase
+        .from("users")
+        .select("id, name, image_url")
+        .in("id", userIds);
+
+      const usersMap = new Map(usersData?.map(u => [u.id, u]) || []);
+
+      const enrichedComments: Comment[] = commentsData.map(comment => {
+        const user = usersMap.get(comment.user_id);
+        return {
+          ...comment,
+          user_name: user?.name || "Unknown User",
+          user_image: user?.image_url || null,
+        };
+      });
+
+      setComments(enrichedComments);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const openCommentModal = (postId: string) => {
+    setSelectedPostId(postId);
+    setCommentModalVisible(true);
+    loadComments(postId);
+  };
+
+  const closeCommentModal = () => {
+    setCommentModalVisible(false);
+    setSelectedPostId(null);
+    setComments([]);
+    setCommentText("");
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || !selectedPostId) return;
+
+    setSubmittingComment(true);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+
+      if (!userId) return;
+
+      const { error } = await supabase
+        .from("post_comments")
+        .insert({
+          post_id: selectedPostId,
+          user_id: userId,
+          content: commentText.trim(),
+        });
+
+      if (error) {
+        console.error("Error submitting comment:", error);
+        return;
+      }
+
+      setCommentText("");
+      Keyboard.dismiss();
+      loadComments(selectedPostId);
+      loadPosts();
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -424,7 +540,10 @@ export default function FeedScreen() {
                         {post.like_count}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionItem}>
+                    <TouchableOpacity
+                      style={styles.actionItem}
+                      onPress={() => openCommentModal(post.id)}
+                    >
                       <MessageCircle size={20} color="#888" />
                       <Text style={styles.actionText}>{post.comment_count}</Text>
                     </TouchableOpacity>
@@ -446,6 +565,80 @@ export default function FeedScreen() {
       >
         <Plus size={28} color="#121212" />
       </TouchableOpacity>
+
+      <Modal
+        visible={commentModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeCommentModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Comments</Text>
+              <TouchableOpacity onPress={closeCommentModal}>
+                <X size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.commentsContainer}>
+              {loadingComments ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#00FF7F" />
+                </View>
+              ) : comments.length === 0 ? (
+                <View style={styles.emptyComments}>
+                  <Text style={styles.emptyCommentsText}>
+                    No comments yet. Be the first to comment!
+                  </Text>
+                </View>
+              ) : (
+                comments.map((comment) => (
+                  <View key={comment.id} style={styles.commentItem}>
+                    <Image
+                      source={{ uri: comment.user_image || "https://via.placeholder.com/40" }}
+                      style={styles.commentAvatar}
+                    />
+                    <View style={styles.commentContent}>
+                      <View style={styles.commentHeader}>
+                        <Text style={styles.commentUserName}>{comment.user_name}</Text>
+                        <Text style={styles.commentTime}>{formatTime(comment.created_at)}</Text>
+                      </View>
+                      <Text style={styles.commentText}>{comment.content}</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.commentInputContainer}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Write a comment..."
+                placeholderTextColor="#666"
+                value={commentText}
+                onChangeText={setCommentText}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  (!commentText.trim() || submittingComment) && styles.sendButtonDisabled
+                ]}
+                onPress={handleSubmitComment}
+                disabled={!commentText.trim() || submittingComment}
+              >
+                {submittingComment ? (
+                  <ActivityIndicator size="small" color="#121212" />
+                ) : (
+                  <Send size={20} color="#121212" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -674,5 +867,112 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#1a1a1a",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "80%",
+    paddingBottom: Platform.OS === "ios" ? 34 : 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a2a",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  commentsContainer: {
+    maxHeight: 400,
+    paddingHorizontal: 20,
+  },
+  emptyComments: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  emptyCommentsText: {
+    color: "#888",
+    fontSize: 15,
+    textAlign: "center",
+  },
+  commentItem: {
+    flexDirection: "row",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a2a",
+  },
+  commentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#00FF7F",
+    marginRight: 12,
+  },
+  commentContent: {
+    flex: 1,
+  },
+  commentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  commentUserName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  commentTime: {
+    fontSize: 12,
+    color: "#888",
+  },
+  commentText: {
+    fontSize: 14,
+    color: "#ccc",
+    lineHeight: 20,
+  },
+  commentInputContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#2a2a2a",
+    gap: 12,
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    color: "#fff",
+    fontSize: 15,
+    maxHeight: 100,
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#00FF7F",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sendButtonDisabled: {
+    backgroundColor: "#2a2a2a",
+    opacity: 0.5,
   },
 });
