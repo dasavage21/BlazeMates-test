@@ -268,17 +268,19 @@ export default function FeedScreen() {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
 
+      const wasLiked = post.is_liked;
+
       setPosts(posts.map(p =>
         p.id === postId
           ? {
               ...p,
-              is_liked: !post.is_liked,
-              like_count: post.is_liked ? p.like_count - 1 : p.like_count + 1
+              is_liked: !wasLiked,
+              like_count: wasLiked ? p.like_count - 1 : p.like_count + 1
             }
           : p
       ));
 
-      if (post.is_liked) {
+      if (wasLiked) {
         const { error } = await supabase
           .from("post_likes")
           .delete()
@@ -296,9 +298,12 @@ export default function FeedScreen() {
       } else {
         const { error } = await supabase
           .from("post_likes")
-          .insert({ post_id: postId, user_id: userId });
+          .upsert(
+            { post_id: postId, user_id: userId },
+            { onConflict: 'post_id,user_id', ignoreDuplicates: true }
+          );
 
-        if (error) {
+        if (error && error.code !== '23505') {
           console.error("Error liking post:", error);
           setPosts(posts.map(p =>
             p.id === postId
