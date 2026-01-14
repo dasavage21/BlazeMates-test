@@ -39,12 +39,12 @@ const isLargePhone = screenWidth >= 414 && screenWidth < 768;
 const isDesktop = screenWidth >= 768;
 
 const cardWidth = Math.min(screenWidth * 0.92, 440);
-const navPadding = isSmallPhone ? 8 : (isMediumPhone ? 14 : (isDesktop ? 40 : 16));
-const navGap = isSmallPhone ? 6 : (isMediumPhone ? 16 : (isDesktop ? 24 : 16));
-const navFontSize = isSmallPhone ? 11 : (isDesktop ? 15 : 13);
-const logoSize = isSmallPhone ? 20 : 28;
-const brandFontSize = isSmallPhone ? 13 : 20;
-const navProfilePicSize = isSmallPhone ? 26 : 36;
+const navPadding = isSmallPhone ? 12 : (isMediumPhone ? 14 : (isDesktop ? 40 : 16));
+const navGap = isSmallPhone ? 10 : (isMediumPhone ? 16 : (isDesktop ? 24 : 16));
+const navFontSize = isSmallPhone ? 14 : (isDesktop ? 15 : 13);
+const logoSize = isSmallPhone ? 26 : 28;
+const brandFontSize = isSmallPhone ? 16 : 20;
+const navProfilePicSize = isSmallPhone ? 34 : 36;
 
 const profilePicSize = isDesktop ? 90 : 70;
 const titleFontSize = isDesktop ? 26 : 22;
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#1a1a1a",
-    paddingVertical: isSmallPhone ? 10 : 12,
+    paddingVertical: isSmallPhone ? 14 : 12,
     paddingHorizontal: navPadding,
     borderBottomWidth: 1,
     borderBottomColor: "#2a2a2a",
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
   navLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: isSmallPhone ? 4 : 8,
+    gap: isSmallPhone ? 6 : 8,
     flex: 1,
     minWidth: 0,
   },
@@ -1064,7 +1064,7 @@ const styles = StyleSheet.create({
   navCenter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: isSmallPhone ? 6 : navGap,
+    gap: navGap,
     flex: 2,
     justifyContent: "center",
     minWidth: 0,
