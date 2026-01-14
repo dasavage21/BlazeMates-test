@@ -377,6 +377,7 @@ export default function FeedScreen() {
         },
         () => {
           loadComments(selectedPostId);
+          loadPosts();
         }
       )
       .subscribe();
