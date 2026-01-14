@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,30 +19,6 @@ import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../supabaseClient";
 import { X, ImageIcon } from "lucide-react-native";
 
-if (Platform.OS === "web") {
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    input:focus, textarea:focus {
-      border-color: #00FF7F !important;
-      box-shadow: 0 0 0 3px rgba(0, 255, 127, 0.1) !important;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-    }
-
-    button:active {
-      transform: translateY(0);
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 const screenWidth = Dimensions.get("window").width;
 const isSmallPhone = screenWidth <= 390;
 const isDesktop = screenWidth >= 768;
@@ -53,6 +29,36 @@ export default function CreatePostScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        input:focus, textarea:focus {
+          border-color: #00FF7F !important;
+          box-shadow: 0 0 0 3px rgba(0, 255, 127, 0.1) !important;
+        }
+
+        button:hover {
+          transform: translateY(-1px);
+        }
+
+        button:active {
+          transform: translateY(0);
+        }
+      `;
+      document.head.appendChild(style);
+
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+  }, []);
 
   const pickImage = async () => {
     try {
