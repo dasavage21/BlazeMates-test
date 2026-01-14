@@ -1485,10 +1485,7 @@ const styles = StyleSheet.create({
     maxHeight: "90%",
     borderWidth: 1,
     borderColor: "#2a2a2a",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.5)",
     elevation: 10,
   },
   modalScroll: {
@@ -1538,10 +1535,7 @@ const styles = StyleSheet.create({
   reportOptionSelected: {
     backgroundColor: "#1a3a2e",
     borderColor: "#00FF7F",
-    shadowColor: "#00FF7F",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    boxShadow: "0 0 8px rgba(0, 255, 127, 0.3)",
     elevation: 5,
   },
   reportOptionIcon: {
@@ -1635,15 +1629,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
-    shadowColor: "#00FF7F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    boxShadow: "0 4px 8px rgba(0, 255, 127, 0.3)",
     elevation: 5,
   },
   submitButtonDisabled: {
     backgroundColor: "#2a2a2a",
-    shadowOpacity: 0,
+    boxShadow: "none",
   },
   submitButtonText: {
     color: "#121212",

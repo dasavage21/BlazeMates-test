@@ -349,11 +349,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
   },
-  inputWrapper: {
-    ...(Platform.OS === "web" && {
-      animation: "fadeIn 0.3s ease-out",
-    }),
-  },
+  inputWrapper: {},
   textInput: {
     fontSize: isDesktop ? 17 : 16,
     color: "#ffffff",
