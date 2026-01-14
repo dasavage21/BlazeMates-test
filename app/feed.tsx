@@ -599,7 +599,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     ...(Platform.OS === "web" && {
       cursor: "pointer",
-      transition: "all 0.2s",
     }),
   },
   actionText: {
@@ -674,10 +673,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#00FF7F",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#00FF7F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
     elevation: 8,
   },
 });
