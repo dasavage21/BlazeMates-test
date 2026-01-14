@@ -362,6 +362,30 @@ export default function FeedScreen() {
     loadComments(postId);
   };
 
+  useEffect(() => {
+    if (!selectedPostId || !commentModalVisible) return;
+
+    const channel = supabase
+      .channel(`comments_${selectedPostId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "post_comments",
+          filter: `post_id=eq.${selectedPostId}`,
+        },
+        () => {
+          loadComments(selectedPostId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedPostId, commentModalVisible]);
+
   const closeCommentModal = () => {
     setCommentModalVisible(false);
     setSelectedPostId(null);
