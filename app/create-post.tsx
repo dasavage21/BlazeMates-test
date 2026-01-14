@@ -142,12 +142,7 @@ export default function CreatePostScreen() {
         return;
       }
 
-      Alert.alert("Success", "Your post has been shared!", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/feed"),
-        },
-      ]);
+      router.replace("/feed");
     } catch (error) {
       console.error("Error creating post:", error);
       Alert.alert("Error", "An unexpected error occurred. Please try again.");

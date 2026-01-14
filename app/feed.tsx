@@ -174,6 +174,27 @@ export default function FeedScreen() {
     loadPosts();
   }, [loadHeaderPhoto, loadPosts]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("feed_posts_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "feed_posts",
+        },
+        () => {
+          loadPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadPosts]);
+
   useFocusEffect(
     useCallback(() => {
       updateUserActivity();
