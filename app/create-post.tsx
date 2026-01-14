@@ -19,6 +19,30 @@ import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../supabaseClient";
 import { X, ImageIcon } from "lucide-react-native";
 
+if (Platform.OS === "web") {
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    input:focus, textarea:focus {
+      border-color: #00FF7F !important;
+      box-shadow: 0 0 0 3px rgba(0, 255, 127, 0.1) !important;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 const screenWidth = Dimensions.get("window").width;
 const isSmallPhone = screenWidth <= 390;
 const isDesktop = screenWidth >= 768;
@@ -184,19 +208,25 @@ export default function CreatePostScreen() {
           </View>
 
           <View style={styles.contentSection}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="What's on your mind?"
-              placeholderTextColor="#666"
-              multiline
-              numberOfLines={8}
-              value={content}
-              onChangeText={setContent}
-              maxLength={500}
-              autoFocus
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="What's on your mind?"
+                placeholderTextColor="#555"
+                multiline
+                numberOfLines={8}
+                value={content}
+                onChangeText={setContent}
+                maxLength={500}
+                autoFocus
+              />
+            </View>
 
-            <Text style={styles.characterCount}>
+            <Text style={[
+              styles.characterCount,
+              content.length > 450 && styles.characterCountWarning,
+              content.length === 500 && styles.characterCountLimit,
+            ]}>
               {content.length} / 500
             </Text>
 
@@ -239,125 +269,185 @@ export default function CreatePostScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "#0a0a0a",
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "#0a0a0a",
   },
   scrollContent: {
     flexGrow: 1,
   },
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "#0a0a0a",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: "#1a1a1a",
+    paddingHorizontal: isDesktop ? 24 : 16,
+    paddingVertical: isDesktop ? 20 : 16,
+    backgroundColor: "#141414",
     borderBottomWidth: 1,
-    borderBottomColor: "#2a2a2a",
+    borderBottomColor: "#1f1f1f",
+    ...(Platform.OS === "web" && {
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+    }),
   },
   closeButton: {
     padding: 8,
+    borderRadius: 20,
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
+    fontSize: isDesktop ? 20 : 18,
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: -0.5,
   },
   postButton: {
     backgroundColor: "#00FF7F",
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    minWidth: 70,
+    paddingHorizontal: isDesktop ? 28 : 24,
+    paddingVertical: isDesktop ? 10 : 9,
+    borderRadius: 24,
+    minWidth: isDesktop ? 90 : 80,
     alignItems: "center",
+    justifyContent: "center",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+      boxShadow: "0 2px 12px rgba(0, 255, 127, 0.3)",
+    }),
   },
   postButtonDisabled: {
-    backgroundColor: "#2a2a2a",
-    opacity: 0.5,
+    backgroundColor: "#1f1f1f",
+    opacity: 0.4,
+    ...(Platform.OS === "web" && {
+      cursor: "not-allowed",
+      boxShadow: "none",
+    }),
   },
   postButtonText: {
-    color: "#121212",
+    color: "#0a0a0a",
     fontWeight: "700",
-    fontSize: 15,
+    fontSize: isDesktop ? 16 : 15,
+    letterSpacing: 0.3,
   },
   contentSection: {
-    padding: 20,
-    maxWidth: 600,
+    padding: isDesktop ? 32 : 20,
+    maxWidth: isDesktop ? 680 : "100%",
     width: "100%",
     alignSelf: "center",
   },
+  inputWrapper: {
+    ...(Platform.OS === "web" && {
+      animation: "fadeIn 0.3s ease-out",
+    }),
+  },
   textInput: {
-    fontSize: 16,
-    color: "#fff",
-    backgroundColor: "#1a1a1a",
-    borderRadius: 12,
-    padding: 16,
-    minHeight: 200,
+    fontSize: isDesktop ? 17 : 16,
+    color: "#ffffff",
+    backgroundColor: "#141414",
+    borderRadius: 16,
+    padding: isDesktop ? 20 : 18,
+    minHeight: isDesktop ? 280 : 220,
     textAlignVertical: "top",
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderWidth: 2,
+    borderColor: "#1f1f1f",
+    lineHeight: isDesktop ? 26 : 24,
+    ...(Platform.OS === "web" && {
+      outlineStyle: "none",
+      transition: "all 0.2s",
+    }),
   },
   characterCount: {
-    fontSize: 13,
-    color: "#666",
+    fontSize: isDesktop ? 14 : 13,
+    color: "#666666",
     textAlign: "right",
-    marginTop: 8,
-    marginBottom: 20,
+    marginTop: 10,
+    marginBottom: 24,
+    fontWeight: "500",
+  },
+  characterCountWarning: {
+    color: "#FFA500",
+    fontWeight: "600",
+  },
+  characterCountLimit: {
+    color: "#FF4444",
+    fontWeight: "700",
   },
   imagePreviewContainer: {
     position: "relative",
-    marginBottom: 20,
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#1f1f1f",
+    ...(Platform.OS === "web" && {
+      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+    }),
   },
   imagePreview: {
     width: "100%",
-    height: 300,
-    borderRadius: 12,
+    height: isDesktop ? 380 : 300,
     resizeMode: "cover",
   },
   removeImageButton: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    borderRadius: 20,
-    padding: 8,
+    top: 16,
+    right: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    borderRadius: 24,
+    padding: 10,
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+      backdropFilter: "blur(8px)",
+    }),
   },
   imageButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
-    backgroundColor: "#1a1a1a",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: "#141414",
+    padding: isDesktop ? 20 : 18,
+    borderRadius: 16,
+    borderWidth: 2,
     borderColor: "#00FF7F",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+      boxShadow: "0 4px 16px rgba(0, 255, 127, 0.15)",
+    }),
   },
   imageButtonText: {
     color: "#00FF7F",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: isDesktop ? 17 : 16,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   uploadingContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 8,
+    marginTop: 20,
+    padding: isDesktop ? 16 : 14,
+    backgroundColor: "rgba(0, 255, 127, 0.08)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 127, 0.2)",
   },
   uploadingText: {
     color: "#00FF7F",
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: isDesktop ? 15 : 14,
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
 });
