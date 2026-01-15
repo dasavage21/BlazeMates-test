@@ -719,9 +719,12 @@ const styles = StyleSheet.create({
   },
   backgroundImage: {
     flex: 1,
+    width: '100%',
+    height: '100%',
   },
   backgroundImageStyle: {
     opacity: 0.15,
+    resizeMode: 'cover',
   },
   scrollView: {
     flex: 1,
