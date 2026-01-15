@@ -41,6 +41,7 @@ export default function EventsScreen() {
   const [newEventTime, setNewEventTime] = useState("");
   const [creating, setCreating] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isPlusUser, setIsPlusUser] = useState(false);
 
   const loadEvents = useCallback(async () => {
     try {
@@ -51,6 +52,17 @@ export default function EventsScreen() {
         return;
       }
       setCurrentUserId(userId);
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("subscription_tier, subscription_status")
+        .eq("id", userId)
+        .maybeSingle();
+
+      setIsPlusUser(
+        (userData?.subscription_tier === 'plus' || userData?.subscription_tier === 'pro') &&
+        userData?.subscription_status === 'active'
+      );
 
       const { data: eventsData, error } = await supabase
         .from("smoke_sessions")
@@ -321,10 +333,12 @@ export default function EventsScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.comingSoonBanner}>
-        <Text style={styles.comingSoonText}>Priority Event Registration - Coming Soon</Text>
-        <Text style={styles.comingSoonSubtext}>Blaze+ members will get early access to popular events</Text>
-      </View>
+      {isPlusUser && (
+        <View style={styles.comingSoonBanner}>
+          <Text style={styles.comingSoonText}>Priority Event Registration - Coming Soon</Text>
+          <Text style={styles.comingSoonSubtext}>Blaze+ members will get early access to popular events</Text>
+        </View>
+      )}
 
       {events.length === 0 ? (
         <View style={styles.emptyContainer}>

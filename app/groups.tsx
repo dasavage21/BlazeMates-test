@@ -38,6 +38,7 @@ export default function GroupsScreen() {
   const [creating, setCreating] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isPlusUser, setIsPlusUser] = useState(false);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -50,6 +51,17 @@ export default function GroupsScreen() {
         return;
       }
       setCurrentUserId(userId);
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("subscription_tier, subscription_status")
+        .eq("id", userId)
+        .maybeSingle();
+
+      setIsPlusUser(
+        (userData?.subscription_tier === 'plus' || userData?.subscription_tier === 'pro') &&
+        userData?.subscription_status === 'active'
+      );
 
       const { data: groupsData, error } = await supabase
         .from("group_chats")
@@ -349,12 +361,14 @@ export default function GroupsScreen() {
               multiline
               numberOfLines={3}
             />
-            <View style={styles.comingSoonBox}>
-              <Text style={styles.comingSoonTitle}>Private Groups - Coming Soon</Text>
-              <Text style={styles.comingSoonDescription}>
-                Blaze+ members will be able to create invite-only private groups
-              </Text>
-            </View>
+            {isPlusUser && (
+              <View style={styles.comingSoonBox}>
+                <Text style={styles.comingSoonTitle}>Private Groups - Coming Soon</Text>
+                <Text style={styles.comingSoonDescription}>
+                  Blaze+ members will be able to create invite-only private groups
+                </Text>
+              </View>
+            )}
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
