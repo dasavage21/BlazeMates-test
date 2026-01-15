@@ -349,6 +349,12 @@ export default function GroupsScreen() {
               multiline
               numberOfLines={3}
             />
+            <View style={styles.comingSoonBox}>
+              <Text style={styles.comingSoonTitle}>Private Groups - Coming Soon</Text>
+              <Text style={styles.comingSoonDescription}>
+                Blaze+ members will be able to create invite-only private groups
+              </Text>
+            </View>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -581,5 +587,23 @@ const styles = StyleSheet.create({
     color: "#121212",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  comingSoonBox: {
+    backgroundColor: "#2a2a2a",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FFD700",
+  },
+  comingSoonTitle: {
+    color: "#FFD700",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  comingSoonDescription: {
+    color: "#aaa",
+    fontSize: 12,
   },
 });

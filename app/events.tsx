@@ -321,6 +321,11 @@ export default function EventsScreen() {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.comingSoonBanner}>
+        <Text style={styles.comingSoonText}>Priority Event Registration - Coming Soon</Text>
+        <Text style={styles.comingSoonSubtext}>Blaze+ members will get early access to popular events</Text>
+      </View>
+
       {events.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No upcoming sessions. Create the first one!</Text>
@@ -697,5 +702,25 @@ const styles = StyleSheet.create({
     color: "#121212",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  comingSoonBanner: {
+    backgroundColor: "#1e1e1e",
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FFD700",
+  },
+  comingSoonText: {
+    color: "#FFD700",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  comingSoonSubtext: {
+    color: "#aaa",
+    fontSize: 12,
   },
 });
