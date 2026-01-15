@@ -294,12 +294,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     maxWidth: "75%",
+    alignSelf: "flex-start",
   },
   ownMessage: {
     alignSelf: "flex-end",
+    alignItems: "flex-end",
   },
   otherMessage: {
     alignSelf: "flex-start",
+    alignItems: "flex-start",
   },
   senderName: {
     color: "#00FF7F",
@@ -316,6 +319,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
+    alignSelf: "flex-start",
   },
   ownBubble: {
     backgroundColor: "#00FF7F",
