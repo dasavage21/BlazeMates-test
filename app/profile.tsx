@@ -231,7 +231,7 @@ export default function ProfileScreen() {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.replace("/swipe")}
+          onPress={() => router.replace("/feed")}
         >
           <Text style={styles.backButtonText}>Back to Community</Text>
         </TouchableOpacity>

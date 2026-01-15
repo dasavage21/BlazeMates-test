@@ -61,7 +61,7 @@ export default function AgeCheck() {
         await mergeUserRow(supabase, userId, { age: ageNum });
       }
 
-      router.replace(userId ? "/swipe" : "/login");
+      router.replace(userId ? "/feed" : "/login");
     } catch (err) {
       const handled = await handleRefreshTokenError(err);
       if (handled) {

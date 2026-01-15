@@ -9,7 +9,7 @@ export default function UnderageBlocked() {
     <View style={styles.container}>
       <Text style={styles.title}>Access Restricted</Text>
       <Text style={styles.body}>
-        BlazeMates contains matchmaking functionality and is limited to adults
+        BlazeMates is a cannabis community platform and is limited to adults
         who are 21 years of age or older. In line with Google Play&apos;s
         Age-Restricted Content policy, accounts identified as underage cannot
         use the app.

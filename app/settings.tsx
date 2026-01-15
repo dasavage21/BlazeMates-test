@@ -151,7 +151,7 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.push("/swipe")} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push("/feed")} style={styles.backButton}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.header}>Settings</Text>

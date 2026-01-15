@@ -9,9 +9,6 @@ interface AnalyticsData {
   totalProfileViews: number;
   totalLikesReceived: number;
   totalLikesSent: number;
-  totalSwipes: number;
-  swipeThroughRate: number;
-  matchLikelihoodScore: number;
   viewsLast7Days: number;
   likesLast7Days: number;
 }
@@ -125,9 +122,6 @@ export default function Analytics() {
           .from('subscription_analytics')
           .insert({
             user_id: authUser.id,
-            swipe_through_rate: 0,
-            match_likelihood_score: 0,
-            total_swipes: 0,
             total_likes_sent: 0,
             total_likes_received: 0,
             total_profile_views: 0,
@@ -170,9 +164,6 @@ export default function Analytics() {
         totalProfileViews: analyticsData.data?.total_profile_views || 0,
         totalLikesReceived: analyticsData.data?.total_likes_received || 0,
         totalLikesSent: analyticsData.data?.total_likes_sent || 0,
-        totalSwipes: analyticsData.data?.total_swipes || 0,
-        swipeThroughRate: analyticsData.data?.swipe_through_rate || 0,
-        matchLikelihoodScore: analyticsData.data?.match_likelihood_score || 0,
         viewsLast7Days: viewsLast7Days || 0,
         likesLast7Days: likesLast7Days || 0,
       });
@@ -306,44 +297,22 @@ export default function Analytics() {
             <Text style={styles.statRowValue}>{analytics?.totalLikesSent || 0}</Text>
           </View>
 
-          <View style={[styles.statRow, { borderBottomWidth: 0 }]}>
-            <View style={styles.statRowIcon}>
-              <Zap size={18} color="#FFC107" />
-            </View>
-            <Text style={styles.statRowLabel}>Total Swipes</Text>
-            <Text style={styles.statRowValue}>{analytics?.totalSwipes || 0}</Text>
-          </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Performance Metrics</Text>
+        <Text style={styles.sectionTitle}>Community Engagement</Text>
 
         <View style={styles.metricCard}>
           <View style={styles.metricHeader}>
             <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9', width: 40, height: 40, borderRadius: 20, marginBottom: 0 }]}>
-              <TrendingUp size={20} color="#4CAF50" />
+              <Users size={20} color="#4CAF50" />
             </View>
-            <Text style={styles.metricTitle}>Swipe Through Rate</Text>
+            <Text style={styles.metricTitle}>Total Interactions</Text>
           </View>
           <Text style={styles.metricValue}>
-            {analytics?.swipeThroughRate ? `${(analytics.swipeThroughRate * 100).toFixed(1)}%` : 'N/A'}
+            {(analytics?.totalLikesSent || 0) + (analytics?.totalLikesReceived || 0)}
           </Text>
           <Text style={styles.metricDescription}>
-            Percentage of swipes that result in likes
-          </Text>
-        </View>
-
-        <View style={styles.metricCard}>
-          <View style={styles.metricHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0', width: 40, height: 40, borderRadius: 20, marginBottom: 0 }]}>
-              <BarChart3 size={20} color="#FF9800" />
-            </View>
-            <Text style={styles.metricTitle}>Match Likelihood</Text>
-          </View>
-          <Text style={styles.metricValue}>
-            {analytics?.matchLikelihoodScore ? `${(analytics.matchLikelihoodScore * 100).toFixed(1)}%` : 'N/A'}
-          </Text>
-          <Text style={styles.metricDescription}>
-            Your estimated match success rate
+            Combined community interactions
           </Text>
         </View>
 

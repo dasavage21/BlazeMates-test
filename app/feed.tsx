@@ -495,9 +495,9 @@ export default function FeedScreen() {
                   style={styles.navProfilePic}
                 />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push("/swipe")}>
+              <TouchableOpacity onPress={() => router.push("/events")}>
                 <Text style={styles.navLink}>
-                  {isSmallPhone ? "🔥" : "🔥 Discover"}
+                  {isSmallPhone ? "📅" : "📅 Events"}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/matches")}>

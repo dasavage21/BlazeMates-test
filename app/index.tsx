@@ -126,7 +126,7 @@ export default function IndexGate() {
 
         if (userId) {
           await AsyncStorage.setItem("userId", userId);
-          router.replace("/swipe");
+          router.replace("/feed");
           return;
         }
 
@@ -153,7 +153,7 @@ export default function IndexGate() {
           }
 
           await AsyncStorage.setItem("userId", session.user.id);
-          router.replace("/swipe");
+          router.replace("/feed");
           return;
         }
 
