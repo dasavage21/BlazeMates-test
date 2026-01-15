@@ -199,7 +199,10 @@ export default function GroupChatScreen() {
                   isOwnMessage ? styles.ownBubble : styles.otherBubble,
                 ]}
               >
-                <Text style={styles.messageText}>{item.content}</Text>
+                <Text style={[
+                  styles.messageText,
+                  isOwnMessage ? styles.ownMessageText : styles.otherMessageText
+                ]}>{item.content}</Text>
               </View>
               <Text style={styles.messageTime}>
                 {new Date(item.created_at).toLocaleTimeString([], {
@@ -242,11 +245,11 @@ export default function GroupChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "#1a1a1a",
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "#1a1a1a",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -256,9 +259,9 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: "#121212",
+    backgroundColor: "#242424",
     borderBottomWidth: 1,
-    borderBottomColor: "#222",
+    borderBottomColor: "#333",
     gap: 16,
   },
   backButton: {
@@ -283,14 +286,14 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   emptyText: {
-    color: "#888",
+    color: "#aaa",
     fontSize: 16,
     textAlign: "center",
   },
   messageContainer: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    maxWidth: "80%",
+    maxWidth: "75%",
   },
   ownMessage: {
     alignSelf: "flex-end",
@@ -305,43 +308,56 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   messageBubble: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   ownBubble: {
     backgroundColor: "#00FF7F",
   },
   otherBubble: {
-    backgroundColor: "#1e1e1e",
+    backgroundColor: "#2a2a2a",
   },
   messageText: {
-    color: "#121212",
     fontSize: 16,
+    lineHeight: 22,
+  },
+  ownMessageText: {
+    color: "#121212",
+  },
+  otherMessageText: {
+    color: "#ffffff",
   },
   messageTime: {
-    color: "#666",
-    fontSize: 10,
+    color: "#888",
+    fontSize: 11,
     marginTop: 4,
   },
   inputContainer: {
     flexDirection: "row",
     padding: 12,
-    backgroundColor: "#121212",
+    backgroundColor: "#242424",
     borderTopWidth: 1,
-    borderTopColor: "#222",
+    borderTopColor: "#333",
     gap: 12,
     alignItems: "flex-end",
   },
   input: {
     flex: 1,
-    backgroundColor: "#1e1e1e",
+    backgroundColor: "#2a2a2a",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     color: "#fff",
     fontSize: 16,
     maxHeight: 100,
+    borderWidth: 1,
+    borderColor: "#333",
   },
   sendButton: {
     backgroundColor: "#00FF7F",
