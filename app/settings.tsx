@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import {
   clearLocalAuthSession,
   handleRefreshTokenError,
@@ -22,6 +23,14 @@ import { supabase, SUPABASE_PROJECT_REF } from "../supabaseClient";
 export default function SettingsScreen() {
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
+
+  const openPrivacyPolicy = () => {
+    if (Platform.OS === 'web') {
+      window.open('/blazemates-privacy.html', '_blank');
+    } else {
+      WebBrowser.openBrowserAsync('https://blazemates.app/blazemates-privacy.html');
+    }
+  };
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -184,13 +193,7 @@ export default function SettingsScreen() {
         <Text style={styles.buttonText}>Delete Account</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() =>
-          Linking.openURL(
-            "https://dasavage21.github.io/BlazeMates-test/blazemates-privacy.html"
-          )
-        }
-      >
+      <TouchableOpacity onPress={openPrivacyPolicy}>
         <Text style={styles.buttonText}>Privacy Policy</Text>
       </TouchableOpacity>
 

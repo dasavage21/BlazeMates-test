@@ -7,9 +7,26 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 
 export default function AboutScreen() {
   const router = useRouter();
+
+  const openPrivacyPolicy = () => {
+    if (Platform.OS === 'web') {
+      window.open('/blazemates-privacy.html', '_blank');
+    } else {
+      WebBrowser.openBrowserAsync('https://blazemates.app/blazemates-privacy.html');
+    }
+  };
+
+  const openSafetyPolicy = () => {
+    if (Platform.OS === 'web') {
+      window.open('/child-safety.html', '_blank');
+    } else {
+      WebBrowser.openBrowserAsync('https://blazemates.app/child-safety.html');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -135,11 +152,11 @@ export default function AboutScreen() {
             <Text style={styles.footerLink}>Home</Text>
           </TouchableOpacity>
           <Text style={styles.footerDivider}>•</Text>
-          <TouchableOpacity onPress={() => Platform.OS === 'web' && window.open('/blazemates-privacy.html', '_blank')}>
+          <TouchableOpacity onPress={openPrivacyPolicy}>
             <Text style={styles.footerLink}>Privacy Policy</Text>
           </TouchableOpacity>
           <Text style={styles.footerDivider}>•</Text>
-          <TouchableOpacity onPress={() => Platform.OS === 'web' && window.open('/child-safety.html', '_blank')}>
+          <TouchableOpacity onPress={openSafetyPolicy}>
             <Text style={styles.footerLink}>Safety</Text>
           </TouchableOpacity>
         </View>
