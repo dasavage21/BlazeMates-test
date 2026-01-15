@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#00FF7F",
   },
   createButton: {
     backgroundColor: "#00FF7F",
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyText: {
-    color: "#888",
+    color: "#7FFF9F",
     fontSize: 16,
     textAlign: "center",
   },
@@ -487,13 +487,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   groupName: {
-    color: "#fff",
+    color: "#00FF7F",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 4,
   },
   groupDescription: {
-    color: "#aaa",
+    color: "#7FFF9F",
     fontSize: 14,
     marginBottom: 4,
   },
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#00FF7F",
     marginBottom: 20,
     textAlign: "center",
   },
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212",
     borderRadius: 8,
     padding: 12,
-    color: "#fff",
+    color: "#00FF7F",
     fontSize: 16,
     marginBottom: 16,
     borderWidth: 1,
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   comingSoonDescription: {
-    color: "#aaa",
+    color: "#7FFF9F",
     fontSize: 12,
   },
 });
