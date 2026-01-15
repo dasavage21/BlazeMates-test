@@ -1,7 +1,7 @@
 // © 2025 Benjamin Hawk. All rights reserved.
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,14 +11,21 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
 import { BlazeLevelBadge } from "../components/BlazeLevelBadge";
+import { MessageCircle, UserPlus, UserMinus } from "lucide-react-native";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const viewingUserId = params.userId as string | undefined;
+
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(true);
   const [age, setAge] = useState<number | null>(null);
   const [profile, setProfile] = useState({
     name: "",
@@ -34,18 +41,27 @@ export default function ProfileScreen() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [blazeLevel, setBlazeLevel] = useState<number>(1);
   const [activityPoints, setActivityPoints] = useState<number>(0);
+  const [followerCount, setFollowerCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [followLoading, setFollowLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const load = async () => {
       try {
         const { data: authData } = await supabase.auth.getUser();
-        const userId = authData?.user?.id;
+        const currentUser = authData?.user?.id;
+        setCurrentUserId(currentUser || null);
 
-        if (userId) {
+        const profileId = viewingUserId || currentUser;
+        const viewingOwn = !viewingUserId || viewingUserId === currentUser;
+        setIsOwnProfile(viewingOwn);
+
+        if (profileId) {
           const { data, error } = await supabase
             .from("users")
-            .select("age, name, bio, strain, experience_level, preferred_strains, consumption_methods, cultivation_interest, image_url, subscription_tier, subscription_status, blaze_level, activity_points")
-            .eq("id", userId)
+            .select("age, name, bio, strain, experience_level, preferred_strains, consumption_methods, cultivation_interest, image_url, subscription_tier, subscription_status, blaze_level, activity_points, follower_count, following_count")
+            .eq("id", profileId)
             .maybeSingle();
 
           if (!error && data) {
@@ -66,6 +82,20 @@ export default function ProfileScreen() {
             setSubscriptionStatus(data.subscription_status);
             setBlazeLevel(data.blaze_level || 1);
             setActivityPoints(data.activity_points || 0);
+            setFollowerCount(data.follower_count || 0);
+            setFollowingCount(data.following_count || 0);
+          }
+
+          // Check if current user is following this profile
+          if (!viewingOwn && currentUser && profileId) {
+            const { data: followData } = await supabase
+              .from("follows")
+              .select("id")
+              .eq("follower_id", currentUser)
+              .eq("followed_id", profileId)
+              .maybeSingle();
+
+            setIsFollowing(!!followData);
           }
         }
       } catch (error) {
@@ -75,20 +105,21 @@ export default function ProfileScreen() {
       }
     };
     load();
-  }, []);
+  }, [viewingUserId]);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
         try {
           const { data: authData } = await supabase.auth.getUser();
-          const userId = authData?.user?.id;
+          const currentUser = authData?.user?.id;
+          const profileId = viewingUserId || currentUser;
 
-          if (userId) {
+          if (profileId) {
             const { data, error } = await supabase
               .from("users")
-              .select("blaze_level, activity_points, subscription_tier, subscription_status")
-              .eq("id", userId)
+              .select("blaze_level, activity_points, subscription_tier, subscription_status, follower_count, following_count")
+              .eq("id", profileId)
               .maybeSingle();
 
             if (!error && data) {
@@ -96,14 +127,88 @@ export default function ProfileScreen() {
               setActivityPoints(data.activity_points || 0);
               setSubscriptionTier(data.subscription_tier);
               setSubscriptionStatus(data.subscription_status);
+              setFollowerCount(data.follower_count || 0);
+              setFollowingCount(data.following_count || 0);
             }
           }
         } catch (error) {
           console.error("Error refreshing profile data:", error);
         }
       })();
-    }, [])
+    }, [viewingUserId])
   );
+
+  const handleFollowToggle = async () => {
+    if (!currentUserId || !viewingUserId || followLoading) return;
+
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        // Unfollow
+        const { error } = await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUserId)
+          .eq("followed_id", viewingUserId);
+
+        if (!error) {
+          setIsFollowing(false);
+          setFollowerCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from("follows")
+          .insert({
+            follower_id: currentUserId,
+            followed_id: viewingUserId,
+          });
+
+        if (!error) {
+          setIsFollowing(true);
+          setFollowerCount(prev => prev + 1);
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+      Alert.alert("Error", "Failed to update follow status");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleMessage = async () => {
+    if (!currentUserId || !viewingUserId) return;
+
+    // Check if they follow each other
+    const { data: followCheck } = await supabase
+      .from("follows")
+      .select("id")
+      .or(`and(follower_id.eq.${currentUserId},followed_id.eq.${viewingUserId}),and(follower_id.eq.${viewingUserId},followed_id.eq.${currentUserId})`)
+      .limit(2);
+
+    if (!followCheck || followCheck.length < 2) {
+      Alert.alert(
+        "Follow Required",
+        "You need to follow each other to send messages. Follow this user first!"
+      );
+      return;
+    }
+
+    // Create thread ID in the correct format
+    const sorted = [currentUserId, viewingUserId].sort();
+    const threadId = `dm_${sorted[0]}_${sorted[1]}`;
+
+    // Ensure thread exists
+    try {
+      await supabase.from("threads").upsert({ id: threadId }, { onConflict: "id" });
+    } catch (error) {
+      console.warn("Failed to create chat thread", error);
+    }
+
+    // Navigate to chat
+    router.push({ pathname: "/chat", params: { threadId } });
+  };
 
   const isPremium = subscriptionStatus === "active" && (subscriptionTier === "plus" || subscriptionTier === "pro");
 
@@ -156,12 +261,58 @@ export default function ProfileScreen() {
           {age !== null ? `${age} years old` : "Age not set"}
         </Text>
 
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push("/profile-edit")}
-        >
-          <Text style={styles.editButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
+        <View style={styles.followStatsContainer}>
+          <TouchableOpacity style={styles.statBox}>
+            <Text style={styles.statNumber}>{followerCount}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </TouchableOpacity>
+          <View style={styles.statDivider} />
+          <TouchableOpacity style={styles.statBox}>
+            <Text style={styles.statNumber}>{followingCount}</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </TouchableOpacity>
+        </View>
+
+        {isOwnProfile ? (
+          <>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => router.push("/profile-edit")}
+            >
+              <Text style={styles.editButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.followButton, isFollowing && styles.followingButton]}
+              onPress={handleFollowToggle}
+              disabled={followLoading}
+            >
+              {followLoading ? (
+                <ActivityIndicator size="small" color={isFollowing ? "#00FF7F" : "#121212"} />
+              ) : (
+                <>
+                  {isFollowing ? (
+                    <UserMinus size={18} color="#00FF7F" />
+                  ) : (
+                    <UserPlus size={18} color="#121212" />
+                  )}
+                  <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+                    {isFollowing ? "Following" : "Follow"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={handleMessage}
+            >
+              <MessageCircle size={18} color="#00FF7F" />
+              <Text style={styles.messageButtonText}>Message</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {subscriptionTier === "pro" && subscriptionStatus === "active" && (
           <TouchableOpacity
@@ -441,5 +592,83 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 17,
     letterSpacing: 0.5,
+  },
+  followStatsContainer: {
+    flexDirection: "row",
+    backgroundColor: "#1f1f1f",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#222",
+    minWidth: 280,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: "#333",
+    marginHorizontal: 16,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#00FF7F",
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: "#888",
+    fontWeight: "500",
+  },
+  actionButtonsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+    maxWidth: 400,
+  },
+  followButton: {
+    flex: 1,
+    backgroundColor: "#00FF7F",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  followingButton: {
+    backgroundColor: "#1f1f1f",
+    borderWidth: 1,
+    borderColor: "#00FF7F",
+  },
+  followButtonText: {
+    color: "#121212",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  followingButtonText: {
+    color: "#00FF7F",
+  },
+  messageButton: {
+    flex: 1,
+    backgroundColor: "#1f1f1f",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#00FF7F",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  messageButtonText: {
+    color: "#00FF7F",
+    fontWeight: "600",
+    fontSize: 15,
   },
 });

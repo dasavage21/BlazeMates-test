@@ -53,34 +53,53 @@ export default function ConnectionsScreen() {
 
       setCurrentUserId(myUserId);
 
-      // Get unique user IDs from messages (people you've chatted with)
-      const { data: messages, error: messagesError } = await supabase
-        .from("messages")
-        .select("user_id")
-        .neq("user_id", myUserId);
+      // Get mutual follows - people who follow you and you follow back
+      // First get people you follow
+      const { data: following, error: followingError } = await supabase
+        .from("follows")
+        .select("followed_id")
+        .eq("follower_id", myUserId);
 
-      if (messagesError) {
-        console.error("Failed to fetch messages:", messagesError);
+      if (followingError) {
+        console.error("Failed to fetch following:", followingError);
         setLoading(false);
         return;
       }
 
-      // Get unique user IDs from threads where this user participated
-      const uniqueUserIds = Array.from(
-        new Set((messages || []).map((msg) => msg.user_id))
-      );
+      const followingIds = (following || []).map(f => f.followed_id);
 
-      if (uniqueUserIds.length === 0) {
+      if (followingIds.length === 0) {
         setConnections([]);
         setLoading(false);
         return;
       }
 
-      // Fetch user details
+      // Now get people who follow you AND you follow them back (mutual follows)
+      const { data: mutualFollows, error: mutualError } = await supabase
+        .from("follows")
+        .select("follower_id")
+        .eq("followed_id", myUserId)
+        .in("follower_id", followingIds);
+
+      if (mutualError) {
+        console.error("Failed to fetch mutual follows:", mutualError);
+        setLoading(false);
+        return;
+      }
+
+      const mutualUserIds = (mutualFollows || []).map(f => f.follower_id);
+
+      if (mutualUserIds.length === 0) {
+        setConnections([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user details for mutual follows
       const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select("id, name, age, bio, image_url, last_active_at, subscription_tier, subscription_status, blaze_level")
-        .in("id", uniqueUserIds);
+        .in("id", mutualUserIds);
 
       if (usersError) {
         console.error("Failed to fetch users:", usersError);
@@ -147,7 +166,7 @@ export default function ConnectionsScreen() {
       {connections.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            No direct messages yet. Join groups and start conversations!
+            No mutual follows yet. Follow other users and have them follow you back to start messaging!
           </Text>
         </View>
       ) : (

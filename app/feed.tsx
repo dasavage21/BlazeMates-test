@@ -542,7 +542,10 @@ export default function FeedScreen() {
             ) : (
               posts.map((post) => (
                 <View key={post.id} style={styles.postCard}>
-                  <View style={styles.postHeader}>
+                  <TouchableOpacity
+                    style={styles.postHeader}
+                    onPress={() => router.push(`/profile?userId=${post.user_id}`)}
+                  >
                     <Image
                       source={{ uri: post.user_image || "https://via.placeholder.com/40" }}
                       style={styles.postAvatar}
@@ -551,7 +554,7 @@ export default function FeedScreen() {
                       <Text style={styles.postUserName}>{post.user_name}</Text>
                       <Text style={styles.postTime}>{formatTime(post.created_at)}</Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
 
                   <Text style={styles.postContent}>{post.content}</Text>
 
