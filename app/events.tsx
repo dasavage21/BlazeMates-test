@@ -190,6 +190,41 @@ export default function EventsScreen() {
         return;
       }
 
+      // Check subscription tier and event limits
+      const { data: userData } = await supabase
+        .from("users")
+        .select("subscription_tier, subscription_status")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const isProOrPlus = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'plus';
+      const isActive = userData?.subscription_status === 'active';
+
+      // Free users limited to 2 events per month
+      if (!isProOrPlus || !isActive) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count: eventsThisMonth } = await supabase
+          .from("smoke_sessions")
+          .select("*", { count: "exact", head: true })
+          .eq("created_by", userId)
+          .gte("created_at", startOfMonth.toISOString());
+
+        if ((eventsThisMonth || 0) >= 2) {
+          Alert.alert(
+            "Event Limit Reached",
+            "Free users can create 2 events per month. Upgrade to Blaze+ or Blaze Pro for unlimited events!",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Upgrade", onPress: () => router.push("/subscription") }
+            ]
+          );
+          return;
+        }
+      }
+
       const { data: newEvent, error: createError } = await supabase
         .from("smoke_sessions")
         .insert({

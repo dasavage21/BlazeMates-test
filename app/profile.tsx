@@ -171,6 +171,13 @@ export default function ProfileScreen() {
             <Text style={styles.analyticsButtonText}>View Analytics</Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          style={styles.cultivationButton}
+          onPress={() => router.push("/cultivation-guides")}
+        >
+          <Text style={styles.cultivationButtonText}>🌿 Cultivation Guides</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.contentSection}>
@@ -344,6 +351,21 @@ const styles = StyleSheet.create({
   },
   analyticsButtonText: {
     color: "#FFD700",
+    fontWeight: "600",
+    fontSize: 15,
+    textAlign: "center",
+  },
+  cultivationButton: {
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    marginTop: 12,
+  },
+  cultivationButtonText: {
+    color: "#4CAF50",
     fontWeight: "600",
     fontSize: 15,
     textAlign: "center",

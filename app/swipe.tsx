@@ -76,6 +76,7 @@ type Profile = {
   subscriptionTier: string | null;
   subscriptionStatus: string | null;
   blazeLevel: number;
+  featuredUntil: string | null;
 };
 
 type SupaUser = {
@@ -92,6 +93,7 @@ type SupaUser = {
   subscription_tier: string | null;
   subscription_status: string | null;
   blaze_level: number | null;
+  featured_until: string | null;
 };
 
 function SwipeCard({
@@ -439,7 +441,7 @@ export default function SwipeScreen() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id,name,age,bio,strain,experience_level,preferred_strains,consumption_methods,cultivation_interest,image_url,subscription_tier,subscription_status,blaze_level")
+        .select("id,name,age,bio,strain,experience_level,preferred_strains,consumption_methods,cultivation_interest,image_url,subscription_tier,subscription_status,blaze_level,featured_until")
         .eq("is_suspended", false)
         .not("name", "is", null)
         .not("age", "is", null);
@@ -481,12 +483,22 @@ export default function SwipeScreen() {
         subscriptionTier: u.subscription_tier,
         subscriptionStatus: u.subscription_status,
         blazeLevel: u.blaze_level ?? 1,
+        featuredUntil: u.featured_until,
       }));
 
       const filtered = everyone
         .filter((p) => !myUserId || p.id !== myUserId)
         .filter((p) => !alreadyLiked.includes(p.id))
-        .filter((p) => !alreadyPassed.includes(p.id));
+        .filter((p) => !alreadyPassed.includes(p.id))
+        .sort((a, b) => {
+          const now = new Date().toISOString();
+          const aIsFeatured = a.featuredUntil && a.featuredUntil > now;
+          const bIsFeatured = b.featuredUntil && b.featuredUntil > now;
+
+          if (aIsFeatured && !bIsFeatured) return -1;
+          if (!aIsFeatured && bIsFeatured) return 1;
+          return 0;
+        });
 
       setProfiles(filtered);
       setIndex(0);
