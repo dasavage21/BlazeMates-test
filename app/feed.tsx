@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  ImageBackground,
   Keyboard,
   Modal,
   Platform,
@@ -482,14 +483,19 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00FF7F" />
-        }
+      <ImageBackground
+        source={require("./assets/ombre_weed_background.jpg")}
+        style={styles.backgroundImage}
+        imageStyle={styles.backgroundImageStyle}
       >
-        <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00FF7F" />
+          }
+        >
+          <View style={styles.container}>
           <View style={styles.navbar}>
             <View style={styles.navLeft}>
               <Text style={styles.logo}>🔥</Text>
@@ -701,6 +707,7 @@ export default function FeedScreen() {
           </View>
         </View>
       </Modal>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
@@ -710,17 +717,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f0f0f",
   },
+  backgroundImage: {
+    flex: 1,
+  },
+  backgroundImageStyle: {
+    opacity: 0.15,
+  },
   scrollView: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "transparent",
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "transparent",
   },
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "transparent",
   },
   navbar: {
     flexDirection: "row",

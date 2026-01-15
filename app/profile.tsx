@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -287,8 +288,13 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.profileHeader}>
+    <ImageBackground
+      source={require("./assets/ombre_weed_background.jpg")}
+      style={styles.backgroundImage}
+      imageStyle={styles.backgroundImageStyle}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
           <Image
             source={{ uri: profileImage || "https://via.placeholder.com/250" }}
@@ -470,11 +476,19 @@ export default function ProfileScreen() {
           <Text style={styles.backButtonText}>Back to Community</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    backgroundColor: "#0f0f0f",
+  },
+  backgroundImageStyle: {
+    opacity: 0.15,
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: "#0f0f0f",
@@ -489,7 +503,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "transparent",
     paddingBottom: 40,
   },
   profileHeader: {
