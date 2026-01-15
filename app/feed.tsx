@@ -42,6 +42,7 @@ type Post = {
   created_at: string;
   user_name: string;
   user_image: string | null;
+  user_last_active: string | null;
   like_count: number;
   comment_count: number;
   is_liked: boolean;
@@ -143,7 +144,7 @@ export default function FeedScreen() {
       const userIds = [...new Set(postsData.map(p => p.user_id))];
       const { data: usersData } = await supabase
         .from("users")
-        .select("id, name, image_url")
+        .select("id, name, image_url, last_active_at")
         .in("id", userIds);
 
       const usersMap = new Map(usersData?.map(u => [u.id, u]) || []);
@@ -184,6 +185,7 @@ export default function FeedScreen() {
           created_at: post.created_at,
           user_name: user?.name || "Unknown User",
           user_image: user?.image_url || null,
+          user_last_active: user?.last_active_at || null,
           like_count: likeCounts.get(post.id) || 0,
           comment_count: commentCounts.get(post.id) || 0,
           is_liked: userLikes.has(post.id),
@@ -443,6 +445,13 @@ export default function FeedScreen() {
     }
   };
 
+  const isUserOnline = useCallback((lastActiveAt: string | null): boolean => {
+    if (!lastActiveAt) return false;
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const lastActive = new Date(lastActiveAt);
+    return lastActive > tenMinutesAgo;
+  }, []);
+
   const formatTime = (timestamp: string) => {
     const now = new Date();
     const postTime = new Date(timestamp);
@@ -546,12 +555,22 @@ export default function FeedScreen() {
                     style={styles.postHeader}
                     onPress={() => router.push(`/profile?userId=${post.user_id}`)}
                   >
-                    <Image
-                      source={{ uri: post.user_image || "https://via.placeholder.com/40" }}
-                      style={styles.postAvatar}
-                    />
+                    <View style={styles.avatarContainer}>
+                      <Image
+                        source={{ uri: post.user_image || "https://via.placeholder.com/40" }}
+                        style={styles.postAvatar}
+                      />
+                      {isUserOnline(post.user_last_active) && (
+                        <View style={styles.onlineIndicator} />
+                      )}
+                    </View>
                     <View style={styles.postHeaderInfo}>
-                      <Text style={styles.postUserName}>{post.user_name}</Text>
+                      <View style={styles.nameRow}>
+                        <Text style={styles.postUserName}>{post.user_name}</Text>
+                        {isUserOnline(post.user_last_active) && (
+                          <Text style={styles.onlineText}>• Online</Text>
+                        )}
+                      </View>
                       <Text style={styles.postTime}>{formatTime(post.created_at)}</Text>
                     </View>
                   </TouchableOpacity>
@@ -790,24 +809,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  avatarContainer: {
+    position: "relative",
+    marginRight: 14,
+  },
   postAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     borderWidth: 2.5,
     borderColor: "#00FF7F",
-    marginRight: 14,
     boxShadow: "0 2px 8px rgba(0, 255, 127, 0.3)",
+  },
+  onlineIndicator: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#00FF7F",
+    borderWidth: 2,
+    borderColor: "#1a1a1a",
   },
   postHeaderInfo: {
     flex: 1,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 3,
   },
   postUserName: {
     fontSize: 17,
     fontWeight: "700",
     color: "#fff",
-    marginBottom: 3,
     letterSpacing: -0.2,
+  },
+  onlineText: {
+    fontSize: 13,
+    color: "#00FF7F",
+    fontWeight: "600",
   },
   postTime: {
     fontSize: 13,
