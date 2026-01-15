@@ -138,6 +138,71 @@ export default function ProfileScreen() {
     }, [viewingUserId])
   );
 
+  useEffect(() => {
+    const profileId = viewingUserId || currentUserId;
+    if (!profileId) return;
+
+    const channel = supabase
+      .channel(`profile-${profileId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "users",
+          filter: `id=eq.${profileId}`,
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          if (updated.follower_count !== undefined) {
+            setFollowerCount(updated.follower_count);
+          }
+          if (updated.following_count !== undefined) {
+            setFollowingCount(updated.following_count);
+          }
+          if (updated.blaze_level !== undefined) {
+            setBlazeLevel(updated.blaze_level);
+          }
+          if (updated.activity_points !== undefined) {
+            setActivityPoints(updated.activity_points);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [viewingUserId, currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId || !viewingUserId || isOwnProfile) return;
+
+    const channel = supabase
+      .channel(`follow-status-${currentUserId}-${viewingUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "follows",
+          filter: `follower_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          if (payload.eventType === "INSERT" && (payload.new as any).followed_id === viewingUserId) {
+            setIsFollowing(true);
+          } else if (payload.eventType === "DELETE" && (payload.old as any).followed_id === viewingUserId) {
+            setIsFollowing(false);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, viewingUserId, isOwnProfile]);
+
   const handleFollowToggle = async () => {
     if (!currentUserId || !viewingUserId || followLoading) return;
 
