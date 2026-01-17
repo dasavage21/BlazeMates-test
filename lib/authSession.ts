@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { supabase, SUPABASE_PROJECT_REF } from "../supabaseClient";
+import { resetDailyLoginCheck } from "./activityTracker";
 
 const SUPABASE_AUTH_TOKEN_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
 const APP_AUTH_CACHE_KEYS = [
@@ -52,6 +53,8 @@ export const clearLocalAuthSession = async () => {
   } catch (err) {
     console.warn("Failed clearing app auth cache", err);
   }
+
+  resetDailyLoginCheck();
 };
 
 export const handleRefreshTokenError = async (
