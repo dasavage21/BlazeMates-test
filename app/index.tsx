@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../supabaseClient";
+import { trackDailyLogin } from "../lib/activityTracker";
 
 const AUTH_CACHE_KEYS = [
   "userProfile",
@@ -146,6 +147,11 @@ export default function IndexGate() {
         if (userId) {
           console.log("[Index] Authenticated user - redirecting to feed");
           await AsyncStorage.setItem("userId", userId);
+
+          trackDailyLogin().catch((err) => {
+            console.warn("[Index] Failed to track daily login", err);
+          });
+
           hasRedirectedRef.current = true;
           router.replace("/feed");
           clearTimeout(safetyTimeout);
@@ -180,6 +186,11 @@ export default function IndexGate() {
           }
 
           await AsyncStorage.setItem("userId", session.user.id);
+
+          trackDailyLogin().catch((err) => {
+            console.warn("[Index] Failed to track daily login", err);
+          });
+
           router.replace("/feed");
           return;
         }
