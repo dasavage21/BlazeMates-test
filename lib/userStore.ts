@@ -9,6 +9,13 @@ type UserRowUpdate = {
   image_url?: string | null;
   age?: number | null;
   username?: string | null;
+  preferred_strains?: string[] | null;
+  consumption_methods?: string[] | null;
+  experience_level?: string | null;
+  cultivation_interest?: boolean | null;
+  favorite_activities?: string[] | null;
+  session_preferences?: string[] | null;
+  interests?: string[] | null;
 };
 
 export async function mergeUserRow(

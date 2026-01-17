@@ -351,6 +351,13 @@ export default function SubscriptionScreen() {
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
 
+        <View style={styles.comingSoonBanner}>
+          <Text style={styles.comingSoonTitle}>🚀 Coming Soon</Text>
+          <Text style={styles.comingSoonText}>
+            Premium subscriptions are currently in development. Check back soon for exclusive features and benefits!
+          </Text>
+        </View>
+
         {pollingPayment && (
           <View style={styles.pollingBanner}>
             <ActivityIndicator size="small" color="#00FF7F" />
@@ -578,6 +585,27 @@ const styles = StyleSheet.create({
     color: "#00FF7F",
     fontSize: 16,
     fontWeight: "600",
+  },
+  comingSoonBanner: {
+    backgroundColor: "#1f1f1f",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: "#FFA500",
+    alignItems: "center",
+  },
+  comingSoonTitle: {
+    color: "#FFA500",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  comingSoonText: {
+    color: "#CCCCCC",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
   },
   currentSubBanner: {
     backgroundColor: "#1f1f1f",
