@@ -598,31 +598,48 @@ export default function FeedScreen() {
   const handleReportPost = async () => {
     if (!selectedPost || !currentUserId) return;
 
-    Alert.alert(
-      "Report Post",
-      "Why are you reporting this post?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Spam",
-          onPress: async () => {
-            await submitReport("spam");
+    if (Platform.OS === 'web') {
+      const reason = window.prompt(
+        "Why are you reporting this post?\n\nEnter:\n1 for Spam\n2 for Inappropriate Content\n3 for Harassment",
+        "1"
+      );
+
+      if (!reason) return;
+
+      const reasonMap: { [key: string]: string } = {
+        '1': 'spam',
+        '2': 'inappropriate',
+        '3': 'harassment'
+      };
+
+      await submitReport(reasonMap[reason] || 'spam');
+    } else {
+      Alert.alert(
+        "Report Post",
+        "Why are you reporting this post?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Spam",
+            onPress: async () => {
+              await submitReport("spam");
+            },
           },
-        },
-        {
-          text: "Inappropriate Content",
-          onPress: async () => {
-            await submitReport("inappropriate");
+          {
+            text: "Inappropriate Content",
+            onPress: async () => {
+              await submitReport("inappropriate");
+            },
           },
-        },
-        {
-          text: "Harassment",
-          onPress: async () => {
-            await submitReport("harassment");
+          {
+            text: "Harassment",
+            onPress: async () => {
+              await submitReport("harassment");
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const submitReport = async (reason: string) => {
@@ -640,55 +657,97 @@ export default function FeedScreen() {
 
       if (error) {
         console.error("Error submitting report:", error);
-        Alert.alert("Error", "Failed to submit report");
+        if (Platform.OS === 'web') {
+          alert("Failed to submit report");
+        } else {
+          Alert.alert("Error", "Failed to submit report");
+        }
         return;
       }
 
       closePostMenu();
-      Alert.alert("Success", "Your report has been submitted. Thank you for helping keep our community safe.");
+      if (Platform.OS === 'web') {
+        alert("Your report has been submitted. Thank you for helping keep our community safe.");
+      } else {
+        Alert.alert("Success", "Your report has been submitted. Thank you for helping keep our community safe.");
+      }
     } catch (error) {
       console.error("Error submitting report:", error);
-      Alert.alert("Error", "An unexpected error occurred");
+      if (Platform.OS === 'web') {
+        alert("An unexpected error occurred");
+      } else {
+        Alert.alert("Error", "An unexpected error occurred");
+      }
     }
   };
 
   const handleBlockUser = async () => {
     if (!selectedPost || !currentUserId) return;
 
-    Alert.alert(
-      "Block User",
-      `Are you sure you want to block ${selectedPost.user_name}? You won't see their posts anymore.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Block",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from("blocks")
-                .insert({
-                  blocker_id: currentUserId,
-                  blocked_id: selectedPost.user_id,
-                });
+    if (Platform.OS === 'web') {
+      if (!window.confirm(`Are you sure you want to block ${selectedPost.user_name}? You won't see their posts anymore.`)) {
+        return;
+      }
 
-              if (error) {
+      try {
+        const { error } = await supabase
+          .from("blocks")
+          .insert({
+            blocker_id: currentUserId,
+            blocked_id: selectedPost.user_id,
+          });
+
+        if (error) {
+          console.error("Error blocking user:", error);
+          alert("Failed to block user");
+          return;
+        }
+
+        closePostMenu();
+        await new Promise(resolve => setTimeout(resolve, 300));
+        loadPosts();
+        alert(`You have blocked ${selectedPost.user_name}`);
+      } catch (error) {
+        console.error("Error blocking user:", error);
+        alert("An unexpected error occurred");
+      }
+    } else {
+      Alert.alert(
+        "Block User",
+        `Are you sure you want to block ${selectedPost.user_name}? You won't see their posts anymore.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Block",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                const { error } = await supabase
+                  .from("blocks")
+                  .insert({
+                    blocker_id: currentUserId,
+                    blocked_id: selectedPost.user_id,
+                  });
+
+                if (error) {
+                  console.error("Error blocking user:", error);
+                  Alert.alert("Error", "Failed to block user");
+                  return;
+                }
+
+                closePostMenu();
+                await new Promise(resolve => setTimeout(resolve, 300));
+                loadPosts();
+                Alert.alert("Success", `You have blocked ${selectedPost.user_name}`);
+              } catch (error) {
                 console.error("Error blocking user:", error);
-                Alert.alert("Error", "Failed to block user");
-                return;
+                Alert.alert("Error", "An unexpected error occurred");
               }
-
-              closePostMenu();
-              loadPosts();
-              Alert.alert("Success", `You have blocked ${selectedPost.user_name}`);
-            } catch (error) {
-              console.error("Error blocking user:", error);
-              Alert.alert("Error", "An unexpected error occurred");
-            }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   if (loading) {
