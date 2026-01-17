@@ -124,6 +124,16 @@ export default function FeedScreen() {
       const { data: authData } = await supabase.auth.getUser();
       const currentUserId = authData?.user?.id;
 
+      let blockedUserIds: string[] = [];
+      if (currentUserId) {
+        const { data: blocksData } = await supabase
+          .from("blocks")
+          .select("blocked_id")
+          .eq("blocker_id", currentUserId);
+
+        blockedUserIds = blocksData?.map(b => b.blocked_id) || [];
+      }
+
       const { data: postsData, error } = await supabase
         .from("feed_posts")
         .select(`
@@ -146,7 +156,14 @@ export default function FeedScreen() {
         return;
       }
 
-      const userIds = [...new Set(postsData.map(p => p.user_id))];
+      const filteredPosts = postsData.filter(post => !blockedUserIds.includes(post.user_id));
+
+      if (filteredPosts.length === 0) {
+        setPosts([]);
+        return;
+      }
+
+      const userIds = [...new Set(filteredPosts.map(p => p.user_id))];
       const { data: usersData } = await supabase
         .from("users")
         .select("id, name, image_url, last_active_at")
@@ -154,7 +171,7 @@ export default function FeedScreen() {
 
       const usersMap = new Map(usersData?.map(u => [u.id, u]) || []);
 
-      const postIds = postsData.map(p => p.id);
+      const postIds = filteredPosts.map(p => p.id);
       const { data: likesData } = await supabase
         .from("post_likes")
         .select("post_id, user_id")
@@ -180,7 +197,7 @@ export default function FeedScreen() {
         commentCounts.set(comment.post_id, (commentCounts.get(comment.post_id) || 0) + 1);
       });
 
-      const enrichedPosts: Post[] = postsData.map(post => {
+      const enrichedPosts: Post[] = filteredPosts.map(post => {
         const user = usersMap.get(post.user_id);
         return {
           id: post.id,
@@ -262,6 +279,18 @@ export default function FeedScreen() {
         },
         (payload) => {
           console.log("Post comments changed:", payload);
+          loadPosts();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "blocks",
+        },
+        (payload) => {
+          console.log("Blocks changed:", payload);
           loadPosts();
         }
       )
@@ -578,9 +607,9 @@ export default function FeedScreen() {
         .from("reports")
         .insert({
           reporter_id: currentUserId,
-          reported_user_id: selectedPost.user_id,
+          reported_id: selectedPost.user_id,
           reason: reason,
-          description: `Reported post: ${selectedPost.content.substring(0, 100)}`,
+          context: `Reported post: ${selectedPost.content.substring(0, 100)}`,
         });
 
       if (error) {
@@ -894,38 +923,43 @@ export default function FeedScreen() {
           activeOpacity={1}
           onPress={closePostMenu}
         >
-          <View style={styles.postMenuContent}>
-            {selectedPost && currentUserId === selectedPost.user_id ? (
-              <TouchableOpacity
-                style={styles.postMenuItem}
-                onPress={handleDeletePost}
-              >
-                <Trash2 size={20} color="#FF4444" />
-                <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
-                  Delete Post
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.postMenuContent}>
+              {selectedPost && currentUserId === selectedPost.user_id ? (
                 <TouchableOpacity
                   style={styles.postMenuItem}
-                  onPress={handleReportPost}
+                  onPress={handleDeletePost}
                 >
-                  <AlertTriangle size={20} color="#FFA500" />
-                  <Text style={styles.postMenuText}>Report Post</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.postMenuItem}
-                  onPress={handleBlockUser}
-                >
-                  <Ban size={20} color="#FF4444" />
+                  <Trash2 size={20} color="#FF4444" />
                   <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
-                    Block User
+                    Delete Post
                   </Text>
                 </TouchableOpacity>
-              </>
-            )}
-          </View>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.postMenuItem}
+                    onPress={handleReportPost}
+                  >
+                    <AlertTriangle size={20} color="#FFA500" />
+                    <Text style={styles.postMenuText}>Report Post</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.postMenuItem}
+                    onPress={handleBlockUser}
+                  >
+                    <Ban size={20} color="#FF4444" />
+                    <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
+                      Block User
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
       </ImageBackground>
@@ -1336,6 +1370,11 @@ const styles = StyleSheet.create({
     minWidth: 200,
     borderWidth: 1,
     borderColor: "#333",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   postMenuItem: {
     flexDirection: "row",
