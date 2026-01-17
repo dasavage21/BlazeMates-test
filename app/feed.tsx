@@ -212,45 +212,18 @@ export default function FeedScreen() {
 
     console.log("Setting up realtime subscription...");
 
+    const channelName = `feed_posts_changes_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel("feed_posts_changes", {
-        config: {
-          broadcast: { self: true },
-        },
-      })
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "feed_posts",
         },
         (payload) => {
-          console.log("Feed post inserted:", payload);
-          loadPosts();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "feed_posts",
-        },
-        (payload) => {
-          console.log("Feed post updated:", payload);
-          loadPosts();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "feed_posts",
-        },
-        (payload) => {
-          console.log("Feed post deleted:", payload);
+          console.log("Feed post changed:", payload);
           loadPosts();
         }
       )

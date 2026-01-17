@@ -175,7 +175,7 @@ export default function CreatePostScreen() {
       console.log("Post created successfully:", data);
 
       // Small delay to ensure realtime event propagates
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       router.back();
     } catch (error) {
