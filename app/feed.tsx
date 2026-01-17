@@ -498,10 +498,7 @@ export default function FeedScreen() {
           <View style={styles.container}>
           <View style={styles.navbar}>
             <View style={styles.navLeft}>
-              <Image
-                source={require('./assets/icon.png')}
-                style={styles.logoIcon}
-              />
+              <Text style={styles.brandName} numberOfLines={1}>BlazeMates</Text>
             </View>
 
             <View style={styles.navCenter}>
@@ -757,10 +754,11 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  logoIcon: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
+  brandName: {
+    fontSize: brandFontSize,
+    fontWeight: "bold",
+    color: "#00FF7F",
+    flexShrink: 1,
   },
   navCenter: {
     flexDirection: "row",

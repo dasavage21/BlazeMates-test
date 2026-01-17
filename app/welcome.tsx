@@ -34,10 +34,7 @@ export default function WelcomeScreen() {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.hero}>
-          <Image
-            source={require('./assets/icon.png')}
-            style={styles.logoIcon}
-          />
+          <Text style={styles.title}>BlazeMates</Text>
           <Text style={styles.tagline}>Find Your Smoke Buddies</Text>
           <Text style={styles.description}>
             Connect with the cannabis community in your area. Find people to smoke with, share strains, and discuss cultivation.
@@ -162,11 +159,11 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     alignItems: "center",
   },
-  logoIcon: {
-    width: 120,
-    height: 120,
-    resizeMode: 'contain',
-    marginBottom: 20,
+  title: {
+    fontSize: 42,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 8,
   },
   tagline: {
     fontSize: 20,
