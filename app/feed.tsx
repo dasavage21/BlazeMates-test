@@ -523,6 +523,12 @@ export default function FeedScreen() {
   };
 
   const openPostMenu = (post: Post) => {
+    console.log("Opening post menu for:", {
+      postId: post.id,
+      postUserId: post.user_id,
+      currentUserId: currentUserId,
+      isOwnPost: currentUserId === post.user_id
+    });
     setSelectedPost(post);
     setPostMenuVisible(true);
   };
@@ -533,43 +539,82 @@ export default function FeedScreen() {
   };
 
   const handleDeletePost = async () => {
-    if (!selectedPost) return;
+    if (!selectedPost) {
+      console.log("No post selected for deletion");
+      return;
+    }
 
-    Alert.alert(
-      "Delete Post",
-      "Are you sure you want to delete this post?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              console.log("Deleting post:", selectedPost.id);
-              const { error, data } = await supabase
-                .from("feed_posts")
-                .delete()
-                .eq("id", selectedPost.id)
-                .select();
+    console.log("Delete request for post:", {
+      postId: selectedPost.id,
+      postUserId: selectedPost.user_id,
+      currentUserId: currentUserId,
+      match: currentUserId === selectedPost.user_id
+    });
 
-              if (error) {
+    if (Platform.OS === 'web') {
+      if (!window.confirm("Are you sure you want to delete this post?")) {
+        return;
+      }
+
+      try {
+        console.log("Attempting to delete post:", selectedPost.id);
+        const { error, data } = await supabase
+          .from("feed_posts")
+          .delete()
+          .eq("id", selectedPost.id)
+          .select();
+
+        if (error) {
+          console.error("Error deleting post:", error);
+          alert(`Failed to delete post: ${error.message}`);
+          return;
+        }
+
+        console.log("Post deleted successfully:", data);
+        closePostMenu();
+        await new Promise(resolve => setTimeout(resolve, 300));
+        loadPosts();
+      } catch (error) {
+        console.error("Error deleting post:", error);
+        alert("An unexpected error occurred");
+      }
+    } else {
+      Alert.alert(
+        "Delete Post",
+        "Are you sure you want to delete this post?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                console.log("Attempting to delete post:", selectedPost.id);
+                const { error, data } = await supabase
+                  .from("feed_posts")
+                  .delete()
+                  .eq("id", selectedPost.id)
+                  .select();
+
+                if (error) {
+                  console.error("Error deleting post:", error);
+                  Alert.alert("Error", `Failed to delete post: ${error.message}`);
+                  return;
+                }
+
+                console.log("Post deleted successfully:", data);
+                closePostMenu();
+                await new Promise(resolve => setTimeout(resolve, 300));
+                loadPosts();
+              } catch (error) {
                 console.error("Error deleting post:", error);
-                Alert.alert("Error", `Failed to delete post: ${error.message}`);
-                return;
+                Alert.alert("Error", "An unexpected error occurred");
               }
-
-              console.log("Post deleted successfully:", data);
-              closePostMenu();
-              await new Promise(resolve => setTimeout(resolve, 300));
-              loadPosts();
-            } catch (error) {
-              console.error("Error deleting post:", error);
-              Alert.alert("Error", "An unexpected error occurred");
-            }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleReportPost = async () => {
@@ -931,16 +976,23 @@ export default function FeedScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.postMenuContent}>
-              {selectedPost && currentUserId === selectedPost.user_id ? (
-                <TouchableOpacity
-                  style={styles.postMenuItem}
-                  onPress={handleDeletePost}
-                >
-                  <Trash2 size={20} color="#FF4444" />
-                  <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
-                    Delete Post
-                  </Text>
-                </TouchableOpacity>
+              {selectedPost && currentUserId && currentUserId === selectedPost.user_id ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.postMenuItem}
+                    onPress={handleDeletePost}
+                  >
+                    <Trash2 size={20} color="#FF4444" />
+                    <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
+                      Delete Post
+                    </Text>
+                  </TouchableOpacity>
+                  {__DEV__ && (
+                    <Text style={{color: '#666', fontSize: 10, padding: 8}}>
+                      Debug: Own post (User: {currentUserId?.substring(0, 8)})
+                    </Text>
+                  )}
+                </>
               ) : (
                 <>
                   <TouchableOpacity
@@ -959,6 +1011,13 @@ export default function FeedScreen() {
                       Block User
                     </Text>
                   </TouchableOpacity>
+                  {__DEV__ && (
+                    <Text style={{color: '#666', fontSize: 10, padding: 8}}>
+                      Debug: Other user's post
+                      {'\n'}Current: {currentUserId?.substring(0, 8) || 'null'}
+                      {'\n'}Post: {selectedPost?.user_id?.substring(0, 8) || 'null'}
+                    </Text>
+                  )}
                 </>
               )}
             </View>
