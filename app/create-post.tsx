@@ -160,11 +160,11 @@ export default function CreatePostScreen() {
         }
       }
 
-      const { error } = await supabase.from("feed_posts").insert({
+      const { data, error } = await supabase.from("feed_posts").insert({
         user_id: userId,
         content: content.trim(),
         image_url: imageUrl,
-      });
+      }).select();
 
       if (error) {
         console.error("Error creating post:", error);
@@ -172,7 +172,12 @@ export default function CreatePostScreen() {
         return;
       }
 
-      router.replace("/feed");
+      console.log("Post created successfully:", data);
+
+      // Small delay to ensure realtime event propagates
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      router.back();
     } catch (error) {
       console.error("Error creating post:", error);
       Alert.alert("Error", "An unexpected error occurred. Please try again.");
