@@ -523,12 +523,6 @@ export default function FeedScreen() {
   };
 
   const openPostMenu = (post: Post) => {
-    console.log("Opening post menu for:", {
-      postId: post.id,
-      postUserId: post.user_id,
-      currentUserId: currentUserId,
-      isOwnPost: currentUserId === post.user_id
-    });
     setSelectedPost(post);
     setPostMenuVisible(true);
   };
@@ -539,17 +533,7 @@ export default function FeedScreen() {
   };
 
   const handleDeletePost = async () => {
-    if (!selectedPost) {
-      console.log("No post selected for deletion");
-      return;
-    }
-
-    console.log("Delete request for post:", {
-      postId: selectedPost.id,
-      postUserId: selectedPost.user_id,
-      currentUserId: currentUserId,
-      match: currentUserId === selectedPost.user_id
-    });
+    if (!selectedPost) return;
 
     if (Platform.OS === 'web') {
       if (!window.confirm("Are you sure you want to delete this post?")) {
@@ -557,12 +541,10 @@ export default function FeedScreen() {
       }
 
       try {
-        console.log("Attempting to delete post:", selectedPost.id);
-        const { error, data } = await supabase
+        const { error } = await supabase
           .from("feed_posts")
           .delete()
-          .eq("id", selectedPost.id)
-          .select();
+          .eq("id", selectedPost.id);
 
         if (error) {
           console.error("Error deleting post:", error);
@@ -570,7 +552,6 @@ export default function FeedScreen() {
           return;
         }
 
-        console.log("Post deleted successfully:", data);
         closePostMenu();
         await new Promise(resolve => setTimeout(resolve, 300));
         loadPosts();
@@ -589,12 +570,10 @@ export default function FeedScreen() {
             style: "destructive",
             onPress: async () => {
               try {
-                console.log("Attempting to delete post:", selectedPost.id);
-                const { error, data } = await supabase
+                const { error } = await supabase
                   .from("feed_posts")
                   .delete()
-                  .eq("id", selectedPost.id)
-                  .select();
+                  .eq("id", selectedPost.id);
 
                 if (error) {
                   console.error("Error deleting post:", error);
@@ -602,7 +581,6 @@ export default function FeedScreen() {
                   return;
                 }
 
-                console.log("Post deleted successfully:", data);
                 closePostMenu();
                 await new Promise(resolve => setTimeout(resolve, 300));
                 loadPosts();
@@ -977,22 +955,15 @@ export default function FeedScreen() {
           >
             <View style={styles.postMenuContent}>
               {selectedPost && currentUserId && currentUserId === selectedPost.user_id ? (
-                <>
-                  <TouchableOpacity
-                    style={styles.postMenuItem}
-                    onPress={handleDeletePost}
-                  >
-                    <Trash2 size={20} color="#FF4444" />
-                    <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
-                      Delete Post
-                    </Text>
-                  </TouchableOpacity>
-                  {__DEV__ && (
-                    <Text style={{color: '#666', fontSize: 10, padding: 8}}>
-                      Debug: Own post (User: {currentUserId?.substring(0, 8)})
-                    </Text>
-                  )}
-                </>
+                <TouchableOpacity
+                  style={styles.postMenuItem}
+                  onPress={handleDeletePost}
+                >
+                  <Trash2 size={20} color="#FF4444" />
+                  <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
+                    Delete Post
+                  </Text>
+                </TouchableOpacity>
               ) : (
                 <>
                   <TouchableOpacity
@@ -1011,13 +982,6 @@ export default function FeedScreen() {
                       Block User
                     </Text>
                   </TouchableOpacity>
-                  {__DEV__ && (
-                    <Text style={{color: '#666', fontSize: 10, padding: 8}}>
-                      Debug: Other user's post
-                      {'\n'}Current: {currentUserId?.substring(0, 8) || 'null'}
-                      {'\n'}Post: {selectedPost?.user_id?.substring(0, 8) || 'null'}
-                    </Text>
-                  )}
                 </>
               )}
             </View>
