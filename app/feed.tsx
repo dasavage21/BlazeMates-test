@@ -545,19 +545,22 @@ export default function FeedScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const { error } = await supabase
+              console.log("Deleting post:", selectedPost.id);
+              const { error, data } = await supabase
                 .from("feed_posts")
                 .delete()
                 .eq("id", selectedPost.id)
-                .eq("user_id", currentUserId);
+                .select();
 
               if (error) {
                 console.error("Error deleting post:", error);
-                Alert.alert("Error", "Failed to delete post");
+                Alert.alert("Error", `Failed to delete post: ${error.message}`);
                 return;
               }
 
+              console.log("Post deleted successfully:", data);
               closePostMenu();
+              await new Promise(resolve => setTimeout(resolve, 300));
               loadPosts();
             } catch (error) {
               console.error("Error deleting post:", error);
