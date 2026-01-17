@@ -15,7 +15,7 @@ import { supabase } from "../supabaseClient";
 interface BlockedUser {
   id: string;
   blocked_id: string;
-  blocked_at: string;
+  created_at: string;
   user_name: string;
   avatar_url: string | null;
 }
@@ -40,32 +40,43 @@ export default function BlockedUsersScreen() {
 
       setCurrentUserId(user.id);
 
-      const { data, error } = await supabase
+      const { data: blocksData, error: blocksError } = await supabase
         .from("blocks")
-        .select(`
-          id,
-          blocked_id,
-          blocked_at,
-          users!blocks_blocked_id_fkey (
-            user_name,
-            avatar_url
-          )
-        `)
+        .select("id, blocked_id, created_at")
         .eq("blocker_id", user.id)
-        .order("blocked_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading blocked users:", error);
+      if (blocksError) {
+        console.error("Error loading blocked users:", blocksError);
         return;
       }
 
-      const formattedData = data?.map((block: any) => ({
+      if (!blocksData || blocksData.length === 0) {
+        setBlockedUsers([]);
+        return;
+      }
+
+      const blockedUserIds = blocksData.map(b => b.blocked_id);
+
+      const { data: usersData, error: usersError } = await supabase
+        .from("users")
+        .select("id, name, image_url")
+        .in("id", blockedUserIds);
+
+      if (usersError) {
+        console.error("Error loading user data:", usersError);
+        return;
+      }
+
+      const usersMap = new Map(usersData?.map(u => [u.id, u]) || []);
+
+      const formattedData = blocksData.map((block) => ({
         id: block.id,
         blocked_id: block.blocked_id,
-        blocked_at: block.blocked_at,
-        user_name: block.users?.user_name || "Unknown User",
-        avatar_url: block.users?.avatar_url || null,
-      })) || [];
+        created_at: block.created_at,
+        user_name: usersMap.get(block.blocked_id)?.name || "Unknown User",
+        avatar_url: usersMap.get(block.blocked_id)?.image_url || null,
+      }));
 
       setBlockedUsers(formattedData);
     } catch (error) {
@@ -130,7 +141,7 @@ export default function BlockedUsersScreen() {
   };
 
   const renderBlockedUser = ({ item }: { item: BlockedUser }) => {
-    const blockedDate = new Date(item.blocked_at);
+    const blockedDate = new Date(item.created_at);
     const formattedDate = blockedDate.toLocaleDateString();
 
     return (
