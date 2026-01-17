@@ -219,7 +219,8 @@ export default function FeedScreen() {
           schema: "public",
           table: "feed_posts",
         },
-        () => {
+        (payload) => {
+          console.log("Feed posts changed:", payload);
           loadPosts();
         }
       )
@@ -230,13 +231,14 @@ export default function FeedScreen() {
           schema: "public",
           table: "post_likes",
         },
-        () => {
+        (payload) => {
+          console.log("Post likes changed:", payload);
           if (likesDebounceTimer) {
             clearTimeout(likesDebounceTimer);
           }
           likesDebounceTimer = setTimeout(() => {
             loadPosts();
-          }, 2000);
+          }, 500);
         }
       )
       .on(
@@ -246,11 +248,14 @@ export default function FeedScreen() {
           schema: "public",
           table: "post_comments",
         },
-        () => {
+        (payload) => {
+          console.log("Post comments changed:", payload);
           loadPosts();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
 
     return () => {
       if (likesDebounceTimer) {
