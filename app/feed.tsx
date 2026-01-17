@@ -3,6 +3,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   ImageBackground,
@@ -20,7 +21,7 @@ import {
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
-import { Heart, MessageCircle, Plus, Send, X } from "lucide-react-native";
+import { Heart, MessageCircle, Plus, Send, X, MoreVertical, Trash2, AlertTriangle, Ban } from "lucide-react-native";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -73,6 +74,9 @@ export default function FeedScreen() {
   const [commentText, setCommentText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [postMenuVisible, setPostMenuVisible] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const loadHeaderPhoto = useCallback(async () => {
     try {
@@ -203,6 +207,11 @@ export default function FeedScreen() {
   }, []);
 
   useEffect(() => {
+    const loadCurrentUser = async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      setCurrentUserId(auth?.user?.id || null);
+    };
+    loadCurrentUser();
     loadHeaderPhoto();
     loadPosts();
   }, [loadHeaderPhoto, loadPosts]);
@@ -484,6 +493,149 @@ export default function FeedScreen() {
     return postTime.toLocaleDateString();
   };
 
+  const openPostMenu = (post: Post) => {
+    setSelectedPost(post);
+    setPostMenuVisible(true);
+  };
+
+  const closePostMenu = () => {
+    setPostMenuVisible(false);
+    setSelectedPost(null);
+  };
+
+  const handleDeletePost = async () => {
+    if (!selectedPost) return;
+
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("feed_posts")
+                .delete()
+                .eq("id", selectedPost.id)
+                .eq("user_id", currentUserId);
+
+              if (error) {
+                console.error("Error deleting post:", error);
+                Alert.alert("Error", "Failed to delete post");
+                return;
+              }
+
+              closePostMenu();
+              loadPosts();
+            } catch (error) {
+              console.error("Error deleting post:", error);
+              Alert.alert("Error", "An unexpected error occurred");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleReportPost = async () => {
+    if (!selectedPost || !currentUserId) return;
+
+    Alert.alert(
+      "Report Post",
+      "Why are you reporting this post?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Spam",
+          onPress: async () => {
+            await submitReport("spam");
+          },
+        },
+        {
+          text: "Inappropriate Content",
+          onPress: async () => {
+            await submitReport("inappropriate");
+          },
+        },
+        {
+          text: "Harassment",
+          onPress: async () => {
+            await submitReport("harassment");
+          },
+        },
+      ]
+    );
+  };
+
+  const submitReport = async (reason: string) => {
+    if (!selectedPost || !currentUserId) return;
+
+    try {
+      const { error } = await supabase
+        .from("reports")
+        .insert({
+          reporter_id: currentUserId,
+          reported_user_id: selectedPost.user_id,
+          reason: reason,
+          description: `Reported post: ${selectedPost.content.substring(0, 100)}`,
+        });
+
+      if (error) {
+        console.error("Error submitting report:", error);
+        Alert.alert("Error", "Failed to submit report");
+        return;
+      }
+
+      closePostMenu();
+      Alert.alert("Success", "Your report has been submitted. Thank you for helping keep our community safe.");
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      Alert.alert("Error", "An unexpected error occurred");
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!selectedPost || !currentUserId) return;
+
+    Alert.alert(
+      "Block User",
+      `Are you sure you want to block ${selectedPost.user_name}? You won't see their posts anymore.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("blocks")
+                .insert({
+                  blocker_id: currentUserId,
+                  blocked_id: selectedPost.user_id,
+                });
+
+              if (error) {
+                console.error("Error blocking user:", error);
+                Alert.alert("Error", "Failed to block user");
+                return;
+              }
+
+              closePostMenu();
+              loadPosts();
+              Alert.alert("Success", `You have blocked ${selectedPost.user_name}`);
+            } catch (error) {
+              console.error("Error blocking user:", error);
+              Alert.alert("Error", "An unexpected error occurred");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -572,29 +724,37 @@ export default function FeedScreen() {
             ) : (
               posts.map((post) => (
                 <View key={post.id} style={styles.postCard}>
-                  <TouchableOpacity
-                    style={styles.postHeader}
-                    onPress={() => router.push(`/profile?userId=${post.user_id}`)}
-                  >
-                    <View style={styles.avatarContainer}>
-                      <Image
-                        source={{ uri: post.user_image || "https://via.placeholder.com/40" }}
-                        style={styles.postAvatar}
-                      />
-                      {isUserOnline(post.user_last_active) && (
-                        <View style={styles.onlineIndicator} />
-                      )}
-                    </View>
-                    <View style={styles.postHeaderInfo}>
-                      <View style={styles.nameRow}>
-                        <Text style={styles.postUserName}>{post.user_name}</Text>
+                  <View style={styles.postHeader}>
+                    <TouchableOpacity
+                      style={styles.postHeaderLeft}
+                      onPress={() => router.push(`/profile?userId=${post.user_id}`)}
+                    >
+                      <View style={styles.avatarContainer}>
+                        <Image
+                          source={{ uri: post.user_image || "https://via.placeholder.com/40" }}
+                          style={styles.postAvatar}
+                        />
                         {isUserOnline(post.user_last_active) && (
-                          <Text style={styles.onlineText}>• Online</Text>
+                          <View style={styles.onlineIndicator} />
                         )}
                       </View>
-                      <Text style={styles.postTime}>{formatTime(post.created_at)}</Text>
-                    </View>
-                  </TouchableOpacity>
+                      <View style={styles.postHeaderInfo}>
+                        <View style={styles.nameRow}>
+                          <Text style={styles.postUserName}>{post.user_name}</Text>
+                          {isUserOnline(post.user_last_active) && (
+                            <Text style={styles.onlineText}>• Online</Text>
+                          )}
+                        </View>
+                        <Text style={styles.postTime}>{formatTime(post.created_at)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.postMenuButton}
+                      onPress={() => openPostMenu(post)}
+                    >
+                      <MoreVertical size={20} color="#888" />
+                    </TouchableOpacity>
+                  </View>
 
                   <Text style={styles.postContent}>{post.content}</Text>
 
@@ -722,6 +882,52 @@ export default function FeedScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={postMenuVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={closePostMenu}
+      >
+        <TouchableOpacity
+          style={styles.postMenuOverlay}
+          activeOpacity={1}
+          onPress={closePostMenu}
+        >
+          <View style={styles.postMenuContent}>
+            {selectedPost && currentUserId === selectedPost.user_id ? (
+              <TouchableOpacity
+                style={styles.postMenuItem}
+                onPress={handleDeletePost}
+              >
+                <Trash2 size={20} color="#FF4444" />
+                <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
+                  Delete Post
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.postMenuItem}
+                  onPress={handleReportPost}
+                >
+                  <AlertTriangle size={20} color="#FFA500" />
+                  <Text style={styles.postMenuText}>Report Post</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.postMenuItem}
+                  onPress={handleBlockUser}
+                >
+                  <Ban size={20} color="#FF4444" />
+                  <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
+                    Block User
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
       </ImageBackground>
     </SafeAreaView>
   );
@@ -835,7 +1041,17 @@ const styles = StyleSheet.create({
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
+  },
+  postHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  postMenuButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   avatarContainer: {
     position: "relative",
@@ -1106,5 +1322,34 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: "#2a2a2a",
     opacity: 0.5,
+  },
+  postMenuOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  postMenuContent: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 12,
+    padding: 8,
+    minWidth: 200,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  postMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 8,
+    gap: 12,
+  },
+  postMenuText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  postMenuTextDanger: {
+    color: "#FF4444",
   },
 });
