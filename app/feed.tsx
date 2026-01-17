@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  ImageBackground,
   Keyboard,
   Modal,
   Platform,
@@ -17,7 +18,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 import { Heart, MessageCircle, Plus, Send, X } from "lucide-react-native";
@@ -525,9 +525,10 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={["#1a0a2e", "#16213e", "#0f3460", "#1a0a2e"]}
+      <ImageBackground
+        source={require("./assets/ombre_weed_background.jpg")}
         style={styles.backgroundImage}
+        imageStyle={styles.backgroundImageStyle}
       >
         <ScrollView
           style={styles.scrollView}
@@ -747,7 +748,7 @@ export default function FeedScreen() {
           </View>
         </View>
       </Modal>
-      </LinearGradient>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
