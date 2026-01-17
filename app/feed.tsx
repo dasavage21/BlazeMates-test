@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
-  ImageBackground,
   Keyboard,
   Modal,
   Platform,
@@ -18,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 import { Heart, MessageCircle, Plus, Send, X } from "lucide-react-native";
@@ -210,17 +210,47 @@ export default function FeedScreen() {
   useEffect(() => {
     let likesDebounceTimer: NodeJS.Timeout | null = null;
 
+    console.log("Setting up realtime subscription...");
+
     const channel = supabase
-      .channel("feed_posts_changes")
+      .channel("feed_posts_changes", {
+        config: {
+          broadcast: { self: true },
+        },
+      })
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "feed_posts",
         },
         (payload) => {
-          console.log("Feed posts changed:", payload);
+          console.log("Feed post inserted:", payload);
+          loadPosts();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "feed_posts",
+        },
+        (payload) => {
+          console.log("Feed post updated:", payload);
+          loadPosts();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "feed_posts",
+        },
+        (payload) => {
+          console.log("Feed post deleted:", payload);
           loadPosts();
         }
       )
@@ -253,11 +283,18 @@ export default function FeedScreen() {
           loadPosts();
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         console.log("Realtime subscription status:", status);
+        if (err) {
+          console.error("Realtime subscription error:", err);
+        }
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to realtime updates!");
+        }
       });
 
     return () => {
+      console.log("Cleaning up realtime subscription...");
       if (likesDebounceTimer) {
         clearTimeout(likesDebounceTimer);
       }
@@ -488,10 +525,9 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ImageBackground
-        source={require("./assets/ombre_weed_background.jpg")}
+      <LinearGradient
+        colors={["#1a0a2e", "#16213e", "#0f3460", "#1a0a2e"]}
         style={styles.backgroundImage}
-        imageStyle={styles.backgroundImageStyle}
       >
         <ScrollView
           style={styles.scrollView}
@@ -711,7 +747,7 @@ export default function FeedScreen() {
           </View>
         </View>
       </Modal>
-      </ImageBackground>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
