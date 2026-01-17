@@ -7,6 +7,7 @@ import { supabase } from '../supabaseClient';
 import { handleRefreshTokenError } from '../lib/authSession';
 import { mergeUserRow } from '../lib/userStore';
 import { fetchSiteStatus, SiteStatus } from '../lib/siteStatus';
+import { trackDailyLogin } from '../lib/activityTracker';
 
 async function syncPendingAvatarIfAuthed() {
   try {
@@ -144,6 +145,11 @@ export default function LoginScreen() {
 
       console.log('Hydrating profile cache...');
       await hydrateProfileCache();
+
+      console.log('Tracking daily login...');
+      trackDailyLogin().catch((err) => {
+        console.warn('Failed to track daily login:', err);
+      });
 
       console.log('Checking username...');
       const { data: authData } = await supabase.auth.getUser();
