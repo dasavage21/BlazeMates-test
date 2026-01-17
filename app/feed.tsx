@@ -305,7 +305,8 @@ export default function FeedScreen() {
   useFocusEffect(
     useCallback(() => {
       updateUserActivity();
-    }, [])
+      loadPosts();
+    }, [loadPosts])
   );
 
   const onRefresh = useCallback(() => {
