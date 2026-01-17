@@ -182,6 +182,13 @@ export default function SettingsScreen() {
         <Text style={styles.buttonText}>Support the Community</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/blocked-users")}
+      >
+        <Text style={styles.buttonText}>Blocked Users</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>
