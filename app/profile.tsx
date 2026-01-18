@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const viewingUserId = params.userId as string | undefined;
+  const refreshKey = params.refresh as string | undefined;
 
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -106,7 +107,7 @@ export default function ProfileScreen() {
       }
     };
     load();
-  }, [viewingUserId]);
+  }, [viewingUserId, refreshKey]);
 
   useFocusEffect(
     useCallback(() => {

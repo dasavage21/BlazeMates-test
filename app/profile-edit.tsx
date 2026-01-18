@@ -389,7 +389,7 @@ export default function ProfileEditScreen() {
         }
       }
 
-      router.replace("/profile");
+      router.replace("/profile?refresh=" + Date.now());
     } finally {
       setSaving(false);
     }
