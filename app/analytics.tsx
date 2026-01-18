@@ -1,16 +1,16 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Eye, Heart, TrendingUp, Zap, BarChart3, Users } from 'lucide-react-native';
+import { ArrowLeft, Eye, TrendingUp, Zap, BarChart3, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface AnalyticsData {
   totalProfileViews: number;
-  totalLikesReceived: number;
-  totalLikesSent: number;
+  totalFollowers: number;
+  totalFollowing: number;
   viewsLast7Days: number;
-  likesLast7Days: number;
+  followersLast7Days: number;
 }
 
 export default function Analytics() {
@@ -43,10 +43,10 @@ export default function Analytics() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
-          table: 'likes',
-          filter: `liked_user_id=eq.${userId}`,
+          table: 'follows',
+          filter: `followed_id=eq.${userId}`,
         },
         () => {
           loadAnalytics();
@@ -88,7 +88,7 @@ export default function Analytics() {
 
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('subscription_tier, subscription_status')
+        .select('subscription_tier, subscription_status, follower_count, following_count')
         .eq('id', authUser.id)
         .maybeSingle();
 
@@ -152,20 +152,20 @@ export default function Analytics() {
 
       console.log('Views last 7 days:', viewsLast7Days, 'Error:', viewsError);
 
-      const { count: likesLast7Days, error: likesError } = await supabase
-        .from('likes')
+      const { count: followersLast7Days, error: followsError } = await supabase
+        .from('follows')
         .select('*', { count: 'exact', head: true })
-        .eq('liked_user_id', authUser.id)
+        .eq('followed_id', authUser.id)
         .gte('created_at', sevenDaysAgo.toISOString());
 
-      console.log('Likes last 7 days:', likesLast7Days, 'Error:', likesError);
+      console.log('Followers last 7 days:', followersLast7Days, 'Error:', followsError);
 
       setAnalytics({
         totalProfileViews: analyticsData.data?.total_profile_views || 0,
-        totalLikesReceived: analyticsData.data?.total_likes_received || 0,
-        totalLikesSent: analyticsData.data?.total_likes_sent || 0,
+        totalFollowers: userData?.follower_count || 0,
+        totalFollowing: userData?.following_count || 0,
         viewsLast7Days: viewsLast7Days || 0,
-        likesLast7Days: likesLast7Days || 0,
+        followersLast7Days: followersLast7Days || 0,
       });
 
       try {
@@ -263,11 +263,11 @@ export default function Analytics() {
           </View>
 
           <View style={styles.statCard}>
-            <View style={[styles.iconContainer, { backgroundColor: '#FFE5EC' }]}>
-              <Heart size={28} color="#FF4458" />
+            <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
+              <Users size={28} color="#4CAF50" />
             </View>
-            <Text style={styles.statValue}>{analytics?.likesLast7Days || 0}</Text>
-            <Text style={styles.statLabel}>Likes Received</Text>
+            <Text style={styles.statValue}>{analytics?.followersLast7Days || 0}</Text>
+            <Text style={styles.statLabel}>New Followers</Text>
           </View>
         </View>
 
@@ -283,18 +283,18 @@ export default function Analytics() {
 
           <View style={styles.statRow}>
             <View style={styles.statRowIcon}>
-              <Heart size={18} color="#FF4458" />
+              <Users size={18} color="#4CAF50" />
             </View>
-            <Text style={styles.statRowLabel}>Likes Received</Text>
-            <Text style={styles.statRowValue}>{analytics?.totalLikesReceived || 0}</Text>
+            <Text style={styles.statRowLabel}>Total Followers</Text>
+            <Text style={styles.statRowValue}>{analytics?.totalFollowers || 0}</Text>
           </View>
 
           <View style={styles.statRow}>
             <View style={styles.statRowIcon}>
-              <Heart size={18} color="#E91E63" />
+              <Users size={18} color="#2196F3" />
             </View>
-            <Text style={styles.statRowLabel}>Likes Sent</Text>
-            <Text style={styles.statRowValue}>{analytics?.totalLikesSent || 0}</Text>
+            <Text style={styles.statRowLabel}>Total Following</Text>
+            <Text style={styles.statRowValue}>{analytics?.totalFollowing || 0}</Text>
           </View>
 
         </View>
@@ -309,10 +309,10 @@ export default function Analytics() {
             <Text style={styles.metricTitle}>Total Interactions</Text>
           </View>
           <Text style={styles.metricValue}>
-            {(analytics?.totalLikesSent || 0) + (analytics?.totalLikesReceived || 0)}
+            {(analytics?.totalFollowers || 0) + (analytics?.totalFollowing || 0)}
           </Text>
           <Text style={styles.metricDescription}>
-            Combined community interactions
+            Your total community connections
           </Text>
         </View>
 
