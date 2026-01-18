@@ -806,11 +806,6 @@ export default function FeedScreen() {
                   {isSmallPhone ? "💬" : "💬 Groups"}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push("/events")}>
-                <Text style={styles.navLink}>
-                  {isSmallPhone ? "📅" : "📅 Events"}
-                </Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.navRight}>
