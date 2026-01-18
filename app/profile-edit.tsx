@@ -205,63 +205,96 @@ export default function ProfileEditScreen() {
   useEffect(() => {
     const init = async () => {
       try {
-        const stored = await AsyncStorage.getItem("userProfile");
-        if (stored) {
-          const data = JSON.parse(stored);
-          setName(data.name ?? "");
-          setBio(data.bio ?? "");
-          setFavoriteStrain(data.favoriteStrain ?? data.strain ?? "");
-          setPreferredStrains(data.preferredStrains ?? []);
-          setConsumptionMethods(data.consumptionMethods ?? []);
-          setExperienceLevel(data.experienceLevel ?? "Beginner");
-          setCultivationInterest(data.cultivationInterest ?? false);
-          setFavoriteActivities(data.favoriteActivities ?? []);
-          setSessionPreferences(data.sessionPreferences ?? []);
-          setInterests(data.interests ?? []);
-          setProfileImage(data.profileImage ?? null);
-        }
-      } catch (e) {
-        console.warn("Failed to load profile", e);
-      }
+        const { data: authInfo } = await supabase.auth.getUser();
+        const authedUser = authInfo?.user;
 
-      try {
+        if (authedUser) {
+          const { data: userRow, error } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", authedUser.id)
+            .maybeSingle();
+
+          if (!error && userRow) {
+            setName(userRow.name ?? "");
+            setBio(userRow.bio ?? "");
+            setFavoriteStrain(userRow.strain ?? "");
+            setPreferredStrains(userRow.preferred_strains ?? []);
+            setConsumptionMethods(userRow.consumption_methods ?? []);
+            setExperienceLevel(userRow.experience_level ?? "Beginner");
+            setCultivationInterest(userRow.cultivation_interest ?? false);
+            setFavoriteActivities(userRow.favorite_activities ?? []);
+            setSessionPreferences(userRow.session_preferences ?? []);
+            setInterests(userRow.interests ?? []);
+            setProfileImage(userRow.image_url ?? null);
+            if (userRow.age !== null && userRow.age !== undefined) {
+              setAge(Number(userRow.age));
+            }
+
+            const profileForStorage = {
+              name: userRow.name,
+              bio: userRow.bio,
+              favoriteStrain: userRow.strain,
+              preferredStrains: userRow.preferred_strains,
+              consumptionMethods: userRow.consumption_methods,
+              experienceLevel: userRow.experience_level,
+              cultivationInterest: userRow.cultivation_interest,
+              favoriteActivities: userRow.favorite_activities,
+              sessionPreferences: userRow.session_preferences,
+              interests: userRow.interests,
+              profileImage: userRow.image_url,
+              age: userRow.age,
+            };
+            await AsyncStorage.setItem("userProfile", JSON.stringify(profileForStorage));
+            if (userRow.age) {
+              await AsyncStorage.setItem("userAge", userRow.age.toString());
+            }
+          } else {
+            const stored = await AsyncStorage.getItem("userProfile");
+            if (stored) {
+              const data = JSON.parse(stored);
+              setName(data.name ?? "");
+              setBio(data.bio ?? "");
+              setFavoriteStrain(data.favoriteStrain ?? data.strain ?? "");
+              setPreferredStrains(data.preferredStrains ?? []);
+              setConsumptionMethods(data.consumptionMethods ?? []);
+              setExperienceLevel(data.experienceLevel ?? "Beginner");
+              setCultivationInterest(data.cultivationInterest ?? false);
+              setFavoriteActivities(data.favoriteActivities ?? []);
+              setSessionPreferences(data.sessionPreferences ?? []);
+              setInterests(data.interests ?? []);
+              setProfileImage(data.profileImage ?? null);
+            }
+          }
+        } else {
+          const stored = await AsyncStorage.getItem("userProfile");
+          if (stored) {
+            const data = JSON.parse(stored);
+            setName(data.name ?? "");
+            setBio(data.bio ?? "");
+            setFavoriteStrain(data.favoriteStrain ?? data.strain ?? "");
+            setPreferredStrains(data.preferredStrains ?? []);
+            setConsumptionMethods(data.consumptionMethods ?? []);
+            setExperienceLevel(data.experienceLevel ?? "Beginner");
+            setCultivationInterest(data.cultivationInterest ?? false);
+            setFavoriteActivities(data.favoriteActivities ?? []);
+            setSessionPreferences(data.sessionPreferences ?? []);
+            setInterests(data.interests ?? []);
+            setProfileImage(data.profileImage ?? null);
+          }
+        }
+
         const storedAge = await AsyncStorage.getItem("userAge");
-        if (storedAge) {
+        if (storedAge && age === null) {
           const parsedAge = parseInt(storedAge, 10);
           if (!Number.isNaN(parsedAge)) {
             setAge(parsedAge);
           }
         }
       } catch (e) {
-        console.warn("Failed to load stored age", e);
-      }
-
-      try {
-        const { data: authInfo } = await supabase.auth.getUser();
-        const authedUser = authInfo?.user;
-        if (authedUser) {
-          const { data: userRow, error } = await supabase
-            .from("users")
-            .select("age")
-            .eq("id", authedUser.id)
-            .maybeSingle();
-          if (!error && userRow?.age !== null && userRow?.age !== undefined) {
-            const remoteAge = Number(userRow.age);
-            if (!Number.isNaN(remoteAge)) {
-              setAge(remoteAge);
-              await AsyncStorage.setItem("userAge", remoteAge.toString());
-            }
-          } else if (!error && (userRow?.age === null || userRow?.age === undefined) && age !== null) {
-            await supabase
-              .from("users")
-              .update({ age })
-              .eq("id", authedUser.id);
-          }
-        }
-      } catch (e) {
         const handled = await handleRefreshTokenError(e);
         if (!handled) {
-          console.warn("Failed to refresh age from Supabase", e);
+          console.warn("Failed to load profile", e);
         } else {
           Alert.alert("Session expired", "Please sign in again to refresh data.");
         }
