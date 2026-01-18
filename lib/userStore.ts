@@ -36,13 +36,13 @@ export async function mergeUserRow(
 
   if (existing) {
     console.log("Updating existing user:", userId);
-    const result = await supabase.from("users").update(values).eq("id", userId);
+    const result = await supabase.from("users").update(values).eq("id", userId).select();
     console.log("Update result:", result);
     return result;
   }
 
   console.log("Inserting new user:", userId, values);
-  const result = await supabase.from("users").insert([{ id: userId, ...values }]);
+  const result = await supabase.from("users").insert([{ id: userId, ...values }]).select();
   console.log("Insert result:", result);
   return result;
 }
