@@ -119,11 +119,24 @@ export default function ProfileScreen() {
           if (profileId) {
             const { data, error } = await supabase
               .from("users")
-              .select("blaze_level, activity_points, subscription_tier, subscription_status, follower_count, following_count")
+              .select("age, name, bio, strain, experience_level, preferred_strains, consumption_methods, cultivation_interest, image_url, blaze_level, activity_points, subscription_tier, subscription_status, follower_count, following_count")
               .eq("id", profileId)
               .maybeSingle();
 
             if (!error && data) {
+              setAge(data.age || null);
+              setProfile({
+                name: data.name || "",
+                bio: data.bio || "",
+                strain: data.strain || "",
+                experienceLevel: data.experience_level || "Beginner",
+                preferredStrains: data.preferred_strains || [],
+                consumptionMethods: data.consumption_methods || [],
+                cultivationInterest: data.cultivation_interest || false,
+              });
+              if (data.image_url) {
+                setProfileImage(data.image_url);
+              }
               setBlazeLevel(data.blaze_level || 1);
               setActivityPoints(data.activity_points || 0);
               setSubscriptionTier(data.subscription_tier);
