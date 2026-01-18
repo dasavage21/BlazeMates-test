@@ -119,8 +119,14 @@ export default function GroupsScreen() {
 
     // Subscribe to auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(() => {
-      console.log("Auth state changed, reloading groups");
-      loadGroups();
+      (async () => {
+        try {
+          console.log("Auth state changed, reloading groups");
+          await loadGroups();
+        } catch (err) {
+          console.warn("Failed to reload groups on auth change", err);
+        }
+      })();
     });
 
     return () => {

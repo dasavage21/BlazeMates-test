@@ -119,9 +119,15 @@ export default function SubscriptionScreen() {
     }
 
     const subscription = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && isMountedRef.current) {
-        loadCurrentSubscription();
-      }
+      (async () => {
+        try {
+          if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && isMountedRef.current) {
+            await loadCurrentSubscription();
+          }
+        } catch (err) {
+          console.warn("Failed to load subscription on auth change", err);
+        }
+      })();
     });
 
     return () => {

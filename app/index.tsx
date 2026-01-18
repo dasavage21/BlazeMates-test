@@ -176,39 +176,45 @@ export default function IndexGate() {
 
     // react to future auth changes as well
     const { data: sub } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const eventType = event as string;
+      (event, session) => {
+        (async () => {
+          try {
+            const eventType = event as string;
 
-        if (session?.user) {
-          const redirected = await enforceAgeGate(session.user.id);
-          if (redirected) {
-            return;
+            if (session?.user) {
+              const redirected = await enforceAgeGate(session.user.id);
+              if (redirected) {
+                return;
+              }
+
+              await AsyncStorage.setItem("userId", session.user.id);
+
+              trackDailyLogin().catch((err) => {
+                console.warn("[Index] Failed to track daily login", err);
+              });
+
+              router.replace("/feed");
+              return;
+            }
+
+            if (eventType === "TOKEN_REFRESH_FAILED") {
+              await clearCachedSessionData(true);
+            } else if (
+              eventType === "SIGNED_OUT" ||
+              eventType === "USER_DELETED"
+            ) {
+              await clearCachedSessionData();
+            }
+
+            if (underageBlockRef.current) {
+              return;
+            }
+
+            router.replace("/welcome");
+          } catch (err) {
+            console.warn("[Index] Auth state change error", err);
           }
-
-          await AsyncStorage.setItem("userId", session.user.id);
-
-          trackDailyLogin().catch((err) => {
-            console.warn("[Index] Failed to track daily login", err);
-          });
-
-          router.replace("/feed");
-          return;
-        }
-
-        if (eventType === "TOKEN_REFRESH_FAILED") {
-          await clearCachedSessionData(true);
-        } else if (
-          eventType === "SIGNED_OUT" ||
-          eventType === "USER_DELETED"
-        ) {
-          await clearCachedSessionData();
-        }
-
-        if (underageBlockRef.current) {
-          return;
-        }
-
-        router.replace("/welcome");
+        })();
       }
     );
 
