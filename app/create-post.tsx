@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import {
@@ -14,10 +13,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../supabaseClient";
-import { X, ImageIcon } from "lucide-react-native";
+import { X, ImageIcon, Camera } from "lucide-react-native";
 
 const screenWidth = Dimensions.get("window").width;
 const isSmallPhone = screenWidth <= 390;
@@ -29,6 +29,7 @@ export default function CreatePostScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showImageOptions, setShowImageOptions] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -60,8 +61,41 @@ export default function CreatePostScreen() {
     }
   }, []);
 
+  const takePhoto = async () => {
+    try {
+      setShowImageOptions(false);
+
+      if (Platform.OS === "web") {
+        Alert.alert("Not Available", "Camera is not available on web. Please select a file instead.");
+        return;
+      }
+
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (permissionResult.status !== "granted") {
+        Alert.alert("Permission Required", "Please allow access to your camera to take photos.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
+    }
+  };
+
   const pickImage = async () => {
     try {
+      setShowImageOptions(false);
+
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (permissionResult.status !== "granted") {
@@ -255,7 +289,7 @@ export default function CreatePostScreen() {
 
             <TouchableOpacity
               style={styles.imageButton}
-              onPress={pickImage}
+              onPress={() => setShowImageOptions(true)}
               disabled={uploading}
             >
               <ImageIcon size={24} color="#00FF7F" />
@@ -273,6 +307,48 @@ export default function CreatePostScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showImageOptions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowImageOptions(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowImageOptions(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add Photo</Text>
+
+            {Platform.OS !== "web" && (
+              <TouchableOpacity
+                style={styles.modalOption}
+                onPress={takePhoto}
+              >
+                <Camera size={24} color="#00FF7F" />
+                <Text style={styles.modalOptionText}>Take Photo</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={pickImage}
+            >
+              <ImageIcon size={24} color="#00FF7F" />
+              <Text style={styles.modalOptionText}>Choose from Library</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => setShowImageOptions(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -454,6 +530,68 @@ const styles = StyleSheet.create({
   uploadingText: {
     color: "#00FF7F",
     fontSize: isDesktop ? 15 : 14,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 24,
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    backgroundColor: "#141414",
+    padding: 18,
+    borderRadius: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
+  },
+  modalOptionText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
+  modalCancel: {
+    backgroundColor: "#2a2a2a",
+    padding: 16,
+    borderRadius: 14,
+    marginTop: 12,
+    alignItems: "center",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
+  },
+  modalCancelText: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "600",
     letterSpacing: 0.2,
   },
