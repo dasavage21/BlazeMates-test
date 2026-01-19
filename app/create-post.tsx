@@ -65,11 +65,6 @@ export default function CreatePostScreen() {
     try {
       setShowImageOptions(false);
 
-      if (Platform.OS === "web") {
-        Alert.alert("Not Available", "Camera is not available on web. Please select a file instead.");
-        return;
-      }
-
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
       if (permissionResult.status !== "granted") {
@@ -322,15 +317,13 @@ export default function CreatePostScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add Photo</Text>
 
-            {Platform.OS !== "web" && (
-              <TouchableOpacity
-                style={styles.modalOption}
-                onPress={takePhoto}
-              >
-                <Camera size={24} color="#00FF7F" />
-                <Text style={styles.modalOptionText}>Take Photo</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={takePhoto}
+            >
+              <Camera size={24} color="#00FF7F" />
+              <Text style={styles.modalOptionText}>Take Photo</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.modalOption}
