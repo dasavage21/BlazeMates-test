@@ -21,7 +21,7 @@ import {
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
-import { Heart, MessageCircle, Plus, Send, X, MoreVertical, Trash2, AlertTriangle, Ban } from "lucide-react-native";
+import { MessageCircle, Plus, Send, X, MoreVertical, Trash2, AlertTriangle, Ban, Flame, Wind, Laugh, Sparkles } from "lucide-react-native";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -51,6 +51,13 @@ type Post = {
   tags: string[] | null;
   is_moment: boolean;
   expires_at: string | null;
+  reactions: {
+    smoke: number;
+    fire: number;
+    funny: number;
+    chill: number;
+  };
+  user_reaction: string | null;
 };
 
 type TrendingTag = {
@@ -209,7 +216,7 @@ export default function FeedScreen() {
       const postIds = filteredPosts.map(p => p.id);
       const { data: likesData } = await supabase
         .from("post_likes")
-        .select("post_id, user_id")
+        .select("post_id, user_id, reaction_type")
         .in("post_id", postIds);
 
       const { data: commentsData } = await supabase
@@ -217,14 +224,27 @@ export default function FeedScreen() {
         .select("post_id")
         .in("post_id", postIds);
 
-      const likeCounts = new Map<string, number>();
-      const userLikes = new Set<string>();
+      const reactionCounts = new Map<string, { smoke: number; fire: number; funny: number; chill: number }>();
+      const userReactions = new Map<string, string>();
 
       likesData?.forEach(like => {
-        likeCounts.set(like.post_id, (likeCounts.get(like.post_id) || 0) + 1);
-        if (like.user_id === currentUserId) {
-          userLikes.add(like.post_id);
+        if (!reactionCounts.has(like.post_id)) {
+          reactionCounts.set(like.post_id, { smoke: 0, fire: 0, funny: 0, chill: 0 });
         }
+        const counts = reactionCounts.get(like.post_id)!;
+        if (like.reaction_type === 'smoke') counts.smoke++;
+        else if (like.reaction_type === 'fire') counts.fire++;
+        else if (like.reaction_type === 'funny') counts.funny++;
+        else if (like.reaction_type === 'chill') counts.chill++;
+
+        if (like.user_id === currentUserId) {
+          userReactions.set(like.post_id, like.reaction_type);
+        }
+      });
+
+      const likeCounts = new Map<string, number>();
+      likesData?.forEach(like => {
+        likeCounts.set(like.post_id, (likeCounts.get(like.post_id) || 0) + 1);
       });
 
       const commentCounts = new Map<string, number>();
@@ -245,10 +265,12 @@ export default function FeedScreen() {
           user_last_active: user?.last_active_at || null,
           like_count: likeCounts.get(post.id) || 0,
           comment_count: commentCounts.get(post.id) || 0,
-          is_liked: userLikes.has(post.id),
+          is_liked: userReactions.has(post.id),
           tags: post.tags,
           is_moment: post.is_moment,
           expires_at: post.expires_at,
+          reactions: reactionCounts.get(post.id) || { smoke: 0, fire: 0, funny: 0, chill: 0 },
+          user_reaction: userReactions.get(post.id) || null,
         };
       });
 
@@ -366,7 +388,7 @@ export default function FeedScreen() {
     loadPosts();
   }, [loadPosts]);
 
-  const handleLikeToggle = async (postId: string) => {
+  const handleReaction = async (postId: string, reactionType: 'smoke' | 'fire' | 'funny' | 'chill') => {
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
@@ -376,19 +398,25 @@ export default function FeedScreen() {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
 
-      const wasLiked = post.is_liked;
+      const hadReaction = post.user_reaction;
+      const sameReaction = hadReaction === reactionType;
 
-      setPosts(posts.map(p =>
-        p.id === postId
-          ? {
-              ...p,
-              is_liked: !wasLiked,
-              like_count: wasLiked ? p.like_count - 1 : p.like_count + 1
-            }
-          : p
-      ));
+      if (sameReaction) {
+        const newReactions = { ...post.reactions };
+        newReactions[reactionType]--;
 
-      if (wasLiked) {
+        setPosts(posts.map(p =>
+          p.id === postId
+            ? {
+                ...p,
+                user_reaction: null,
+                is_liked: false,
+                like_count: p.like_count - 1,
+                reactions: newReactions
+              }
+            : p
+        ));
+
         const { error } = await supabase
           .from("post_likes")
           .delete()
@@ -396,32 +424,47 @@ export default function FeedScreen() {
           .eq("user_id", userId);
 
         if (error) {
-          console.error("Error unliking post:", error);
-          setPosts(posts.map(p =>
-            p.id === postId
-              ? { ...p, is_liked: true, like_count: p.like_count + 1 }
-              : p
-          ));
+          console.error("Error removing reaction:", error);
+          loadPosts();
         }
       } else {
+        const newReactions = { ...post.reactions };
+        if (hadReaction) {
+          newReactions[hadReaction as keyof typeof newReactions]--;
+        }
+        newReactions[reactionType]++;
+
+        setPosts(posts.map(p =>
+          p.id === postId
+            ? {
+                ...p,
+                user_reaction: reactionType,
+                is_liked: true,
+                like_count: hadReaction ? p.like_count : p.like_count + 1,
+                reactions: newReactions
+              }
+            : p
+        ));
+
+        if (hadReaction) {
+          await supabase
+            .from("post_likes")
+            .delete()
+            .eq("post_id", postId)
+            .eq("user_id", userId);
+        }
+
         const { error } = await supabase
           .from("post_likes")
-          .upsert(
-            { post_id: postId, user_id: userId, reaction_type: 'like' },
-            { onConflict: 'post_id,user_id,reaction_type', ignoreDuplicates: true }
-          );
+          .insert({ post_id: postId, user_id: userId, reaction_type: reactionType });
 
         if (error && error.code !== '23505') {
-          console.error("Error liking post:", error);
-          setPosts(posts.map(p =>
-            p.id === postId
-              ? { ...p, is_liked: false, like_count: p.like_count - 1 }
-              : p
-          ));
+          console.error("Error adding reaction:", error);
+          loadPosts();
         }
       }
     } catch (error) {
-      console.error("Error toggling like:", error);
+      console.error("Error toggling reaction:", error);
     }
   };
 
@@ -991,20 +1034,76 @@ export default function FeedScreen() {
 
                   <View style={styles.postActions}>
                     <TouchableOpacity
-                      style={styles.actionItem}
-                      onPress={() => handleLikeToggle(post.id)}
+                      style={styles.reactionButton}
+                      onPress={() => handleReaction(post.id, 'smoke')}
                     >
-                      <Heart
+                      <Wind
                         size={20}
-                        color={post.is_liked ? "#FF4444" : "#888"}
-                        fill={post.is_liked ? "#FF4444" : "none"}
+                        color={post.user_reaction === 'smoke' ? "#4CAF50" : "#888"}
+                        fill={post.user_reaction === 'smoke' ? "#4CAF50" : "none"}
                       />
-                      <Text style={[
-                        styles.actionText,
-                        post.is_liked && styles.actionTextActive
-                      ]}>
-                        {post.like_count}
-                      </Text>
+                      {post.reactions.smoke > 0 && (
+                        <Text style={[
+                          styles.reactionCount,
+                          post.user_reaction === 'smoke' && styles.reactionCountActive
+                        ]}>
+                          {post.reactions.smoke}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.reactionButton}
+                      onPress={() => handleReaction(post.id, 'fire')}
+                    >
+                      <Flame
+                        size={20}
+                        color={post.user_reaction === 'fire' ? "#FF6B35" : "#888"}
+                        fill={post.user_reaction === 'fire' ? "#FF6B35" : "none"}
+                      />
+                      {post.reactions.fire > 0 && (
+                        <Text style={[
+                          styles.reactionCount,
+                          post.user_reaction === 'fire' && styles.reactionCountActive
+                        ]}>
+                          {post.reactions.fire}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.reactionButton}
+                      onPress={() => handleReaction(post.id, 'funny')}
+                    >
+                      <Laugh
+                        size={20}
+                        color={post.user_reaction === 'funny' ? "#FFD700" : "#888"}
+                        fill={post.user_reaction === 'funny' ? "#FFD700" : "none"}
+                      />
+                      {post.reactions.funny > 0 && (
+                        <Text style={[
+                          styles.reactionCount,
+                          post.user_reaction === 'funny' && styles.reactionCountActive
+                        ]}>
+                          {post.reactions.funny}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.reactionButton}
+                      onPress={() => handleReaction(post.id, 'chill')}
+                    >
+                      <Sparkles
+                        size={20}
+                        color={post.user_reaction === 'chill' ? "#00BCD4" : "#888"}
+                        fill={post.user_reaction === 'chill' ? "#00BCD4" : "none"}
+                      />
+                      {post.reactions.chill > 0 && (
+                        <Text style={[
+                          styles.reactionCount,
+                          post.user_reaction === 'chill' && styles.reactionCountActive
+                        ]}>
+                          {post.reactions.chill}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionItem}
@@ -1376,6 +1475,27 @@ const styles = StyleSheet.create({
   },
   actionTextActive: {
     color: "#FF4444",
+    fontWeight: "700",
+  },
+  reactionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: "#141414",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+    }),
+  },
+  reactionCount: {
+    fontSize: 13,
+    color: "#999",
+    fontWeight: "600",
+  },
+  reactionCountActive: {
     fontWeight: "700",
   },
   loadingContainer: {
