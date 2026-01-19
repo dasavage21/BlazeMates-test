@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import { Camera } from "expo-camera";
 import * as FileSystem from "expo-file-system/legacy";
+import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -11,6 +12,7 @@ import {
   Alert,
   DeviceEventEmitter,
   Image,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -19,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Camera as CameraIcon, ImageIcon } from "lucide-react-native";
 
 import { supabase } from "../supabaseClient";
 import { handleRefreshTokenError } from "../lib/authSession";
@@ -60,6 +63,7 @@ export default function ProfileEditScreen() {
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showImageOptions, setShowImageOptions] = useState(false);
 
   /** Upload a local file:// uri to Storage and update users.image_url. */
   const uploadAvatarAndSave = useCallback(async (localUri: string) => {
@@ -330,15 +334,61 @@ export default function ProfileEditScreen() {
     }, [])
   );
 
-  const openCamera = () => {
-    if (!hasCamPermission) {
-      Alert.alert(
-        "Permission required",
-        "Enable camera access in Settings to take a profile photo."
-      );
-      return;
+  const takePhoto = async () => {
+    try {
+      setShowImageOptions(false);
+
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (permissionResult.status !== "granted") {
+        Alert.alert("Permission Required", "Please allow access to your camera to take photos.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        uploadAvatarAndSave(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
     }
-    router.push("/camera"); // navigates to app/camera.tsx
+  };
+
+  const pickImage = async () => {
+    try {
+      setShowImageOptions(false);
+
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.status !== "granted") {
+        Alert.alert("Permission Required", "Please allow access to your photo library.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        uploadAvatarAndSave(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to select image. Please try again.");
+    }
+  };
+
+  const openImageOptions = () => {
+    setShowImageOptions(true);
   };
 
   const saveProfile = async () => {
@@ -453,16 +503,14 @@ export default function ProfileEditScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.photoButton} onPress={openCamera}>
+        <TouchableOpacity style={styles.photoButton} onPress={openImageOptions} disabled={uploading}>
           <Text style={styles.photoButtonText}>
-            {Platform.OS === "web" ? "Choose Photo" : "Take Photo"}
+            {profileImage ? "Change Photo" : "Add Photo"}
           </Text>
         </TouchableOpacity>
 
-        {hasCamPermission === false && (
-          <Text style={styles.permissionWarning}>
-            Camera permission needed
-          </Text>
+        {uploading && (
+          <Text style={styles.uploadingText}>Uploading...</Text>
         )}
       </View>
 
@@ -693,6 +741,46 @@ export default function ProfileEditScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={showImageOptions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowImageOptions(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowImageOptions(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add Photo</Text>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={takePhoto}
+            >
+              <CameraIcon size={24} color="#00FF7F" />
+              <Text style={styles.modalOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={pickImage}
+            >
+              <ImageIcon size={24} color="#00FF7F" />
+              <Text style={styles.modalOptionText}>Choose from Library</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => setShowImageOptions(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -913,5 +1001,61 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 17,
     letterSpacing: 0.5,
+  },
+  uploadingText: {
+    color: "#00FF7F",
+    fontSize: 14,
+    marginTop: 12,
+    fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 16,
+    padding: 24,
+    width: "85%",
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#222",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  modalOptionText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 16,
+  },
+  modalCancel: {
+    backgroundColor: "#2a2a2a",
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    alignItems: "center",
+  },
+  modalCancelText: {
+    color: "#888",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
