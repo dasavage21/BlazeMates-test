@@ -584,6 +584,32 @@ export default function FeedScreen() {
     }
   };
 
+  const handleQuickReply = async (postId: string, text: string) => {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+
+      if (!userId) return;
+
+      const { error } = await supabase
+        .from("post_comments")
+        .insert({
+          post_id: postId,
+          user_id: userId,
+          content: text,
+        });
+
+      if (error) {
+        console.error("Error submitting quick reply:", error);
+        return;
+      }
+
+      loadPosts();
+    } catch (error) {
+      console.error("Error submitting quick reply:", error);
+    }
+  };
+
   const isUserOnline = useCallback((lastActiveAt: string | null): boolean => {
     if (!lastActiveAt) return false;
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
@@ -1111,6 +1137,27 @@ export default function FeedScreen() {
                     >
                       <MessageCircle size={20} color="#888" />
                       <Text style={styles.actionText}>{post.comment_count}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.quickReplyContainer}>
+                    <TouchableOpacity
+                      style={styles.quickReplyButton}
+                      onPress={() => handleQuickReply(post.id, "Who's down?")}
+                    >
+                      <Text style={styles.quickReplyText}>Who's down?</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.quickReplyButton}
+                      onPress={() => handleQuickReply(post.id, "Where at?")}
+                    >
+                      <Text style={styles.quickReplyText}>Where at?</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.quickReplyButton}
+                      onPress={() => handleQuickReply(post.id, "What strain?")}
+                    >
+                      <Text style={styles.quickReplyText}>What strain?</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1807,5 +1854,34 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#00FF7F",
     letterSpacing: 0.3,
+  },
+  quickReplyContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#2a2a2a",
+  },
+  quickReplyButton: {
+    flex: 1,
+    backgroundColor: "rgba(0, 255, 127, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 127, 0.3)",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
+  },
+  quickReplyText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#00FF7F",
+    letterSpacing: 0.2,
   },
 });
