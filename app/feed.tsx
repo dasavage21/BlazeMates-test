@@ -407,8 +407,8 @@ export default function FeedScreen() {
         const { error } = await supabase
           .from("post_likes")
           .upsert(
-            { post_id: postId, user_id: userId },
-            { onConflict: 'post_id,user_id', ignoreDuplicates: true }
+            { post_id: postId, user_id: userId, reaction_type: 'like' },
+            { onConflict: 'post_id,user_id,reaction_type', ignoreDuplicates: true }
           );
 
         if (error && error.code !== '23505') {
