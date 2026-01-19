@@ -226,7 +226,9 @@ export default function FeedScreen() {
   useEffect(() => {
     const loadCurrentUser = async () => {
       const { data: auth } = await supabase.auth.getUser();
-      setCurrentUserId(auth?.user?.id || null);
+      const userId = auth?.user?.id || null;
+      console.log("Setting current user ID:", userId);
+      setCurrentUserId(userId);
     };
     loadCurrentUser();
     loadHeaderPhoto();
@@ -523,6 +525,7 @@ export default function FeedScreen() {
   };
 
   const openPostMenu = (post: Post) => {
+    console.log("Opening post menu - Current User ID:", currentUserId, "Post User ID:", post.user_id, "Match:", currentUserId === post.user_id);
     setSelectedPost(post);
     setPostMenuVisible(true);
   };
@@ -1008,36 +1011,40 @@ export default function FeedScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.postMenuContent}>
-              {selectedPost && currentUserId && currentUserId === selectedPost.user_id ? (
-                <TouchableOpacity
-                  style={styles.postMenuItem}
-                  onPress={handleDeletePost}
-                >
-                  <Trash2 size={20} color="#FF4444" />
-                  <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
-                    Delete Post
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <>
+              {(() => {
+                const isOwnPost = selectedPost && currentUserId && currentUserId === selectedPost.user_id;
+                console.log("Rendering menu - selectedPost:", !!selectedPost, "currentUserId:", currentUserId, "post.user_id:", selectedPost?.user_id, "isOwnPost:", isOwnPost);
+                return isOwnPost ? (
                   <TouchableOpacity
                     style={styles.postMenuItem}
-                    onPress={handleReportPost}
+                    onPress={handleDeletePost}
                   >
-                    <AlertTriangle size={20} color="#FFA500" />
-                    <Text style={styles.postMenuText}>Report Post</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.postMenuItem}
-                    onPress={handleBlockUser}
-                  >
-                    <Ban size={20} color="#FF4444" />
+                    <Trash2 size={20} color="#FF4444" />
                     <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
-                      Block User
+                      Delete Post
                     </Text>
                   </TouchableOpacity>
-                </>
-              )}
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={styles.postMenuItem}
+                      onPress={handleReportPost}
+                    >
+                      <AlertTriangle size={20} color="#FFA500" />
+                      <Text style={styles.postMenuText}>Report Post</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.postMenuItem}
+                      onPress={handleBlockUser}
+                    >
+                      <Ban size={20} color="#FF4444" />
+                      <Text style={[styles.postMenuText, styles.postMenuTextDanger]}>
+                        Block User
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                );
+              })()}
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
