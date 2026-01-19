@@ -9,6 +9,21 @@ interface BlazeLevelBadgeProps {
   size?: 'small' | 'medium' | 'large';
 }
 
+export function getLevelColor(level: number): string {
+  if (level >= 10) return '#FF4500';
+  if (level >= 7) return '#FF6B35';
+  if (level >= 5) return '#FF8C42';
+  if (level >= 3) return '#FFA500';
+  return '#FFB84D';
+}
+
+export function getLevelTitle(level: number): string {
+  if (level >= 10) return 'Blaze Legend 👑';
+  if (level >= 7) return 'Sesh Master';
+  if (level >= 4) return 'Daily Toker';
+  return 'Rookie';
+}
+
 export function BlazeLevelBadge({
   level,
   activityPoints,
@@ -24,11 +39,10 @@ export function BlazeLevelBadge({
   };
 
   const getLevelTitle = (level: number): string => {
-    if (level >= 10) return 'Legendary';
-    if (level >= 7) return 'Expert';
-    if (level >= 5) return 'Advanced';
-    if (level >= 3) return 'Rising';
-    return 'Starter';
+    if (level >= 10) return 'Blaze Legend 👑';
+    if (level >= 7) return 'Sesh Master';
+    if (level >= 4) return 'Daily Toker';
+    return 'Rookie';
   };
 
   const getNextLevelPoints = (currentLevel: number): number => {

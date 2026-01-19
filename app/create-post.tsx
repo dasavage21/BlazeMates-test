@@ -23,6 +23,14 @@ const screenWidth = Dimensions.get("window").width;
 const isSmallPhone = screenWidth <= 390;
 const isDesktop = screenWidth >= 768;
 
+const AVAILABLE_TAGS = [
+  "#Sesh",
+  "#Pickup",
+  "#Chill",
+  "#420Friendly",
+  "#Events",
+];
+
 export default function CreatePostScreen() {
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -30,6 +38,8 @@ export default function CreatePostScreen() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showImageOptions, setShowImageOptions] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isMoment, setIsMoment] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -163,6 +173,12 @@ export default function CreatePostScreen() {
     }
   };
 
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
   const handlePost = async () => {
     if (!content.trim()) {
       Alert.alert("Error", "Please enter some content for your post.");
@@ -189,11 +205,21 @@ export default function CreatePostScreen() {
         }
       }
 
-      const { data, error } = await supabase.from("feed_posts").insert({
+      const postData: any = {
         user_id: userId,
         content: content.trim(),
         image_url: imageUrl,
-      }).select();
+        tags: selectedTags.length > 0 ? selectedTags : null,
+        is_moment: isMoment,
+      };
+
+      if (isMoment) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+        postData.expires_at = expiresAt.toISOString();
+      }
+
+      const { data, error } = await supabase.from("feed_posts").insert(postData).select();
 
       if (error) {
         console.error("Error creating post:", error);
@@ -203,7 +229,6 @@ export default function CreatePostScreen() {
 
       console.log("Post created successfully:", data);
 
-      // Small delay to ensure realtime event propagates
       await new Promise(resolve => setTimeout(resolve, 500));
 
       router.back();
@@ -299,6 +324,56 @@ export default function CreatePostScreen() {
                 <Text style={styles.uploadingText}>Uploading image...</Text>
               </View>
             )}
+
+            <View style={styles.tagsSection}>
+              <Text style={styles.sectionTitle}>Add Tags</Text>
+              <View style={styles.tagsContainer}>
+                {AVAILABLE_TAGS.map((tag) => (
+                  <TouchableOpacity
+                    key={tag}
+                    onPress={() => toggleTag(tag)}
+                    style={[
+                      styles.tagButton,
+                      selectedTags.includes(tag) && styles.tagButtonSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tagButtonText,
+                        selectedTags.includes(tag) && styles.tagButtonTextSelected,
+                      ]}
+                    >
+                      {tag}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.momentToggle}
+              onPress={() => setIsMoment(!isMoment)}
+            >
+              <View style={styles.momentToggleLeft}>
+                <Text style={styles.momentToggleTitle}>Blaze Moment</Text>
+                <Text style={styles.momentToggleSubtitle}>
+                  Post disappears after 24 hours
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.momentToggleSwitch,
+                  isMoment && styles.momentToggleSwitchActive,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.momentToggleCircle,
+                    isMoment && styles.momentToggleCircleActive,
+                  ]}
+                />
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -587,5 +662,103 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     letterSpacing: 0.2,
+  },
+  tagsSection: {
+    marginTop: 24,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: isDesktop ? 16 : 15,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  tagButton: {
+    paddingHorizontal: isDesktop ? 18 : 16,
+    paddingVertical: isDesktop ? 10 : 9,
+    backgroundColor: "#141414",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#2a2a2a",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
+  },
+  tagButtonSelected: {
+    backgroundColor: "rgba(0, 255, 127, 0.15)",
+    borderColor: "#00FF7F",
+  },
+  tagButtonText: {
+    fontSize: isDesktop ? 14 : 13,
+    fontWeight: "600",
+    color: "#888",
+    letterSpacing: 0.2,
+  },
+  tagButtonTextSelected: {
+    color: "#00FF7F",
+    fontWeight: "700",
+  },
+  momentToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#141414",
+    padding: isDesktop ? 20 : 18,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#2a2a2a",
+    marginTop: 16,
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
+  },
+  momentToggleLeft: {
+    flex: 1,
+  },
+  momentToggleTitle: {
+    fontSize: isDesktop ? 16 : 15,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  momentToggleSubtitle: {
+    fontSize: isDesktop ? 13 : 12,
+    color: "#888",
+    fontWeight: "500",
+  },
+  momentToggleSwitch: {
+    width: 56,
+    height: 30,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 15,
+    padding: 3,
+    justifyContent: "center",
+    ...(Platform.OS === "web" && {
+      transition: "all 0.3s",
+    }),
+  },
+  momentToggleSwitchActive: {
+    backgroundColor: "#00FF7F",
+  },
+  momentToggleCircle: {
+    width: 24,
+    height: 24,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    ...(Platform.OS === "web" && {
+      transition: "all 0.3s",
+    }),
+  },
+  momentToggleCircleActive: {
+    transform: [{ translateX: 26 }],
   },
 });

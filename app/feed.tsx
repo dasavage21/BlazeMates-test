@@ -48,6 +48,14 @@ type Post = {
   like_count: number;
   comment_count: number;
   is_liked: boolean;
+  tags: string[] | null;
+  is_moment: boolean;
+  expires_at: string | null;
+};
+
+type TrendingTag = {
+  tag: string;
+  usage_count: number;
 };
 
 type Comment = {
@@ -77,6 +85,8 @@ export default function FeedScreen() {
   const [postMenuVisible, setPostMenuVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
+  const [filterTag, setFilterTag] = useState<string | null>(null);
 
   const loadHeaderPhoto = useCallback(async () => {
     try {
@@ -119,6 +129,22 @@ export default function FeedScreen() {
     }
   }, [PLACEHOLDER_50]);
 
+  const loadTrendingTags = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("trending_tags")
+        .select("tag, usage_count")
+        .order("usage_count", { ascending: false })
+        .limit(10);
+
+      if (!error && data) {
+        setTrendingTags(data);
+      }
+    } catch (error) {
+      console.error("Error loading trending tags:", error);
+    }
+  }, []);
+
   const loadPosts = useCallback(async () => {
     try {
       const { data: authData } = await supabase.auth.getUser();
@@ -134,17 +160,26 @@ export default function FeedScreen() {
         blockedUserIds = blocksData?.map(b => b.blocked_id) || [];
       }
 
-      const { data: postsData, error } = await supabase
+      let query = supabase
         .from("feed_posts")
         .select(`
           id,
           user_id,
           content,
           image_url,
-          created_at
+          created_at,
+          tags,
+          is_moment,
+          expires_at
         `)
         .order("created_at", { ascending: false })
         .limit(50);
+
+      if (filterTag) {
+        query = query.contains("tags", [filterTag]);
+      }
+
+      const { data: postsData, error } = await query;
 
       if (error) {
         console.error("Failed to fetch posts:", error);
@@ -211,6 +246,9 @@ export default function FeedScreen() {
           like_count: likeCounts.get(post.id) || 0,
           comment_count: commentCounts.get(post.id) || 0,
           is_liked: userLikes.has(post.id),
+          tags: post.tags,
+          is_moment: post.is_moment,
+          expires_at: post.expires_at,
         };
       });
 
@@ -221,7 +259,7 @@ export default function FeedScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [filterTag]);
 
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -233,7 +271,8 @@ export default function FeedScreen() {
     loadCurrentUser();
     loadHeaderPhoto();
     loadPosts();
-  }, [loadHeaderPhoto, loadPosts]);
+    loadTrendingTags();
+  }, [loadHeaderPhoto, loadPosts, loadTrendingTags]);
 
   useEffect(() => {
     let likesDebounceTimer: NodeJS.Timeout | null = null;
@@ -823,6 +862,56 @@ export default function FeedScreen() {
           <View style={styles.feedContainer}>
             <Text style={styles.pageTitle}>Community Feed</Text>
 
+            {trendingTags.length > 0 && (
+              <View style={styles.trendingSection}>
+                <Text style={styles.trendingSectionTitle}>Trending This Week</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.trendingTagsContainer}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.trendingTag,
+                      !filterTag && styles.trendingTagActive,
+                    ]}
+                    onPress={() => setFilterTag(null)}
+                  >
+                    <Text
+                      style={[
+                        styles.trendingTagText,
+                        !filterTag && styles.trendingTagTextActive,
+                      ]}
+                    >
+                      All
+                    </Text>
+                  </TouchableOpacity>
+                  {trendingTags.map((tag) => (
+                    <TouchableOpacity
+                      key={tag.tag}
+                      style={[
+                        styles.trendingTag,
+                        filterTag === tag.tag && styles.trendingTagActive,
+                      ]}
+                      onPress={() =>
+                        setFilterTag(filterTag === tag.tag ? null : tag.tag)
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.trendingTagText,
+                          filterTag === tag.tag && styles.trendingTagTextActive,
+                        ]}
+                      >
+                        {tag.tag}
+                      </Text>
+                      <Text style={styles.trendingTagCount}>{tag.usage_count}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
             {posts.length === 0 ? (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIcon}>
@@ -835,7 +924,10 @@ export default function FeedScreen() {
               </View>
             ) : (
               posts.map((post) => (
-                <View key={post.id} style={styles.postCard}>
+                <View key={post.id} style={[
+                  styles.postCard,
+                  post.is_moment && styles.momentCard
+                ]}>
                   <View style={styles.postHeader}>
                     <TouchableOpacity
                       style={styles.postHeaderLeft}
@@ -856,6 +948,11 @@ export default function FeedScreen() {
                           {isUserOnline(post.user_last_active) && (
                             <Text style={styles.onlineText}>• Online</Text>
                           )}
+                          {post.is_moment && (
+                            <View style={styles.momentBadge}>
+                              <Text style={styles.momentBadgeText}>24h</Text>
+                            </View>
+                          )}
                         </View>
                         <Text style={styles.postTime}>{formatTime(post.created_at)}</Text>
                       </View>
@@ -869,6 +966,20 @@ export default function FeedScreen() {
                   </View>
 
                   <Text style={styles.postContent}>{post.content}</Text>
+
+                  {post.tags && post.tags.length > 0 && (
+                    <View style={styles.postTagsContainer}>
+                      {post.tags.map((tag, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.postTag}
+                          onPress={() => setFilterTag(tag)}
+                        >
+                          <Text style={styles.postTagText}>{tag}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
 
                   {post.image_url && (
                     <Image
@@ -1474,5 +1585,107 @@ const styles = StyleSheet.create({
   },
   postMenuTextDanger: {
     color: "#FF4444",
+  },
+  trendingSection: {
+    marginBottom: 24,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  trendingSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  trendingTagsContainer: {
+    flexDirection: "row",
+    gap: 10,
+    paddingVertical: 4,
+  },
+  trendingTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#141414",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#2a2a2a",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
+  },
+  trendingTagActive: {
+    backgroundColor: "rgba(0, 255, 127, 0.15)",
+    borderColor: "#00FF7F",
+  },
+  trendingTagText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#888",
+    letterSpacing: 0.2,
+  },
+  trendingTagTextActive: {
+    color: "#00FF7F",
+    fontWeight: "700",
+  },
+  trendingTagCount: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#666",
+    backgroundColor: "#0f0f0f",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  momentCard: {
+    borderColor: "#FFB84D",
+    borderWidth: 2,
+    ...(Platform.OS === "web" && {
+      boxShadow: "0 4px 20px rgba(255, 184, 77, 0.2)",
+    }),
+  },
+  momentBadge: {
+    backgroundColor: "#FFB84D",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginLeft: 6,
+  },
+  momentBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#0a0a0a",
+    letterSpacing: 0.5,
+  },
+  postTagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  postTag: {
+    backgroundColor: "rgba(0, 255, 127, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 127, 0.3)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }),
+  },
+  postTagText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#00FF7F",
+    letterSpacing: 0.3,
   },
 });

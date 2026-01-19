@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
-import { BlazeLevelBadge } from "../components/BlazeLevelBadge";
+import { BlazeLevelBadge, getLevelColor } from "../components/BlazeLevelBadge";
 import { MessageCircle, UserPlus, UserMinus } from "lucide-react-native";
 
 export default function ProfileScreen() {
@@ -310,10 +310,15 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
-          <Image
-            source={{ uri: profileImage || "https://via.placeholder.com/250" }}
-            style={styles.avatar}
-          />
+          <View style={[
+            styles.levelRing,
+            { borderColor: getLevelColor(blazeLevel) }
+          ]}>
+            <Image
+              source={{ uri: profileImage || "https://via.placeholder.com/250" }}
+              style={styles.avatar}
+            />
+          </View>
           {age !== null && age >= 21 && (
             <View style={styles.verifiedBadge}>
               <Text style={styles.verifiedText}>✓</Text>
@@ -536,12 +541,20 @@ const styles = StyleSheet.create({
     position: "relative",
     marginBottom: 20,
   },
+  levelRing: {
+    borderRadius: 95,
+    borderWidth: 5,
+    padding: 5,
+    ...(Platform.OS === "web" && {
+      boxShadow: "0 0 20px rgba(255, 127, 0, 0.4)",
+    }),
+  },
   avatar: {
     width: 180,
     height: 180,
     borderRadius: 90,
-    borderWidth: 4,
-    borderColor: "#00FF7F",
+    borderWidth: 3,
+    borderColor: "#121212",
   },
   verifiedBadge: {
     position: "absolute",
