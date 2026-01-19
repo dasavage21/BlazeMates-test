@@ -30,21 +30,6 @@ export function BlazeLevelBadge({
   showProgress = false,
   size = 'medium',
 }: BlazeLevelBadgeProps) {
-  const getLevelColor = (level: number): string => {
-    if (level >= 10) return '#FF4500';
-    if (level >= 7) return '#FF6B35';
-    if (level >= 5) return '#FF8C42';
-    if (level >= 3) return '#FFA500';
-    return '#FFB84D';
-  };
-
-  const getLevelTitle = (level: number): string => {
-    if (level >= 10) return 'Blaze Legend 👑';
-    if (level >= 7) return 'Sesh Master';
-    if (level >= 4) return 'Daily Toker';
-    return 'Rookie';
-  };
-
   const getNextLevelPoints = (currentLevel: number): number => {
     return Math.pow(currentLevel, 2) * 50;
   };

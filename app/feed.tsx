@@ -275,7 +275,7 @@ export default function FeedScreen() {
   }, [loadHeaderPhoto, loadPosts, loadTrendingTags]);
 
   useEffect(() => {
-    let likesDebounceTimer: NodeJS.Timeout | null = null;
+    let likesDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     console.log("Setting up realtime subscription...");
 

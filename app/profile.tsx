@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Platform,
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
