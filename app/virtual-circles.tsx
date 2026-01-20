@@ -278,13 +278,16 @@ export default function VirtualCirclesScreen() {
       // Check if already a participant
       const { data: existingParticipant } = await supabase
         .from('circle_participants')
-        .select('id')
+        .select('id, is_video_on, is_audio_on')
         .eq('circle_id', circle.id)
         .eq('user_id', currentUserId)
+        .is('left_at', null)
         .maybeSingle();
 
-      // If already a participant, just open the circle view
+      // If already a participant, sync their state and open the circle view
       if (existingParticipant) {
+        setIsVideoOn(existingParticipant.is_video_on);
+        setIsAudioOn(existingParticipant.is_audio_on);
         setSelectedCircle(circle);
         setShowCircleModal(true);
         loadParticipants(circle.id);
@@ -298,11 +301,17 @@ export default function VirtualCirclesScreen() {
         user_id: currentUserId,
         is_video_on: true,
         is_audio_on: true,
-      });
+      }).select('is_video_on, is_audio_on').single();
 
       if (error) {
         console.error('Join circle error:', error);
         throw error;
+      }
+
+      // Sync state with newly created participant
+      if (data) {
+        setIsVideoOn(data.is_video_on);
+        setIsAudioOn(data.is_audio_on);
       }
 
       setSelectedCircle(circle);
@@ -327,6 +336,10 @@ export default function VirtualCirclesScreen() {
 
       setShowCircleModal(false);
       setSelectedCircle(null);
+      setIsVideoOn(true);
+      setIsAudioOn(true);
+      setParticipants([]);
+      setChatMessages([]);
       loadCircles();
     } catch (error) {
       console.error('Error leaving circle:', error);
@@ -343,6 +356,11 @@ export default function VirtualCirclesScreen() {
 
       Alert.alert('Success', 'Circle ended');
       setShowCircleModal(false);
+      setSelectedCircle(null);
+      setIsVideoOn(true);
+      setIsAudioOn(true);
+      setParticipants([]);
+      setChatMessages([]);
       loadCircles();
     } catch (error) {
       console.error('Error ending circle:', error);
