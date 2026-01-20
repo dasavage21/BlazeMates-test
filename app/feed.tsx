@@ -585,7 +585,6 @@ export default function FeedScreen() {
       setCommentText("");
       Keyboard.dismiss();
       loadComments(selectedPostId);
-      loadPosts();
     } catch (error) {
       console.error("Error submitting comment:", error);
       // Revert on error
@@ -623,9 +622,6 @@ export default function FeedScreen() {
         loadPosts();
         return;
       }
-
-      // Reload posts to get accurate data
-      loadPosts();
     } catch (error) {
       console.error("Error submitting quick reply:", error);
       // Revert on error
