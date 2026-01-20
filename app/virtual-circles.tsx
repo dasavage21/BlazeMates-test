@@ -231,6 +231,24 @@ export default function VirtualCirclesScreen() {
         return;
       }
 
+      // Check if already a participant
+      const { data: existingParticipant } = await supabase
+        .from('circle_participants')
+        .select('id')
+        .eq('circle_id', circle.id)
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+
+      // If already a participant, just open the circle view
+      if (existingParticipant) {
+        setSelectedCircle(circle);
+        setShowCircleModal(true);
+        loadParticipants(circle.id);
+        loadChatMessages(circle.id);
+        return;
+      }
+
+      // If not a participant, add them
       const { data, error } = await supabase.from('circle_participants').insert({
         circle_id: circle.id,
         user_id: currentUserId,
@@ -239,15 +257,8 @@ export default function VirtualCirclesScreen() {
       });
 
       if (error) {
-        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
-          setSelectedCircle(circle);
-          setShowCircleModal(true);
-          loadParticipants(circle.id);
-          loadChatMessages(circle.id);
-          return;
-        } else {
-          throw error;
-        }
+        console.error('Join circle error:', error);
+        throw error;
       }
 
       setSelectedCircle(circle);
