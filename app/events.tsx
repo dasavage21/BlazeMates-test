@@ -14,6 +14,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import { Video, VideoIcon, Sparkles } from "lucide-react-native";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 
@@ -331,6 +332,41 @@ export default function EventsScreen() {
         <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.createButton}>
           <Text style={styles.createButtonText}>+ New</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.featuredSection}>
+        <Text style={styles.featuredTitle}>New Features</Text>
+        <View style={styles.featuredGrid}>
+          <TouchableOpacity
+            style={styles.featuredCard}
+            onPress={() => router.push("/live-streaming")}
+          >
+            <View style={styles.featuredIconBadge}>
+              <Video size={28} color="#10b981" />
+              <View style={styles.comingSoonPill}>
+                <Sparkles size={12} color="#FFD700" />
+                <Text style={styles.comingSoonPillText}>SOON</Text>
+              </View>
+            </View>
+            <Text style={styles.featuredCardTitle}>Live Streaming</Text>
+            <Text style={styles.featuredCardDesc}>Stream your sessions in real-time</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.featuredCard}
+            onPress={() => router.push("/virtual-circles")}
+          >
+            <View style={styles.featuredIconBadge}>
+              <VideoIcon size={28} color="#10b981" />
+              <View style={styles.comingSoonPill}>
+                <Sparkles size={12} color="#FFD700" />
+                <Text style={styles.comingSoonPillText}>SOON</Text>
+              </View>
+            </View>
+            <Text style={styles.featuredCardTitle}>Virtual Circles</Text>
+            <Text style={styles.featuredCardDesc}>Video chat rooms for group sessions</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isPlusUser && (
@@ -736,5 +772,68 @@ const styles = StyleSheet.create({
   comingSoonSubtext: {
     color: "#aaa",
     fontSize: 12,
+  },
+  featuredSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  featuredTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 12,
+  },
+  featuredGrid: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  featuredCard: {
+    flex: 1,
+    backgroundColor: "#1e1e1e",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.3)",
+  },
+  featuredIconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    position: "relative",
+  },
+  comingSoonPill: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 2,
+    borderWidth: 1,
+    borderColor: "#FFD700",
+  },
+  comingSoonPillText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#FFD700",
+    letterSpacing: 0.5,
+  },
+  featuredCardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 4,
+  },
+  featuredCardDesc: {
+    fontSize: 13,
+    color: "#999",
+    lineHeight: 18,
   },
 });
