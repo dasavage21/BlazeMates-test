@@ -17,15 +17,15 @@ const VERSION_KEY = 'app_version_seen';
 const UPDATES = [
   {
     title: 'Build System Fixed',
-    description: 'Fixed deployment issues - the app now builds and deploys correctly to web.',
+    description: 'Fixed deployment issues - the website now builds and deploys correctly to web.',
   },
   {
     title: 'Image Loading Improvements',
-    description: 'All app icons and images now load properly across all platforms.',
+    description: 'All website icons and images now load properly across all platforms.',
   },
   {
     title: 'Enhanced Stability',
-    description: 'Improved overall app stability and performance.',
+    description: 'Improved overall website stability and performance.',
   },
 ];
 
@@ -103,7 +103,7 @@ export function UpdateNotification() {
             onPress={handleClose}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Got it, Reload App</Text>
+            <Text style={styles.buttonText}>Got it, Reload website</Text>
           </TouchableOpacity>
         </View>
       </View>
