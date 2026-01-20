@@ -11,21 +11,21 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Sparkles } from 'lucide-react-native';
 
-const CURRENT_VERSION = '1.2.0';
+const CURRENT_VERSION = '1.2.1';
 const VERSION_KEY = 'app_version_seen';
 
 const UPDATES = [
   {
-    title: 'Build System Fixed',
-    description: 'Fixed deployment issues - the website now builds and deploys correctly to web.',
+    title: 'Groups Page Fixed',
+    description: 'Fixed infinite recursion error that prevented the Groups page from loading. Public groups and group memberships now work correctly.',
   },
   {
-    title: 'Image Loading Improvements',
-    description: 'All website icons and images now load properly across all platforms.',
+    title: 'Database Performance',
+    description: 'Improved database query performance by optimizing Row Level Security policies and removing circular dependencies.',
   },
   {
     title: 'Enhanced Stability',
-    description: 'Improved overall website stability and performance.',
+    description: 'Fixed critical database policy issues that were causing 500 Internal Server Errors.',
   },
 ];
 

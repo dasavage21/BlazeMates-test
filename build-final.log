@@ -1,0 +1,54 @@
+
+> blazemates@1.0.0 build
+> expo export --platform web
+
+env: load .env
+env: export EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_SUPABASE_URL
+Starting Metro Bundler
+Static rendering is enabled. Learn more: https://docs.expo.dev/router/reference/static-rendering/
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 55.0% (402/542)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.9% (467/571)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.8% (2500/2502)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.7% (2653/2698)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (2501/2502)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.7% (2653/2698)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (2502/2502)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (2727/2727)
+Web Bundled 15912ms node_modules/expo-router/entry.js (2502 modules)
+λ Bundled 16194ms node_modules/expo-router/node/render.js (2727 modules)
+
+› web bundles (1):
+_expo/static/js/web/entry-c03b0dd0fc2f98de7e0e6c5a7e12a60d.js (3.38 MB)
+
+› Static routes (29):
+/chat (18.5 kB)
+/feed (18.5 kB)
+/about (18.5 kB)
+/ (index) (18.5 kB)
+/login (18.5 kB)
+/camera (18.5 kB)
+/events (18.5 kB)
+/groups (18.5 kB)
+/matches (18.5 kB)
+/profile (18.5 kB)
+/welcome (18.5 kB)
+/settings (18.5 kB)
+/_sitemap (18.4 kB)
+/age-check (18.5 kB)
+/analytics (18.5 kB)
+/followers (18.5 kB)
+/group-chat (18.5 kB)
+/+not-found (18.4 kB)
+/create-post (18.5 kB)
+/profile-edit (18.5 kB)
+/subscription (18.5 kB)
+/admin-reports (18.5 kB)
+/blocked-users (18.5 kB)
+/create-account (18.5 kB)
+/reset-password (18.5 kB)
+/username-setup (18.5 kB)
+/forgot-password (18.5 kB)
+/underage-blocked (18.5 kB)
+/cultivation-guides (18.5 kB)
+
+Exported: dist

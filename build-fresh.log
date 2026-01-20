@@ -1,0 +1,25 @@
+
+> blazemates@1.0.0 build
+> expo export --platform web
+
+env: load .env
+env: export EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_SUPABASE_URL
+Starting Metro Bundler
+Static rendering is enabled. Learn more: https://docs.expo.dev/router/reference/static-rendering/
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.8% (270/428)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 67.7% (469/570)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.2% (2395/2442)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.9% (2701/2716)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.2% (2395/2442)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (2725/2727)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.8% (2499/2502)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (2725/2727)
+λ Bundling failed 12696ms node_modules/expo-router/node/render.js (2727 modules)
+SyntaxError: app/assets/ombre_weed_background.jpg: unsupported file type: undefined (file: /tmp/cc-agent/61912519/project/app/assets/ombre_weed_background.jpg)
+TypeError: unsupported file type: undefined (file: /tmp/cc-agent/61912519/project/app/assets/ombre_weed_background.jpg)
+    at lookup (/tmp/cc-agent/61912519/project/node_modules/image-size/dist/index.js:42:11)
+    at imageSize (/tmp/cc-agent/61912519/project/node_modules/image-size/dist/index.js:113:16)
+    at getAssetData (/tmp/cc-agent/61912519/project/node_modules/metro/src/Assets.js:140:32)
+    at async getUniversalAssetData (/tmp/cc-agent/61912519/project/node_modules/@expo/metro-config/build/transform-worker/getAssets.js:74:28)
+    at async Object.transform (/tmp/cc-agent/61912519/project/node_modules/@expo/metro-config/build/transform-worker/asset-transformer.js:61:18)
+    at async transformAsset (/tmp/cc-agent/61912519/project/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js:439:20)
