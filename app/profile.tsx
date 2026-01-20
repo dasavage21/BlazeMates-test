@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../supabaseClient";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
 import { BlazeLevelBadge, getLevelColor } from "../components/BlazeLevelBadge";
@@ -304,10 +304,9 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ImageBackground
-      source={require("./assets/ombre_weed_background.png")}
+    <LinearGradient
+      colors={['#1a1a1a', '#0a0a0a', '#1a1a1a']}
       style={styles.backgroundImage}
-      imageStyle={styles.backgroundImageStyle}
     >
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.profileHeader}>
@@ -498,7 +497,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
       </ScrollView>
-    </ImageBackground>
+    </LinearGradient>
   );
 }
 
