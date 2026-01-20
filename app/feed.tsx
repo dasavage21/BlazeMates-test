@@ -1291,10 +1291,8 @@ export default function FeedScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.postMenuContent}>
-              {(() => {
-                const isOwnPost = selectedPost && currentUserId && currentUserId === selectedPost.user_id;
-                console.log("Rendering menu - selectedPost:", !!selectedPost, "currentUserId:", currentUserId, "post.user_id:", selectedPost?.user_id, "isOwnPost:", isOwnPost);
-                return isOwnPost ? (
+              {selectedPost && currentUserId && (
+                selectedPost.user_id === currentUserId ? (
                   <TouchableOpacity
                     style={styles.postMenuItem}
                     onPress={handleDeletePost}
@@ -1323,8 +1321,8 @@ export default function FeedScreen() {
                       </Text>
                     </TouchableOpacity>
                   </>
-                );
-              })()}
+                )
+              )}
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
