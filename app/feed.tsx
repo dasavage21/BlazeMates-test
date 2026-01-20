@@ -560,6 +560,13 @@ export default function FeedScreen() {
 
       if (!userId) return;
 
+      // Optimistic update: immediately increment comment count
+      setPosts(posts.map(p =>
+        p.id === selectedPostId
+          ? { ...p, comment_count: p.comment_count + 1 }
+          : p
+      ));
+
       const { error } = await supabase
         .from("post_comments")
         .insert({
@@ -570,6 +577,8 @@ export default function FeedScreen() {
 
       if (error) {
         console.error("Error submitting comment:", error);
+        // Revert optimistic update on error
+        loadPosts();
         return;
       }
 
@@ -579,6 +588,8 @@ export default function FeedScreen() {
       loadPosts();
     } catch (error) {
       console.error("Error submitting comment:", error);
+      // Revert on error
+      loadPosts();
     } finally {
       setSubmittingComment(false);
     }
@@ -591,6 +602,13 @@ export default function FeedScreen() {
 
       if (!userId) return;
 
+      // Optimistic update: immediately increment comment count
+      setPosts(posts.map(p =>
+        p.id === postId
+          ? { ...p, comment_count: p.comment_count + 1 }
+          : p
+      ));
+
       const { error } = await supabase
         .from("post_comments")
         .insert({
@@ -601,12 +619,17 @@ export default function FeedScreen() {
 
       if (error) {
         console.error("Error submitting quick reply:", error);
+        // Revert optimistic update on error
+        loadPosts();
         return;
       }
 
+      // Reload posts to get accurate data
       loadPosts();
     } catch (error) {
       console.error("Error submitting quick reply:", error);
+      // Revert on error
+      loadPosts();
     }
   };
 
