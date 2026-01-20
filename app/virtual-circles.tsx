@@ -551,6 +551,11 @@ export default function VirtualCirclesScreen() {
               </TouchableOpacity>
             </View>
 
+            <View style={styles.webrtcBanner}>
+              <VideoIcon size={20} color="#10b981" />
+              <Text style={styles.webrtcBannerText}>WebRTC integration coming soon</Text>
+            </View>
+
             <View style={styles.videoGrid}>
               {participants.slice(0, 4).map((participant) => (
                 <View key={participant.id} style={styles.videoTile}>
@@ -857,6 +862,24 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
+  },
+  webrtcBanner: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  webrtcBannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
   },
   videoGrid: {
     flexDirection: 'row',
