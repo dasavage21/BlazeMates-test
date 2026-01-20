@@ -53,7 +53,7 @@ export default function LiveStreamingScreen() {
           *,
           users!live_streams_streamer_id_fkey (
             username,
-            avatar_url
+            image_url
           )
         `)
         .eq('is_active', true)
@@ -71,7 +71,7 @@ export default function LiveStreamingScreen() {
         started_at: stream.started_at,
         category: stream.category,
         streamer_username: stream.users?.username || 'Unknown',
-        streamer_avatar: stream.users?.avatar_url,
+        streamer_avatar: stream.users?.image_url,
       }));
 
       setStreams(formattedStreams);
