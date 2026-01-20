@@ -883,7 +883,7 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground
-        source={require("./assets/ombre_weed_background.jpg")}
+        source={require("./assets/ombre_weed_background.png")}
         style={styles.backgroundImage}
         imageStyle={styles.backgroundImageStyle}
       >

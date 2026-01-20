@@ -200,12 +200,16 @@ export default function VirtualCirclesScreen() {
 
       if (error) throw error;
 
-      await supabase.from('circle_participants').insert({
+      const { error: participantError } = await supabase.from('circle_participants').insert({
         circle_id: newCircle.id,
         user_id: userId,
         is_video_on: true,
         is_audio_on: true,
       });
+
+      if (participantError && !participantError.message?.includes('duplicate') && !participantError.message?.includes('unique')) {
+        throw participantError;
+      }
 
       Alert.alert('Success', 'Circle created successfully!');
       setShowCreateModal(false);
@@ -227,7 +231,7 @@ export default function VirtualCirclesScreen() {
         return;
       }
 
-      const { error } = await supabase.from('circle_participants').insert({
+      const { data, error } = await supabase.from('circle_participants').insert({
         circle_id: circle.id,
         user_id: currentUserId,
         is_video_on: true,
@@ -235,8 +239,12 @@ export default function VirtualCirclesScreen() {
       });
 
       if (error) {
-        if (error.code === '23505') {
-          Alert.alert('Already Joined', 'You are already in this circle');
+        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+          setSelectedCircle(circle);
+          setShowCircleModal(true);
+          loadParticipants(circle.id);
+          loadChatMessages(circle.id);
+          return;
         } else {
           throw error;
         }

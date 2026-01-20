@@ -305,7 +305,7 @@ export default function ProfileScreen() {
 
   return (
     <ImageBackground
-      source={require("./assets/ombre_weed_background.jpg")}
+      source={require("./assets/ombre_weed_background.png")}
       style={styles.backgroundImage}
       imageStyle={styles.backgroundImageStyle}
     >
