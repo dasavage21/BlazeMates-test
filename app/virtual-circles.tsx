@@ -105,17 +105,59 @@ export default function VirtualCirclesScreen() {
   useEffect(() => {
     loadCircles();
 
-    const channel = supabase
+    const circlesChannel = supabase
       .channel('virtual_circles_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'virtual_circles' }, () => {
         loadCircles();
       })
       .subscribe();
 
+    const participantsGlobalChannel = supabase
+      .channel('circle_participants_global')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'circle_participants' }, () => {
+        loadCircles();
+      })
+      .subscribe();
+
     return () => {
-      channel.unsubscribe();
+      circlesChannel.unsubscribe();
+      participantsGlobalChannel.unsubscribe();
     };
   }, [loadCircles]);
+
+  // Real-time subscriptions for participants and chat when viewing a circle
+  useEffect(() => {
+    if (!selectedCircle) return;
+
+    const participantsChannel = supabase
+      .channel(`circle_participants_${selectedCircle.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'circle_participants',
+        filter: `circle_id=eq.${selectedCircle.id}`
+      }, () => {
+        loadParticipants(selectedCircle.id);
+      })
+      .subscribe();
+
+    const chatChannel = supabase
+      .channel(`circle_chat_${selectedCircle.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'circle_chat_messages',
+        filter: `circle_id=eq.${selectedCircle.id}`
+      }, () => {
+        loadChatMessages(selectedCircle.id);
+      })
+      .subscribe();
+
+    return () => {
+      participantsChannel.unsubscribe();
+      chatChannel.unsubscribe();
+    };
+  }, [selectedCircle, loadParticipants, loadChatMessages]);
 
   const loadParticipants = useCallback(async (circleId: string) => {
     try {
