@@ -9,6 +9,7 @@ import { LogBox, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFrameworkReady } from "../hooks/useFrameworkReady";
 import { useEffect } from "react";
+import { UpdateNotification } from "../components/UpdateNotification";
 
 LogBox.ignoreLogs(["Warning: useInsertionEffect must not schedule updates"]);
 
@@ -47,6 +48,7 @@ export default function Layout() {
         screenOptions={{ headerShown: false }} // This hides the top header on all screens
       />
       <StatusBar style="light" />
+      <UpdateNotification />
     </SafeAreaProvider>
   );
 }
