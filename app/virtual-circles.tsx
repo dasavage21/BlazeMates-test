@@ -304,6 +304,13 @@ export default function VirtualCirclesScreen() {
       }).select('is_video_on, is_audio_on').single();
 
       if (error) {
+        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+          setSelectedCircle(circle);
+          setShowCircleModal(true);
+          loadParticipants(circle.id);
+          loadChatMessages(circle.id);
+          return;
+        }
         console.error('Join circle error:', error);
         throw error;
       }
