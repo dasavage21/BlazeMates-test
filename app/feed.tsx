@@ -287,7 +287,6 @@ export default function FeedScreen() {
     const loadCurrentUser = async () => {
       const { data: auth } = await supabase.auth.getUser();
       const userId = auth?.user?.id || null;
-      console.log("Setting current user ID:", userId);
       setCurrentUserId(userId);
     };
     loadCurrentUser();
@@ -298,8 +297,6 @@ export default function FeedScreen() {
 
   useEffect(() => {
     let likesDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-    console.log("Setting up realtime subscription...");
 
     const channelName = `feed_posts_changes_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
@@ -312,7 +309,6 @@ export default function FeedScreen() {
           table: "feed_posts",
         },
         (payload) => {
-          console.log("Feed post changed:", payload);
           loadPosts();
         }
       )
@@ -324,7 +320,6 @@ export default function FeedScreen() {
           table: "post_likes",
         },
         (payload) => {
-          console.log("Post likes changed:", payload);
           if (likesDebounceTimer) {
             clearTimeout(likesDebounceTimer);
           }
@@ -341,7 +336,6 @@ export default function FeedScreen() {
           table: "post_comments",
         },
         (payload) => {
-          console.log("Post comments changed:", payload);
           loadPosts();
         }
       )
@@ -353,22 +347,16 @@ export default function FeedScreen() {
           table: "blocks",
         },
         (payload) => {
-          console.log("Blocks changed:", payload);
           loadPosts();
         }
       )
       .subscribe((status, err) => {
-        console.log("Realtime subscription status:", status);
         if (err) {
           console.error("Realtime subscription error:", err);
-        }
-        if (status === "SUBSCRIBED") {
-          console.log("Successfully subscribed to realtime updates!");
         }
       });
 
     return () => {
-      console.log("Cleaning up realtime subscription...");
       if (likesDebounceTimer) {
         clearTimeout(likesDebounceTimer);
       }
@@ -652,7 +640,6 @@ export default function FeedScreen() {
   };
 
   const openPostMenu = (post: Post) => {
-    console.log("Opening post menu - Current User ID:", currentUserId, "Post User ID:", post.user_id, "Match:", currentUserId === post.user_id);
     setSelectedPost(post);
     setPostMenuVisible(true);
   };
@@ -1057,9 +1044,9 @@ export default function FeedScreen() {
 
                   {post.tags && post.tags.length > 0 && (
                     <View style={styles.postTagsContainer}>
-                      {post.tags.map((tag, index) => (
+                      {post.tags.map((tag) => (
                         <TouchableOpacity
-                          key={index}
+                          key={tag}
                           style={styles.postTag}
                           onPress={() => setFilterTag(tag)}
                         >

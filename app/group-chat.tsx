@@ -69,13 +69,15 @@ export default function GroupChatScreen() {
           .limit(100);
 
         if (!error && messagesData) {
-          const formattedMessages = messagesData.map((msg: any) => ({
-            id: msg.id,
-            sender_id: msg.sender_id,
-            sender_name: msg.users?.name || "Unknown",
-            content: msg.content,
-            created_at: msg.created_at,
-          }));
+          const formattedMessages = messagesData
+            .filter((msg: any) => msg && msg.id && msg.content)
+            .map((msg: any) => ({
+              id: msg.id,
+              sender_id: msg.sender_id,
+              sender_name: msg.users?.name || "Unknown",
+              content: msg.content,
+              created_at: msg.created_at,
+            }));
           setMessages(formattedMessages);
         }
       } catch (error) {
@@ -102,12 +104,15 @@ export default function GroupChatScreen() {
           filter: `group_id=eq.${groupId}`,
         },
         async (payload) => {
+          if (!payload.new || typeof payload.new !== 'object') return;
           const newMessage = payload.new as any;
+          if (!newMessage.id || !newMessage.content || !newMessage.sender_id) return;
+
           const { data: userData } = await supabase
             .from("users")
             .select("name")
             .eq("id", newMessage.sender_id)
-            .single();
+            .maybeSingle();
 
           setMessages((prev) => [
             ...prev,

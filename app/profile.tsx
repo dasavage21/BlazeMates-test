@@ -169,17 +169,18 @@ export default function ProfileScreen() {
           filter: `id=eq.${profileId}`,
         },
         (payload) => {
+          if (!payload.new || typeof payload.new !== 'object') return;
           const updated = payload.new as any;
-          if (updated.follower_count !== undefined) {
+          if (typeof updated.follower_count === 'number') {
             setFollowerCount(updated.follower_count);
           }
-          if (updated.following_count !== undefined) {
+          if (typeof updated.following_count === 'number') {
             setFollowingCount(updated.following_count);
           }
-          if (updated.blaze_level !== undefined) {
+          if (typeof updated.blaze_level === 'number') {
             setBlazeLevel(updated.blaze_level);
           }
-          if (updated.activity_points !== undefined) {
+          if (typeof updated.activity_points === 'number') {
             setActivityPoints(updated.activity_points);
           }
         }

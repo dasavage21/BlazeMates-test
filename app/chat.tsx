@@ -232,7 +232,10 @@ export default function ChatScreen() {
           filter: `thread_id=eq.${threadId}`,
         },
         (payload) => {
+          if (!payload.new || typeof payload.new !== 'object') return;
           const newMessage = payload.new as Message;
+          if (!newMessage.id || !newMessage.content) return;
+
           setMessages((prev) => [...prev, newMessage]);
 
           if (newMessage.sender_id !== userId) {
@@ -320,8 +323,8 @@ export default function ChatScreen() {
         if (!cancelled && !error) {
           setReadReceipts(toMap(data));
         }
-      } catch {
-        // ignore read receipt fetch errors
+      } catch (err) {
+        console.error("Error fetching read receipts:", err);
       }
     };
 
@@ -648,8 +651,8 @@ export default function ChatScreen() {
           .from("threads")
           .update({ typing: updated })
           .eq("id", threadId);
-      } catch {
-        /* no-op */
+      } catch (err) {
+        console.error("Error updating typing indicator:", err);
       }
     },
     [threadId, userId]

@@ -131,7 +131,6 @@ export default function LoginScreen() {
   const signIn = async () => {
     try {
       setBusy(true);
-      console.log('Starting sign in...');
 
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
@@ -140,18 +139,13 @@ export default function LoginScreen() {
         return;
       }
 
-      console.log('Sign in successful, syncing avatar...');
       await syncPendingAvatarIfAuthed();
-
-      console.log('Hydrating profile cache...');
       await hydrateProfileCache();
 
-      console.log('Tracking daily login...');
       trackDailyLogin().catch((err) => {
         console.warn('Failed to track daily login:', err);
       });
 
-      console.log('Checking username...');
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
 
@@ -162,22 +156,17 @@ export default function LoginScreen() {
           .eq('id', user.id)
           .maybeSingle();
 
-        console.log('Username check result:', userData);
-
         if (!userData?.username) {
-          console.log('No username, redirecting to username-setup');
           router.replace('/username-setup');
           return;
         }
       }
 
-      console.log('Login complete, redirecting to profile');
       router.replace('/profile');
     } catch (error) {
       console.error('Unexpected error during sign in:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
-      console.log('Resetting busy state');
       setBusy(false);
     }
   };
