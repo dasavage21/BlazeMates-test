@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert, Platform, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { VideoIcon, Users, MessageCircle, ArrowLeft, Plus, X, Video, Mic, MicOff, VideoOff } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../supabaseClient';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 type VirtualCircle = {
   id: string;
@@ -652,7 +654,8 @@ export default function VirtualCirclesScreen() {
         </Modal>
 
         <Modal visible={showCircleModal} transparent animationType="slide">
-          <View style={styles.circleViewModal}>
+          <View style={styles.circleViewModalOverlay}>
+            <View style={styles.circleViewModal}>
             <View style={styles.circleViewHeader}>
               <Text style={styles.circleViewTitle}>{selectedCircle?.name}</Text>
               <TouchableOpacity
@@ -730,6 +733,7 @@ export default function VirtualCirclesScreen() {
                 <Text style={styles.endCircleButtonText}>End Circle</Text>
               </TouchableOpacity>
             )}
+            </View>
           </View>
         </Modal>
       </LinearGradient>
@@ -854,12 +858,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
   modalContent: {
     backgroundColor: '#1e1e1e',
     borderRadius: 20,
     padding: 24,
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : screenWidth - 40,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -955,16 +962,33 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
   },
+  circleViewModalOverlay: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'web' ? 'rgba(0, 0, 0, 0.8)' : '#000',
+    ...(Platform.OS === 'web' && {
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    }),
+  },
   circleViewModal: {
     flex: 1,
     backgroundColor: '#000',
+    ...(Platform.OS === 'web' && {
+      maxWidth: 1200,
+      maxHeight: '90vh',
+      width: '100%',
+      borderRadius: 20,
+      overflow: 'hidden',
+      flex: undefined,
+    }),
   },
   circleViewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'web' ? 20 : 60,
     paddingBottom: 20,
   },
   circleViewTitle: {
@@ -1000,7 +1024,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   videoTile: {
-    width: '48%',
+    width: Platform.OS === 'web' ? '23%' : '48%',
     aspectRatio: 1,
     position: 'relative',
   },
@@ -1047,6 +1071,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderRadius: 16,
     padding: 16,
+    ...(Platform.OS === 'web' && {
+      maxHeight: 300,
+    }),
   },
   chatTitle: {
     fontSize: 16,
