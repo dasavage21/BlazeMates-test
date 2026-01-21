@@ -244,15 +244,35 @@ export default function VirtualCirclesScreen() {
 
       if (error) throw error;
 
-      const { error: participantError } = await supabase.from('circle_participants').insert({
-        circle_id: newCircle.id,
-        user_id: userId,
-        is_video_on: true,
-        is_audio_on: true,
-      });
+      // Check if there's a previous participant record (unlikely but handle edge case)
+      const { data: previousParticipant } = await supabase
+        .from('circle_participants')
+        .select('id')
+        .eq('circle_id', newCircle.id)
+        .eq('user_id', userId)
+        .not('left_at', 'is', null)
+        .maybeSingle();
 
-      if (participantError && !participantError.message?.includes('duplicate') && !participantError.message?.includes('unique')) {
-        throw participantError;
+      if (previousParticipant) {
+        // Rejoin by updating the existing record
+        await supabase
+          .from('circle_participants')
+          .update({
+            left_at: null,
+            is_video_on: true,
+            is_audio_on: true,
+          })
+          .eq('id', previousParticipant.id);
+      } else {
+        // Insert new participant record
+        await supabase
+          .from('circle_participants')
+          .insert({
+            circle_id: newCircle.id,
+            user_id: userId,
+            is_video_on: true,
+            is_audio_on: true,
+          });
       }
 
       Alert.alert('Success', 'Circle created successfully!');
@@ -275,8 +295,8 @@ export default function VirtualCirclesScreen() {
         return;
       }
 
-      // Check if already a participant
-      const { data: existingParticipant } = await supabase
+      // Check if already an active participant
+      const { data: activeParticipant } = await supabase
         .from('circle_participants')
         .select('id, is_video_on, is_audio_on')
         .eq('circle_id', circle.id)
@@ -284,10 +304,10 @@ export default function VirtualCirclesScreen() {
         .is('left_at', null)
         .maybeSingle();
 
-      // If already a participant, sync their state and open the circle view
-      if (existingParticipant) {
-        setIsVideoOn(existingParticipant.is_video_on);
-        setIsAudioOn(existingParticipant.is_audio_on);
+      // If already an active participant, sync their state and open the circle view
+      if (activeParticipant) {
+        setIsVideoOn(activeParticipant.is_video_on);
+        setIsAudioOn(activeParticipant.is_audio_on);
         setSelectedCircle(circle);
         setShowCircleModal(true);
         loadParticipants(circle.id);
@@ -295,30 +315,53 @@ export default function VirtualCirclesScreen() {
         return;
       }
 
-      // If not a participant, add them
-      const { data, error } = await supabase.from('circle_participants').insert({
-        circle_id: circle.id,
-        user_id: currentUserId,
-        is_video_on: true,
-        is_audio_on: true,
-      }).select('is_video_on, is_audio_on').single();
+      // Check if there's a previous participant record (user left before)
+      const { data: previousParticipant } = await supabase
+        .from('circle_participants')
+        .select('id, is_video_on, is_audio_on')
+        .eq('circle_id', circle.id)
+        .eq('user_id', currentUserId)
+        .not('left_at', 'is', null)
+        .maybeSingle();
 
-      if (error) {
-        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
-          setSelectedCircle(circle);
-          setShowCircleModal(true);
-          loadParticipants(circle.id);
-          loadChatMessages(circle.id);
-          return;
-        }
-        console.error('Join circle error:', error);
-        throw error;
+      let participantData;
+
+      if (previousParticipant) {
+        // Rejoin by updating the existing record
+        const { data, error } = await supabase
+          .from('circle_participants')
+          .update({
+            left_at: null,
+            is_video_on: true,
+            is_audio_on: true,
+          })
+          .eq('id', previousParticipant.id)
+          .select('is_video_on, is_audio_on')
+          .single();
+
+        if (error) throw error;
+        participantData = data;
+      } else {
+        // New participant, insert a new record
+        const { data, error } = await supabase
+          .from('circle_participants')
+          .insert({
+            circle_id: circle.id,
+            user_id: currentUserId,
+            is_video_on: true,
+            is_audio_on: true,
+          })
+          .select('is_video_on, is_audio_on')
+          .single();
+
+        if (error) throw error;
+        participantData = data;
       }
 
-      // Sync state with newly created participant
-      if (data) {
-        setIsVideoOn(data.is_video_on);
-        setIsAudioOn(data.is_audio_on);
+      // Sync state with participant data
+      if (participantData) {
+        setIsVideoOn(participantData.is_video_on);
+        setIsAudioOn(participantData.is_audio_on);
       }
 
       setSelectedCircle(circle);
