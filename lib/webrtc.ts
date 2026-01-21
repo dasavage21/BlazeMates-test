@@ -60,12 +60,28 @@ export class WebRTCManager {
     } catch (error: any) {
       console.error('[WebRTCManager] Error accessing media devices:', error);
 
+      // Try audio-only if camera fails due to being in use
+      if ((error.name === 'NotReadableError' || error.name === 'TrackStartError') && videoEnabled) {
+        console.log('[WebRTCManager] Camera unavailable, trying audio-only mode...');
+        try {
+          this.localStream = await navigator.mediaDevices.getUserMedia({
+            video: false,
+            audio: audioEnabled,
+          });
+          console.log('[WebRTCManager] Audio-only mode enabled (camera in use elsewhere)');
+          return this.localStream;
+        } catch (audioError: any) {
+          console.error('[WebRTCManager] Audio access also failed:', audioError);
+          // Fall through to normal error handling
+        }
+      }
+
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         throw new Error('Camera/microphone permission denied. Please allow access and try again.');
       } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
         throw new Error('No camera or microphone found on your device.');
       } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        throw new Error('Camera/microphone is already in use by another application.');
+        throw new Error('Camera is in use by another app. Close other apps/tabs and retry.');
       } else if (error.name === 'OverconstrainedError') {
         throw new Error('Camera does not support the required settings.');
       } else if (error.name === 'SecurityError') {

@@ -725,7 +725,7 @@ export default function VirtualCirclesScreen() {
                       <Text style={[styles.webrtcBannerText, { color: '#ef4444', fontWeight: '600' }]}>
                         {webrtcError}
                       </Text>
-                      {webrtcError.includes('already in use') && (
+                      {(webrtcError.includes('in use') || webrtcError.includes('already')) && (
                         <Text style={[styles.webrtcBannerText, { color: '#ef4444', fontSize: 11, marginTop: 2 }]}>
                           Close other apps/tabs using your camera
                         </Text>
@@ -747,8 +747,16 @@ export default function VirtualCirclesScreen() {
                   </>
                 ) : localStream ? (
                   <>
-                    <VideoIcon size={20} color="#10b981" />
-                    <Text style={styles.webrtcBannerText}>Live video enabled</Text>
+                    {localStream.getVideoTracks().length > 0 ? (
+                      <VideoIcon size={20} color="#10b981" />
+                    ) : (
+                      <Mic size={20} color="#f59e0b" />
+                    )}
+                    <Text style={[styles.webrtcBannerText, localStream.getVideoTracks().length === 0 && { color: '#f59e0b' }]}>
+                      {localStream.getVideoTracks().length > 0
+                        ? 'Live video enabled'
+                        : 'Audio-only mode (camera in use elsewhere)'}
+                    </Text>
                   </>
                 ) : (
                   <>
