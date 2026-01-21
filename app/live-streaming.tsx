@@ -363,12 +363,14 @@ export default function LiveStreamingScreen() {
               </TouchableOpacity>
             </View>
 
+            <View style={styles.webrtcBanner}>
+              <Video size={20} color="#10b981" />
+              <Text style={styles.webrtcBannerText}>WebRTC integration coming soon</Text>
+            </View>
+
             <View style={styles.streamVideoPlaceholder}>
               <Video size={80} color="#333" />
               <Text style={styles.videoPlaceholderText}>Video Stream</Text>
-              <Text style={styles.videoPlaceholderSubtext}>
-                WebRTC integration coming soon
-              </Text>
             </View>
 
             <View style={styles.chatContainer}>
@@ -633,6 +635,24 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 8,
   },
+  webrtcBanner: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  webrtcBannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
+  },
   streamVideoPlaceholder: {
     height: 300,
     backgroundColor: '#1a1a1a',
@@ -646,11 +666,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#555',
     marginTop: 16,
-  },
-  videoPlaceholderSubtext: {
-    fontSize: 12,
-    color: '#444',
-    marginTop: 4,
   },
   chatContainer: {
     flex: 1,
