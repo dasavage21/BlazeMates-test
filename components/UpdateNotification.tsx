@@ -11,10 +11,14 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Sparkles } from 'lucide-react-native';
 
-const CURRENT_VERSION = '1.2.1';
+const CURRENT_VERSION = '1.3.0';
 const VERSION_KEY = 'app_version_seen';
 
 const UPDATES = [
+  {
+    title: 'Live Streaming & Virtual Circles',
+    description: 'New features now available! Create live streams and virtual hangout rooms. WebRTC integration for real video/audio streaming coming soon.',
+  },
   {
     title: 'Groups Page Fixed',
     description: 'Fixed infinite recursion error that prevented the Groups page from loading. Public groups and group memberships now work correctly.',
