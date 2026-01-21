@@ -63,6 +63,7 @@ export default function VirtualCirclesScreen() {
     remoteStreams,
     isVideoEnabled,
     isAudioEnabled,
+    isConnecting,
     startConnection,
     connectToPeer,
     toggleVideo: toggleWebRTCVideo,
@@ -721,15 +722,24 @@ export default function VirtualCirclesScreen() {
                   <>
                     <VideoIcon size={20} color="#ef4444" />
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.webrtcBannerText, { color: '#ef4444' }]}>
+                      <Text style={[styles.webrtcBannerText, { color: '#ef4444', fontWeight: '600' }]}>
                         {webrtcError}
                       </Text>
+                      {webrtcError.includes('already in use') && (
+                        <Text style={[styles.webrtcBannerText, { color: '#ef4444', fontSize: 11, marginTop: 2 }]}>
+                          Close other apps/tabs using your camera
+                        </Text>
+                      )}
                     </View>
                     <TouchableOpacity
                       style={styles.retryButton}
-                      onPress={() => {
-                        disconnectWebRTC();
-                        setTimeout(() => startConnection(), 300);
+                      onPress={async () => {
+                        console.log('[VirtualCircles] Retry button pressed, cleaning up...');
+                        await disconnectWebRTC();
+                        setTimeout(() => {
+                          console.log('[VirtualCircles] Retrying connection...');
+                          startConnection();
+                        }, 500);
                       }}
                     >
                       <Text style={styles.retryButtonText}>Retry</Text>
@@ -744,7 +754,7 @@ export default function VirtualCirclesScreen() {
                   <>
                     <VideoIcon size={20} color="#f59e0b" />
                     <Text style={[styles.webrtcBannerText, { color: '#f59e0b' }]}>
-                      Requesting camera access...
+                      {isConnecting ? 'Requesting camera access...' : 'Connecting...'}
                     </Text>
                   </>
                 )}

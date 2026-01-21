@@ -102,13 +102,28 @@ export function useWebRTC(circleId: string | null, userId: string | null) {
   }, [isAudioEnabled]);
 
   const disconnect = useCallback(async () => {
+    console.log('[WebRTC] Disconnecting and cleaning up...');
+
+    if (localStream) {
+      console.log('[WebRTC] Stopping local stream tracks...');
+      localStream.getTracks().forEach((track) => {
+        console.log('[WebRTC] Stopping track:', track.kind, track.label);
+        track.stop();
+      });
+    }
+
     if (managerRef.current) {
       await managerRef.current.disconnect();
       managerRef.current = null;
     }
+
     setLocalStream(null);
     setRemoteStreams([]);
-  }, []);
+    setError(null);
+    setIsConnecting(false);
+
+    console.log('[WebRTC] Cleanup complete');
+  }, [localStream]);
 
   useEffect(() => {
     return () => {
