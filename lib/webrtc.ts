@@ -34,19 +34,45 @@ export class WebRTCManager {
 
   async initLocalStream(videoEnabled: boolean = true, audioEnabled: boolean = true): Promise<MediaStream | null> {
     if (Platform.OS !== 'web') {
-      console.log('WebRTC is only supported on web platform');
+      console.log('[WebRTCManager] WebRTC is only supported on web platform');
       return null;
     }
 
     try {
+      console.log('[WebRTCManager] Requesting media devices...', { video: videoEnabled, audio: audioEnabled });
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Your browser does not support camera/microphone access');
+      }
+
       this.localStream = await navigator.mediaDevices.getUserMedia({
-        video: videoEnabled,
+        video: videoEnabled ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
         audio: audioEnabled,
       });
+
+      console.log('[WebRTCManager] Media stream obtained:', {
+        id: this.localStream.id,
+        videoTracks: this.localStream.getVideoTracks().length,
+        audioTracks: this.localStream.getAudioTracks().length,
+      });
+
       return this.localStream;
-    } catch (error) {
-      console.error('Error accessing media devices:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('[WebRTCManager] Error accessing media devices:', error);
+
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        throw new Error('Camera/microphone permission denied. Please allow access and try again.');
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        throw new Error('No camera or microphone found on your device.');
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        throw new Error('Camera/microphone is already in use by another application.');
+      } else if (error.name === 'OverconstrainedError') {
+        throw new Error('Camera does not support the required settings.');
+      } else if (error.name === 'SecurityError') {
+        throw new Error('Camera access blocked by browser security settings.');
+      } else {
+        throw new Error(error.message || 'Failed to access camera/microphone. Please check your browser settings.');
+      }
     }
   }
 
@@ -54,30 +80,43 @@ export class WebRTCManager {
     onRemoteStream: (peerId: string, stream: MediaStream) => void,
     onPeerDisconnected: (peerId: string) => void
   ) {
+    console.log('[WebRTCManager] Setting up signaling channel for circle:', this.circleId);
+
     const channel = supabase
       .channel(`circle:${this.circleId}:webrtc`)
       .on('broadcast', { event: 'offer' }, async ({ payload }) => {
+        console.log('[WebRTCManager] Received offer from:', payload.from, 'to:', payload.to);
         if (payload.to === this.userId) {
           await this.handleOffer(payload.from, payload.offer, onRemoteStream);
         }
       })
       .on('broadcast', { event: 'answer' }, async ({ payload }) => {
+        console.log('[WebRTCManager] Received answer from:', payload.from, 'to:', payload.to);
         if (payload.to === this.userId) {
           await this.handleAnswer(payload.from, payload.answer);
         }
       })
       .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+        console.log('[WebRTCManager] Received ICE candidate from:', payload.from, 'to:', payload.to);
         if (payload.to === this.userId) {
           await this.handleIceCandidate(payload.from, payload.candidate);
         }
       })
       .on('broadcast', { event: 'peer-disconnected' }, ({ payload }) => {
+        console.log('[WebRTCManager] Peer disconnected:', payload.peerId);
         if (payload.peerId !== this.userId) {
           this.removePeer(payload.peerId);
           onPeerDisconnected(payload.peerId);
         }
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log('[WebRTCManager] Channel subscription status:', status, err);
+        if (status === 'SUBSCRIBED') {
+          console.log('[WebRTCManager] Successfully subscribed to signaling channel');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[WebRTCManager] Channel error:', err);
+        }
+      });
 
     this.signalChannel = channel;
   }

@@ -354,12 +354,6 @@ export default function VirtualCirclesScreen() {
         setShowCircleModal(true);
         loadParticipants(circle.id);
         loadChatMessages(circle.id);
-
-        if (Platform.OS === 'web') {
-          setTimeout(() => {
-            startConnection();
-          }, 500);
-        }
         return;
       }
 
@@ -416,12 +410,6 @@ export default function VirtualCirclesScreen() {
       setShowCircleModal(true);
       loadParticipants(circle.id);
       loadChatMessages(circle.id);
-
-      if (Platform.OS === 'web') {
-        setTimeout(() => {
-          startConnection();
-        }, 500);
-      }
     } catch (error: any) {
       console.error('Error joining circle:', error);
       if (Platform.OS === 'web') {
@@ -560,6 +548,18 @@ export default function VirtualCirclesScreen() {
       .eq('circle_id', selectedCircle.id)
       .eq('user_id', currentUserId);
   };
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && showCircleModal && selectedCircle && currentUserId && !localStream) {
+      console.log('[VirtualCircles] Starting WebRTC connection...', {
+        circleId: selectedCircle.id,
+        userId: currentUserId,
+      });
+      setTimeout(() => {
+        startConnection();
+      }, 300);
+    }
+  }, [showCircleModal, selectedCircle, currentUserId, localStream, startConnection]);
 
   useEffect(() => {
     if (Platform.OS === 'web' && localStream && selectedCircle && currentUserId) {
