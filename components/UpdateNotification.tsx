@@ -11,7 +11,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Sparkles } from 'lucide-react-native';
 
-const CURRENT_VERSION = '1.3.0';
+const CURRENT_VERSION = '1.4.0';
 const VERSION_KEY = 'app_version_seen';
 
 const UPDATES = [
