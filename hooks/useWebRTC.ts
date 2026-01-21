@@ -33,6 +33,8 @@ export function useWebRTC(circleId: string | null, userId: string | null) {
   }, []);
 
   const startConnection = useCallback(async () => {
+    console.log('[WebRTC] startConnection called', { circleId, userId, platform: Platform.OS });
+
     if (!circleId || !userId || Platform.OS !== 'web') {
       if (Platform.OS !== 'web') {
         setError('WebRTC is only supported on web browsers');
@@ -40,25 +42,42 @@ export function useWebRTC(circleId: string | null, userId: string | null) {
       return;
     }
 
+    if (managerRef.current || localStream) {
+      console.log('[WebRTC] Already connected or connecting');
+      return;
+    }
+
     try {
+      console.log('[WebRTC] Starting connection...');
       setIsConnecting(true);
       setError(null);
 
       const manager = new WebRTCManager(circleId, userId);
       managerRef.current = manager;
 
-      const stream = await manager.initLocalStream(isVideoEnabled, isAudioEnabled);
+      console.log('[WebRTC] Requesting media access...');
+      const stream = await manager.initLocalStream(true, true);
+
       if (stream) {
+        console.log('[WebRTC] Got media stream:', stream.id);
         setLocalStream(stream);
+        setIsVideoEnabled(true);
+        setIsAudioEnabled(true);
+
+        console.log('[WebRTC] Setting up signaling...');
         await manager.setupSignaling(handleRemoteStream, handlePeerDisconnected);
+        console.log('[WebRTC] Connection complete!');
+      } else {
+        throw new Error('Failed to get media stream');
       }
     } catch (err) {
-      console.error('Error starting WebRTC connection:', err);
+      console.error('[WebRTC] Error starting connection:', err);
       setError(err instanceof Error ? err.message : 'Failed to start connection');
+      managerRef.current = null;
     } finally {
       setIsConnecting(false);
     }
-  }, [circleId, userId, isVideoEnabled, isAudioEnabled, handleRemoteStream, handlePeerDisconnected]);
+  }, [circleId, userId, localStream, handleRemoteStream, handlePeerDisconnected]);
 
   const connectToPeer = useCallback(async (peerId: string) => {
     if (managerRef.current) {

@@ -354,6 +354,12 @@ export default function VirtualCirclesScreen() {
         setShowCircleModal(true);
         loadParticipants(circle.id);
         loadChatMessages(circle.id);
+
+        if (Platform.OS === 'web') {
+          setTimeout(() => {
+            startConnection();
+          }, 500);
+        }
         return;
       }
 
@@ -711,10 +717,37 @@ export default function VirtualCirclesScreen() {
 
             {Platform.OS === 'web' ? (
               <View style={styles.webrtcBanner}>
-                <VideoIcon size={20} color="#10b981" />
-                <Text style={styles.webrtcBannerText}>
-                  {localStream ? 'Live video enabled' : 'Connecting...'}
-                </Text>
+                {webrtcError ? (
+                  <>
+                    <VideoIcon size={20} color="#ef4444" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.webrtcBannerText, { color: '#ef4444' }]}>
+                        {webrtcError}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.retryButton}
+                      onPress={() => {
+                        disconnectWebRTC();
+                        setTimeout(() => startConnection(), 300);
+                      }}
+                    >
+                      <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : localStream ? (
+                  <>
+                    <VideoIcon size={20} color="#10b981" />
+                    <Text style={styles.webrtcBannerText}>Live video enabled</Text>
+                  </>
+                ) : (
+                  <>
+                    <VideoIcon size={20} color="#f59e0b" />
+                    <Text style={[styles.webrtcBannerText, { color: '#f59e0b' }]}>
+                      Requesting camera access...
+                    </Text>
+                  </>
+                )}
               </View>
             ) : (
               <View style={styles.webrtcBanner}>
@@ -1090,6 +1123,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#10b981',
+  },
+  retryButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   videoGrid: {
     flexDirection: 'row',
