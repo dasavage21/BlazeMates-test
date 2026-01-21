@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { VideoIcon, Users, MessageCircle, ArrowLeft, Plus, X, Video, Mic, MicOff, VideoOff } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../supabaseClient';
+import { useWebRTC } from '../hooks/useWebRTC';
+import { VideoView } from '../components/VideoView';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -55,6 +57,19 @@ export default function VirtualCirclesScreen() {
 
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
+
+  const {
+    localStream,
+    remoteStreams,
+    isVideoEnabled,
+    isAudioEnabled,
+    startConnection,
+    connectToPeer,
+    toggleVideo: toggleWebRTCVideo,
+    toggleAudio: toggleWebRTCAudio,
+    disconnect: disconnectWebRTC,
+    error: webrtcError,
+  } = useWebRTC(selectedCircle?.id || null, currentUserId);
 
   const loadCircles = useCallback(async () => {
     try {
@@ -395,6 +410,12 @@ export default function VirtualCirclesScreen() {
       setShowCircleModal(true);
       loadParticipants(circle.id);
       loadChatMessages(circle.id);
+
+      if (Platform.OS === 'web') {
+        setTimeout(() => {
+          startConnection();
+        }, 500);
+      }
     } catch (error: any) {
       console.error('Error joining circle:', error);
       if (Platform.OS === 'web') {
@@ -425,6 +446,7 @@ export default function VirtualCirclesScreen() {
         return;
       }
 
+      await disconnectWebRTC();
       setShowCircleModal(false);
       setSelectedCircle(null);
       setIsVideoOn(true);
@@ -505,6 +527,10 @@ export default function VirtualCirclesScreen() {
     const newState = !isVideoOn;
     setIsVideoOn(newState);
 
+    if (Platform.OS === 'web') {
+      toggleWebRTCVideo();
+    }
+
     await supabase
       .from('circle_participants')
       .update({ is_video_on: newState })
@@ -518,12 +544,29 @@ export default function VirtualCirclesScreen() {
     const newState = !isAudioOn;
     setIsAudioOn(newState);
 
+    if (Platform.OS === 'web') {
+      toggleWebRTCAudio();
+    }
+
     await supabase
       .from('circle_participants')
       .update({ is_audio_on: newState })
       .eq('circle_id', selectedCircle.id)
       .eq('user_id', currentUserId);
   };
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && localStream && selectedCircle && currentUserId) {
+      participants.forEach((participant) => {
+        if (participant.user_id !== currentUserId) {
+          const alreadyConnected = remoteStreams.some(s => s.peerId === participant.user_id);
+          if (!alreadyConnected) {
+            connectToPeer(participant.user_id);
+          }
+        }
+      });
+    }
+  }, [participants, localStream, selectedCircle, currentUserId, Platform.OS]);
 
   if (loading) {
     return (
@@ -666,13 +709,44 @@ export default function VirtualCirclesScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.webrtcBanner}>
-              <VideoIcon size={20} color="#10b981" />
-              <Text style={styles.webrtcBannerText}>WebRTC integration coming soon</Text>
-            </View>
+            {Platform.OS === 'web' ? (
+              <View style={styles.webrtcBanner}>
+                <VideoIcon size={20} color="#10b981" />
+                <Text style={styles.webrtcBannerText}>
+                  {localStream ? 'Live video enabled' : 'Connecting...'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.webrtcBanner}>
+                <VideoIcon size={20} color="#ef4444" />
+                <Text style={[styles.webrtcBannerText, { color: '#ef4444' }]}>
+                  WebRTC only available on web browsers
+                </Text>
+              </View>
+            )}
 
             <View style={styles.videoGrid}>
-              {participants.slice(0, 4).map((participant) => (
+              {Platform.OS === 'web' && localStream && (
+                <View style={styles.videoTile}>
+                  <VideoView stream={localStream} mirror={true} />
+                  <View style={styles.participantControls}>
+                    {!isVideoOn && <VideoOff size={16} color="#ef4444" />}
+                    {!isAudioOn && <MicOff size={16} color="#ef4444" />}
+                  </View>
+                  <Text style={styles.participantName}>You</Text>
+                </View>
+              )}
+
+              {Platform.OS === 'web' && remoteStreams.map((remote) => (
+                <View key={remote.peerId} style={styles.videoTile}>
+                  <VideoView stream={remote.stream} />
+                  <Text style={styles.participantName}>
+                    {participants.find(p => p.user_id === remote.peerId)?.username || 'User'}
+                  </Text>
+                </View>
+              ))}
+
+              {(Platform.OS !== 'web' || !localStream) && participants.slice(0, 4).map((participant) => (
                 <View key={participant.id} style={styles.videoTile}>
                   <View style={styles.videoPlaceholder}>
                     <VideoIcon size={40} color="#444" />
@@ -1036,17 +1110,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   participantName: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
     fontSize: 12,
     color: '#fff',
     fontWeight: '600',
-    marginTop: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   participantControls: {
     position: 'absolute',
-    bottom: 8,
+    top: 8,
     right: 8,
     flexDirection: 'row',
     gap: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 4,
+    borderRadius: 6,
   },
   controls: {
     flexDirection: 'row',
