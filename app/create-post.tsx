@@ -472,19 +472,10 @@ const styles = StyleSheet.create({
     minWidth: isDesktop ? 90 : 80,
     alignItems: "center",
     justifyContent: "center",
-    ...(Platform.OS === "web" && {
-      cursor: "pointer",
-      transition: "all 0.2s",
-      boxShadow: "0 2px 12px rgba(0, 255, 127, 0.3)",
-    }),
   },
   postButtonDisabled: {
     backgroundColor: "#1f1f1f",
     opacity: 0.4,
-    ...(Platform.OS === "web" && {
-      cursor: "not-allowed",
-      boxShadow: "none",
-    }),
   },
   postButtonText: {
     color: "#0a0a0a",
@@ -510,10 +501,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#1f1f1f",
     lineHeight: isDesktop ? 26 : 24,
-    ...(Platform.OS === "web" && {
-      outlineStyle: "none",
-      transition: "all 0.2s",
-    }),
   },
   characterCount: {
     fontSize: isDesktop ? 14 : 13,
@@ -555,11 +542,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.8)",
     borderRadius: 24,
     padding: 10,
-    ...(Platform.OS === "web" && {
-      cursor: "pointer",
-      transition: "all 0.2s",
-      backdropFilter: "blur(8px)",
-    }),
   },
   imageButton: {
     flexDirection: "row",

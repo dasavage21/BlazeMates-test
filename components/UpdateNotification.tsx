@@ -11,25 +11,25 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Sparkles } from 'lucide-react-native';
 
-const CURRENT_VERSION = '1.4.0';
+const CURRENT_VERSION = '1.4.1';
 const VERSION_KEY = 'app_version_seen';
 
 const UPDATES = [
   {
-    title: 'Live Streaming & Virtual Circles',
-    description: 'New features now available! Create live streams and virtual hangout rooms. WebRTC integration for real video/audio streaming coming soon.',
+    title: 'Critical Bug Fixes',
+    description: 'Fixed TypeScript errors and deprecated style properties that were causing build issues and performance problems.',
   },
   {
-    title: 'Groups Page Fixed',
-    description: 'Fixed infinite recursion error that prevented the Groups page from loading. Public groups and group memberships now work correctly.',
+    title: 'Style System Improvements',
+    description: 'Removed deprecated shadow properties and replaced them with modern boxShadow. Cleaned up web-only CSS properties that were causing compatibility issues.',
   },
   {
-    title: 'Database Performance',
-    description: 'Improved database query performance by optimizing Row Level Security policies and removing circular dependencies.',
+    title: 'Code Quality Enhancements',
+    description: 'Fixed duplicate style definitions and removed invalid React Native style properties for better cross-platform compatibility.',
   },
   {
     title: 'Enhanced Stability',
-    description: 'Fixed critical database policy issues that were causing 500 Internal Server Errors.',
+    description: 'Resolved all TypeScript compilation errors in application code, ensuring a more stable and maintainable codebase.',
   },
 ];
 

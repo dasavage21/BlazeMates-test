@@ -769,21 +769,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#aaa",
   },
-  comingSoonBanner: {
-    backgroundColor: "#2a2a2a",
-    padding: 20,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 24,
-    borderWidth: 2,
-    borderColor: "#FFD700",
-  },
-  comingSoonText: {
-    color: "#FFD700",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
   comingSoonSubtext: {
     color: "#aaa",
     fontSize: 14,

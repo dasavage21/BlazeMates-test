@@ -1533,12 +1533,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 2,
     borderColor: "#333",
-    transition: "all 0.2s ease",
   },
   reportOptionSelected: {
     backgroundColor: "#1a3a2e",
     borderColor: "#00FF7F",
-    boxShadow: "0 0 8px rgba(0, 255, 127, 0.3)",
     elevation: 5,
   },
   reportOptionIcon: {
