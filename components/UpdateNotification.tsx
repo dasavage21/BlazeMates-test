@@ -131,10 +131,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     borderWidth: 1,
     borderColor: '#2a2a2a',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    boxShadow: '0px 10px 20px 0px rgba(0, 0, 0, 0.5)',
     elevation: 10,
   },
   header: {
