@@ -218,7 +218,11 @@ export default function VirtualCirclesScreen() {
 
   const handleCreateCircle = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a circle name');
+      if (Platform.OS === 'web') {
+        alert('Please enter a circle name');
+      } else {
+        Alert.alert('Error', 'Please enter a circle name');
+      }
       return;
     }
 
@@ -226,7 +230,11 @@ export default function VirtualCirclesScreen() {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
       if (!userId) {
-        Alert.alert('Error', 'You must be logged in');
+        if (Platform.OS === 'web') {
+          alert('You must be logged in');
+        } else {
+          Alert.alert('Error', 'You must be logged in');
+        }
         return;
       }
 
@@ -255,7 +263,7 @@ export default function VirtualCirclesScreen() {
 
       if (previousParticipant) {
         // Rejoin by updating the existing record
-        await supabase
+        const { error: updateError } = await supabase
           .from('circle_participants')
           .update({
             left_at: null,
@@ -263,9 +271,11 @@ export default function VirtualCirclesScreen() {
             is_audio_on: true,
           })
           .eq('id', previousParticipant.id);
+
+        if (updateError) throw updateError;
       } else {
         // Insert new participant record
-        await supabase
+        const { error: insertError } = await supabase
           .from('circle_participants')
           .insert({
             circle_id: newCircle.id,
@@ -273,16 +283,27 @@ export default function VirtualCirclesScreen() {
             is_video_on: true,
             is_audio_on: true,
           });
+
+        if (insertError) throw insertError;
       }
 
-      Alert.alert('Success', 'Circle created successfully!');
+      if (Platform.OS === 'web') {
+        alert('Circle created successfully!');
+      } else {
+        Alert.alert('Success', 'Circle created successfully!');
+      }
+
       setShowCreateModal(false);
       setName('');
       setDescription('');
       loadCircles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating circle:', error);
-      Alert.alert('Error', 'Failed to create circle');
+      if (Platform.OS === 'web') {
+        alert(`Failed to create circle: ${error.message || 'Unknown error'}`);
+      } else {
+        Alert.alert('Error', 'Failed to create circle');
+      }
     }
   };
 
@@ -291,7 +312,11 @@ export default function VirtualCirclesScreen() {
       if (!currentUserId) return;
 
       if (circle.participant_count >= circle.max_participants) {
-        Alert.alert('Circle Full', 'This circle has reached its maximum capacity');
+        if (Platform.OS === 'web') {
+          alert('This circle has reached its maximum capacity');
+        } else {
+          Alert.alert('Circle Full', 'This circle has reached its maximum capacity');
+        }
         return;
       }
 
@@ -368,9 +393,13 @@ export default function VirtualCirclesScreen() {
       setShowCircleModal(true);
       loadParticipants(circle.id);
       loadChatMessages(circle.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error joining circle:', error);
-      Alert.alert('Error', 'Failed to join circle');
+      if (Platform.OS === 'web') {
+        alert(`Failed to join circle: ${error.message || 'Unknown error'}`);
+      } else {
+        Alert.alert('Error', 'Failed to join circle');
+      }
     }
   };
 
@@ -378,11 +407,21 @@ export default function VirtualCirclesScreen() {
     try {
       if (!currentUserId) return;
 
-      await supabase
+      const { error } = await supabase
         .from('circle_participants')
         .update({ left_at: new Date().toISOString() })
         .eq('circle_id', circleId)
         .eq('user_id', currentUserId);
+
+      if (error) {
+        console.error('Error leaving circle:', error);
+        if (Platform.OS === 'web') {
+          alert(`Failed to leave circle: ${error.message}`);
+        } else {
+          Alert.alert('Error', `Failed to leave circle: ${error.message}`);
+        }
+        return;
+      }
 
       setShowCircleModal(false);
       setSelectedCircle(null);
@@ -393,18 +432,37 @@ export default function VirtualCirclesScreen() {
       loadCircles();
     } catch (error) {
       console.error('Error leaving circle:', error);
-      Alert.alert('Error', 'Failed to leave circle');
+      if (Platform.OS === 'web') {
+        alert('Failed to leave circle. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to leave circle');
+      }
     }
   };
 
   const handleEndCircle = async (circleId: string) => {
     try {
-      await supabase
+      const { error } = await supabase
         .from('virtual_circles')
         .update({ is_active: false, ended_at: new Date().toISOString() })
         .eq('id', circleId);
 
-      Alert.alert('Success', 'Circle ended');
+      if (error) {
+        console.error('Error ending circle:', error);
+        if (Platform.OS === 'web') {
+          alert(`Failed to end circle: ${error.message}`);
+        } else {
+          Alert.alert('Error', `Failed to end circle: ${error.message}`);
+        }
+        return;
+      }
+
+      if (Platform.OS === 'web') {
+        alert('Circle ended successfully!');
+      } else {
+        Alert.alert('Success', 'Circle ended');
+      }
+
       setShowCircleModal(false);
       setSelectedCircle(null);
       setIsVideoOn(true);
@@ -414,7 +472,11 @@ export default function VirtualCirclesScreen() {
       loadCircles();
     } catch (error) {
       console.error('Error ending circle:', error);
-      Alert.alert('Error', 'Failed to end circle');
+      if (Platform.OS === 'web') {
+        alert('Failed to end circle. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to end circle');
+      }
     }
   };
 
