@@ -276,19 +276,23 @@ export default function LiveStreamingScreen() {
         userId: currentUserId,
       });
       setTimeout(() => {
-        startConnection();
+        startConnection(false);
       }, 300);
     }
   }, [showStreamModal, selectedStream, currentUserId, localStream, isStreamer, startConnection]);
 
   useEffect(() => {
-    if (Platform.OS === 'web' && showStreamModal && selectedStream && currentUserId && !isStreamer) {
-      console.log('[LiveStreaming] Viewer connecting to streamer...');
+    if (Platform.OS === 'web' && showStreamModal && selectedStream && currentUserId && !isStreamer && !localStream) {
+      console.log('[LiveStreaming] Viewer connecting in view-only mode...');
       setTimeout(() => {
-        connectToPeer(selectedStream.streamer_id);
-      }, 500);
+        startConnection(true).then(() => {
+          setTimeout(() => {
+            connectToPeer(selectedStream.streamer_id);
+          }, 500);
+        });
+      }, 300);
     }
-  }, [showStreamModal, selectedStream, currentUserId, isStreamer, connectToPeer]);
+  }, [showStreamModal, selectedStream, currentUserId, isStreamer, localStream, startConnection, connectToPeer]);
 
   if (loading) {
     return (

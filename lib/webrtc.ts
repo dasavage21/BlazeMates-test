@@ -141,15 +141,17 @@ export class WebRTCManager {
     peerId: string,
     onRemoteStream: (peerId: string, stream: MediaStream) => void
   ) {
-    if (Platform.OS !== 'web' || !this.localStream) {
+    if (Platform.OS !== 'web') {
       return;
     }
 
     const peerConnection = new RTCPeerConnection(this.config);
 
-    this.localStream.getTracks().forEach((track) => {
-      peerConnection.addTrack(track, this.localStream!);
-    });
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((track) => {
+        peerConnection.addTrack(track, this.localStream!);
+      });
+    }
 
     peerConnection.ontrack = (event) => {
       if (event.streams && event.streams[0]) {
@@ -183,15 +185,17 @@ export class WebRTCManager {
     offer: RTCSessionDescriptionInit,
     onRemoteStream: (peerId: string, stream: MediaStream) => void
   ) {
-    if (Platform.OS !== 'web' || !this.localStream) {
+    if (Platform.OS !== 'web') {
       return;
     }
 
     const peerConnection = new RTCPeerConnection(this.config);
 
-    this.localStream.getTracks().forEach((track) => {
-      peerConnection.addTrack(track, this.localStream!);
-    });
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((track) => {
+        peerConnection.addTrack(track, this.localStream!);
+      });
+    }
 
     peerConnection.ontrack = (event) => {
       if (event.streams && event.streams[0]) {

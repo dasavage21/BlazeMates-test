@@ -32,8 +32,8 @@ export function useWebRTC(circleId: string | null, userId: string | null) {
     setRemoteStreams((prev) => prev.filter((s) => s.peerId !== peerId));
   }, []);
 
-  const startConnection = useCallback(async () => {
-    console.log('[WebRTC] startConnection called', { circleId, userId, platform: Platform.OS });
+  const startConnection = useCallback(async (viewOnly: boolean = false) => {
+    console.log('[WebRTC] startConnection called', { circleId, userId, platform: Platform.OS, viewOnly });
 
     if (!circleId || !userId || Platform.OS !== 'web') {
       if (Platform.OS !== 'web') {
@@ -42,7 +42,7 @@ export function useWebRTC(circleId: string | null, userId: string | null) {
       return;
     }
 
-    if (managerRef.current || localStream) {
+    if (managerRef.current) {
       console.log('[WebRTC] Already connected or connecting');
       return;
     }
@@ -55,21 +55,25 @@ export function useWebRTC(circleId: string | null, userId: string | null) {
       const manager = new WebRTCManager(circleId, userId);
       managerRef.current = manager;
 
-      console.log('[WebRTC] Requesting media access...');
-      const stream = await manager.initLocalStream(true, true);
+      if (!viewOnly) {
+        console.log('[WebRTC] Requesting media access...');
+        const stream = await manager.initLocalStream(true, true);
 
-      if (stream) {
-        console.log('[WebRTC] Got media stream:', stream.id);
-        setLocalStream(stream);
-        setIsVideoEnabled(true);
-        setIsAudioEnabled(true);
-
-        console.log('[WebRTC] Setting up signaling...');
-        await manager.setupSignaling(handleRemoteStream, handlePeerDisconnected);
-        console.log('[WebRTC] Connection complete!');
+        if (stream) {
+          console.log('[WebRTC] Got media stream:', stream.id);
+          setLocalStream(stream);
+          setIsVideoEnabled(true);
+          setIsAudioEnabled(true);
+        } else {
+          throw new Error('Failed to get media stream');
+        }
       } else {
-        throw new Error('Failed to get media stream');
+        console.log('[WebRTC] View-only mode - no media access needed');
       }
+
+      console.log('[WebRTC] Setting up signaling...');
+      await manager.setupSignaling(handleRemoteStream, handlePeerDisconnected);
+      console.log('[WebRTC] Connection complete!');
     } catch (err) {
       console.error('[WebRTC] Error starting connection:', err);
       setError(err instanceof Error ? err.message : 'Failed to start connection');
@@ -77,7 +81,7 @@ export function useWebRTC(circleId: string | null, userId: string | null) {
     } finally {
       setIsConnecting(false);
     }
-  }, [circleId, userId, localStream, handleRemoteStream, handlePeerDisconnected]);
+  }, [circleId, userId, handleRemoteStream, handlePeerDisconnected]);
 
   const connectToPeer = useCallback(async (peerId: string) => {
     if (managerRef.current) {
