@@ -63,10 +63,6 @@ export function UpdateNotification() {
     try {
       await AsyncStorage.setItem(VERSION_KEY, CURRENT_VERSION);
       setVisible(false);
-
-      if (Platform.OS === 'web') {
-        window.location.reload();
-      }
     } catch (error) {
       console.error('Error saving version:', error);
       setVisible(false);
@@ -111,7 +107,7 @@ export function UpdateNotification() {
             onPress={handleClose}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Got it, Reload website</Text>
+            <Text style={styles.buttonText}>Got it!</Text>
           </TouchableOpacity>
         </View>
       </View>
