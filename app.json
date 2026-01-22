@@ -39,7 +39,7 @@
       ]
     },
     "web": {
-      "output": "server"
+      "output": "static"
     },
     "owner": "hawkc13",
     "extra": {
