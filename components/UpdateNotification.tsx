@@ -63,6 +63,10 @@ export function UpdateNotification() {
     try {
       await AsyncStorage.setItem(VERSION_KEY, CURRENT_VERSION);
       setVisible(false);
+
+      if (Platform.OS === 'web') {
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Error saving version:', error);
       setVisible(false);
