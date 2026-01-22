@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Video, Users, MessageCircle, ArrowLeft, Plus, X } from 'lucide-react-native';
+import { Video, Users, MessageCircle, ArrowLeft, Plus, X, Mic, MicOff, VideoOff } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../supabaseClient';
+import { useWebRTC } from '../hooks/useWebRTC';
+import { VideoView } from '../components/VideoView';
 
 type LiveStream = {
   id: string;
@@ -40,6 +42,24 @@ export default function LiveStreamingScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'smoke_session' | 'grow_update' | 'general'>('smoke_session');
+
+  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isAudioOn, setIsAudioOn] = useState(true);
+  const [isStreamer, setIsStreamer] = useState(false);
+
+  const {
+    localStream,
+    remoteStreams,
+    isVideoEnabled,
+    isAudioEnabled,
+    isConnecting,
+    startConnection,
+    connectToPeer,
+    toggleVideo: toggleWebRTCVideo,
+    toggleAudio: toggleWebRTCAudio,
+    disconnect: disconnectWebRTC,
+    error: webrtcError,
+  } = useWebRTC(selectedStream?.id || null, currentUserId);
 
   const loadStreams = useCallback(async () => {
     try {
@@ -176,6 +196,9 @@ export default function LiveStreamingScreen() {
     try {
       if (!currentUserId) return;
 
+      const isStreamOwner = stream.streamer_id === currentUserId;
+      setIsStreamer(isStreamOwner);
+
       await supabase.from('stream_viewers').insert({
         stream_id: stream.id,
         user_id: currentUserId,
@@ -196,8 +219,10 @@ export default function LiveStreamingScreen() {
         .update({ is_active: false, ended_at: new Date().toISOString() })
         .eq('id', streamId);
 
+      await disconnectWebRTC();
       Alert.alert('Success', 'Stream ended');
       setShowStreamModal(false);
+      setIsStreamer(false);
       loadStreams();
     } catch (error) {
       console.error('Error ending stream:', error);
@@ -221,6 +246,45 @@ export default function LiveStreamingScreen() {
       console.error('Error sending message:', error);
     }
   };
+
+  const toggleVideo = async () => {
+    const newState = !isVideoOn;
+    setIsVideoOn(newState);
+
+    if (Platform.OS === 'web') {
+      toggleWebRTCVideo();
+    }
+  };
+
+  const toggleAudio = async () => {
+    const newState = !isAudioOn;
+    setIsAudioOn(newState);
+
+    if (Platform.OS === 'web') {
+      toggleWebRTCAudio();
+    }
+  };
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && showStreamModal && selectedStream && currentUserId && !localStream && isStreamer) {
+      console.log('[LiveStreaming] Starting WebRTC connection for streamer...', {
+        streamId: selectedStream.id,
+        userId: currentUserId,
+      });
+      setTimeout(() => {
+        startConnection();
+      }, 300);
+    }
+  }, [showStreamModal, selectedStream, currentUserId, localStream, isStreamer, startConnection]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && showStreamModal && selectedStream && currentUserId && !isStreamer) {
+      console.log('[LiveStreaming] Viewer connecting to streamer...');
+      setTimeout(() => {
+        connectToPeer(selectedStream.streamer_id);
+      }, 500);
+    }
+  }, [showStreamModal, selectedStream, currentUserId, isStreamer, connectToPeer]);
 
   if (loading) {
     return (
@@ -363,15 +427,81 @@ export default function LiveStreamingScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.webrtcBanner}>
-              <Video size={20} color="#10b981" />
-              <Text style={styles.webrtcBannerText}>WebRTC integration coming soon</Text>
-            </View>
+            {Platform.OS === 'web' ? (
+              <View style={styles.webrtcBanner}>
+                {webrtcError ? (
+                  <>
+                    <Video size={20} color="#ef4444" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.webrtcBannerText, { color: '#ef4444', fontWeight: '600' }]}>
+                        {webrtcError}
+                      </Text>
+                      {(webrtcError.includes('in use') || webrtcError.includes('already')) && (
+                        <Text style={[styles.webrtcBannerText, { color: '#ef4444', fontSize: 11, marginTop: 2 }]}>
+                          Close other apps/tabs using your camera
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.retryButton}
+                      onPress={async () => {
+                        console.log('[LiveStreaming] Retry button pressed, cleaning up...');
+                        await disconnectWebRTC();
+                        setTimeout(() => {
+                          console.log('[LiveStreaming] Retrying connection...');
+                          startConnection();
+                        }, 500);
+                      }}
+                    >
+                      <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (localStream || remoteStreams.length > 0) ? (
+                  <>
+                    <Video size={20} color="#10b981" />
+                    <Text style={styles.webrtcBannerText}>
+                      {isStreamer ? 'Live streaming enabled' : 'Connected to stream'}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Video size={20} color="#f59e0b" />
+                    <Text style={[styles.webrtcBannerText, { color: '#f59e0b' }]}>
+                      {isConnecting ? 'Requesting camera access...' : 'Connecting...'}
+                    </Text>
+                  </>
+                )}
+              </View>
+            ) : (
+              <View style={styles.webrtcBanner}>
+                <Video size={20} color="#ef4444" />
+                <Text style={[styles.webrtcBannerText, { color: '#ef4444' }]}>
+                  WebRTC only available on web browsers
+                </Text>
+              </View>
+            )}
 
-            <View style={styles.streamVideoPlaceholder}>
-              <Video size={80} color="#333" />
-              <Text style={styles.videoPlaceholderText}>Video Stream</Text>
-            </View>
+            {Platform.OS === 'web' && isStreamer && localStream ? (
+              <View style={styles.streamVideoContainer}>
+                <VideoView stream={localStream} mirror={true} />
+                <View style={styles.streamControls}>
+                  {!isVideoOn && <VideoOff size={16} color="#ef4444" />}
+                  {!isAudioOn && <MicOff size={16} color="#ef4444" />}
+                </View>
+              </View>
+            ) : Platform.OS === 'web' && !isStreamer && remoteStreams.length > 0 ? (
+              <View style={styles.streamVideoContainer}>
+                <VideoView stream={remoteStreams[0].stream} />
+              </View>
+            ) : (
+              <View style={styles.streamVideoPlaceholder}>
+                <Video size={80} color="#333" />
+                <Text style={styles.videoPlaceholderText}>
+                  {Platform.OS !== 'web' ? 'Web browser required for video' :
+                   isConnecting ? 'Connecting...' : 'Video Stream'}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.chatContainer}>
               <Text style={styles.chatTitle}>Live Chat</Text>
@@ -396,6 +526,23 @@ export default function LiveStreamingScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {isStreamer && Platform.OS === 'web' && (
+              <View style={styles.controls}>
+                <TouchableOpacity
+                  style={[styles.controlButton, !isVideoOn && styles.controlButtonOff]}
+                  onPress={toggleVideo}
+                >
+                  {isVideoOn ? <Video size={24} color="#fff" /> : <VideoOff size={24} color="#fff" />}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.controlButton, !isAudioOn && styles.controlButtonOff]}
+                  onPress={toggleAudio}
+                >
+                  {isAudioOn ? <Mic size={24} color="#fff" /> : <MicOff size={24} color="#fff" />}
+                </TouchableOpacity>
+              </View>
+            )}
 
             {selectedStream && selectedStream.streamer_id === currentUserId && (
               <TouchableOpacity
@@ -653,6 +800,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#10b981',
   },
+  retryButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  streamVideoContainer: {
+    height: 400,
+    backgroundColor: '#000',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  streamControls: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 6,
+    borderRadius: 8,
+  },
   streamVideoPlaceholder: {
     height: 300,
     backgroundColor: '#1a1a1a',
@@ -718,6 +894,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    paddingVertical: 20,
+  },
+  controlButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  controlButtonOff: {
+    backgroundColor: '#ef4444',
   },
   endStreamButton: {
     backgroundColor: '#ef4444',
