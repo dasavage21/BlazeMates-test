@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   streamVideoContainer: {
-    height: 400,
+    height: 280,
     backgroundColor: '#000',
     marginHorizontal: 20,
     borderRadius: 16,
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   streamVideoPlaceholder: {
-    height: 300,
+    height: 280,
     backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   chatContainer: {
-    flex: 1,
+    height: 220,
     backgroundColor: '#1a1a1a',
     marginHorizontal: 20,
     marginTop: 20,
