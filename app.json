@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "scheme": "blazemates",
     "orientation": "portrait",
-    "icon": "./app/assets/icon.png",
     "assetBundlePatterns": ["**/*"],
     "plugins": [
       "expo-camera",
@@ -40,8 +39,7 @@
       ]
     },
     "web": {
-      "output": "static",
-      "favicon": "./public/favicon.png"
+      "output": "server"
     },
     "owner": "hawkc13",
     "extra": {

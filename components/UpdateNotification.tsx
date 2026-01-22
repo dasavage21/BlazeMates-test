@@ -11,25 +11,29 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Sparkles } from 'lucide-react-native';
 
-const CURRENT_VERSION = '1.4.1';
+const CURRENT_VERSION = '1.5.0';
 const VERSION_KEY = 'app_version_seen';
 
 const UPDATES = [
   {
-    title: 'Critical Bug Fixes',
-    description: 'Fixed TypeScript errors and deprecated style properties that were causing build issues and performance problems.',
+    title: 'Live Video Broadcasting',
+    description: 'Live Streams now supports real-time video and audio broadcasting! Start a stream with your camera and microphone, and viewers can watch your live feed instantly.',
   },
   {
-    title: 'Style System Improvements',
-    description: 'Removed deprecated shadow properties and replaced them with modern boxShadow. Cleaned up web-only CSS properties that were causing compatibility issues.',
+    title: 'Virtual Circles Video Chat',
+    description: 'Virtual Circles now features real-time video chat! See and hear all participants in group sessions with WebRTC peer-to-peer connections.',
   },
   {
-    title: 'Code Quality Enhancements',
-    description: 'Fixed duplicate style definitions and removed invalid React Native style properties for better cross-platform compatibility.',
+    title: 'Camera & Audio Controls',
+    description: 'Toggle your video and audio on/off during streams and circles. Enjoy full control over your broadcast with easy-to-use controls.',
   },
   {
-    title: 'Enhanced Stability',
-    description: 'Resolved all TypeScript compilation errors in application code, ensuring a more stable and maintainable codebase.',
+    title: 'Web Browser Support',
+    description: 'Video features are available on web browsers. Access Live Streams and Virtual Circles through your browser for the best experience.',
+  },
+  {
+    title: 'Smart Error Handling',
+    description: 'Automatic fallback to audio-only mode if your camera is in use. Clear error messages and retry functionality for a smooth experience.',
   },
 ];
 

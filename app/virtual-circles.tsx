@@ -1101,7 +1101,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     ...(Platform.OS === 'web' && {
       maxWidth: 1200,
-      maxHeight: '90vh',
+      maxHeight: '90vh' as any,
       width: '100%',
       borderRadius: 20,
       overflow: 'hidden',
