@@ -199,9 +199,13 @@ export default function LiveStreamingScreen() {
       const isStreamOwner = stream.streamer_id === currentUserId;
       setIsStreamer(isStreamOwner);
 
-      await supabase.from('stream_viewers').insert({
+      await supabase.from('stream_viewers').upsert({
         stream_id: stream.id,
         user_id: currentUserId,
+        joined_at: new Date().toISOString(),
+        left_at: null,
+      }, {
+        onConflict: 'stream_id,user_id'
       });
 
       setSelectedStream(stream);
