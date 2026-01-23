@@ -1089,24 +1089,11 @@ const styles = StyleSheet.create({
   },
   circleViewModalOverlay: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? 'rgba(0, 0, 0, 0.8)' : '#000',
-    ...(Platform.OS === 'web' && {
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    }),
+    backgroundColor: '#000',
   },
   circleViewModal: {
     flex: 1,
     backgroundColor: '#000',
-    ...(Platform.OS === 'web' && {
-      maxWidth: 1200,
-      maxHeight: '90vh' as any,
-      width: '100%',
-      borderRadius: 20,
-      overflow: 'hidden',
-      flex: undefined,
-    }),
   },
   circleViewHeader: {
     flexDirection: 'row',
@@ -1158,11 +1145,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 20,
     gap: 10,
+    marginBottom: 16,
   },
   videoTile: {
     width: Platform.OS === 'web' ? '23%' : '48%',
-    aspectRatio: 1,
+    aspectRatio: 16 / 9,
     position: 'relative',
+    backgroundColor: '#000',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   videoPlaceholder: {
     flex: 1,
@@ -1211,14 +1202,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
   },
   chatContainer: {
-    flex: 1,
     backgroundColor: '#1a1a1a',
     marginHorizontal: 20,
     borderRadius: 16,
     padding: 16,
-    ...(Platform.OS === 'web' && {
-      maxHeight: 300,
-    }),
+    height: 300,
+    marginBottom: 16,
   },
   chatTitle: {
     fontSize: 16,
@@ -1227,7 +1216,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chatMessages: {
-    flex: 1,
+    height: 180,
     marginBottom: 12,
   },
   chatMessage: {
