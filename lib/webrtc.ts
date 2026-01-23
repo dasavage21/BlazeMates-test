@@ -186,6 +186,14 @@ export class WebRTCManager {
       }
     };
 
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log('[WebRTCManager] ICE connection state with', peerId, ':', peerConnection.iceConnectionState);
+    };
+
+    peerConnection.onicegatheringstatechange = () => {
+      console.log('[WebRTCManager] ICE gathering state with', peerId, ':', peerConnection.iceGatheringState);
+    };
+
     this.peerConnections.set(peerId, { peerId, connection: peerConnection });
 
     console.log('[WebRTCManager] Creating offer for:', peerId);
@@ -239,6 +247,14 @@ export class WebRTCManager {
       }
     };
 
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log('[WebRTCManager] ICE connection state (from handleOffer) with', peerId, ':', peerConnection.iceConnectionState);
+    };
+
+    peerConnection.onicegatheringstatechange = () => {
+      console.log('[WebRTCManager] ICE gathering state (from handleOffer) with', peerId, ':', peerConnection.iceGatheringState);
+    };
+
     this.peerConnections.set(peerId, { peerId, connection: peerConnection });
 
     console.log('[WebRTCManager] Setting remote description and creating answer for:', peerId);
@@ -250,16 +266,25 @@ export class WebRTCManager {
   }
 
   private async handleAnswer(peerId: string, answer: RTCSessionDescriptionInit) {
+    console.log('[WebRTCManager] Handling answer from:', peerId);
     const peer = this.peerConnections.get(peerId);
     if (peer) {
+      console.log('[WebRTCManager] Setting remote description for answer');
       await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log('[WebRTCManager] Remote description set, connection state:', peer.connection.connectionState);
+    } else {
+      console.error('[WebRTCManager] No peer connection found for:', peerId);
     }
   }
 
   private async handleIceCandidate(peerId: string, candidate: RTCIceCandidateInit) {
+    console.log('[WebRTCManager] Handling ICE candidate from:', peerId);
     const peer = this.peerConnections.get(peerId);
     if (peer) {
       await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log('[WebRTCManager] ICE candidate added');
+    } else {
+      console.error('[WebRTCManager] No peer connection found for ICE candidate from:', peerId);
     }
   }
 
