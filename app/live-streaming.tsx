@@ -171,20 +171,24 @@ export default function LiveStreamingScreen() {
         return;
       }
 
-      const { error } = await supabase.from('live_streams').insert({
+      const { data: newStream, error } = await supabase.from('live_streams').insert({
         title: title.trim(),
         description: description.trim() || null,
         streamer_id: userId,
         category,
         is_active: true,
-      });
+      }).select('*, users(username, avatar_url)').single();
 
       if (error) throw error;
 
-      Alert.alert('Success', 'Stream started! Your stream is now live.');
       setShowCreateModal(false);
       setTitle('');
       setDescription('');
+
+      if (newStream) {
+        await handleJoinStream(newStream);
+      }
+
       loadStreams();
     } catch (error) {
       console.error('Error creating stream:', error);
@@ -435,6 +439,7 @@ export default function LiveStreamingScreen() {
               </TouchableOpacity>
             </View>
 
+            <ScrollView style={{ flex: 1 }}>
             {Platform.OS === 'web' ? (
               <View style={styles.webrtcBanner}>
                 {webrtcError ? (
@@ -560,6 +565,7 @@ export default function LiveStreamingScreen() {
                 <Text style={styles.endStreamButtonText}>End Stream</Text>
               </TouchableOpacity>
             )}
+            </ScrollView>
           </View>
         </Modal>
       </LinearGradient>
