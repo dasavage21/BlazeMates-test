@@ -776,40 +776,46 @@ export default function VirtualCirclesScreen() {
               </View>
             )}
 
-            <View style={styles.videoGrid}>
-              {Platform.OS === 'web' && localStream && (
-                <View style={styles.videoTile}>
-                  <VideoView stream={localStream} mirror={true} />
-                  <View style={styles.participantControls}>
-                    {!isVideoOn && <VideoOff size={16} color="#ef4444" />}
-                    {!isAudioOn && <MicOff size={16} color="#ef4444" />}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.videoScroll}>
+              <View style={styles.videoGrid}>
+                {Platform.OS === 'web' && localStream && (
+                  <View style={styles.videoTile}>
+                    <View style={styles.videoContent}>
+                      <VideoView stream={localStream} mirror={true} />
+                    </View>
+                    <View style={styles.participantControls}>
+                      {!isVideoOn && <VideoOff size={16} color="#ef4444" />}
+                      {!isAudioOn && <MicOff size={16} color="#ef4444" />}
+                    </View>
+                    <Text style={styles.participantName}>You</Text>
                   </View>
-                  <Text style={styles.participantName}>You</Text>
-                </View>
-              )}
+                )}
 
-              {Platform.OS === 'web' && remoteStreams.map((remote) => (
-                <View key={remote.peerId} style={styles.videoTile}>
-                  <VideoView stream={remote.stream} />
-                  <Text style={styles.participantName}>
-                    {participants.find(p => p.user_id === remote.peerId)?.username || 'User'}
-                  </Text>
-                </View>
-              ))}
+                {Platform.OS === 'web' && remoteStreams.map((remote) => (
+                  <View key={remote.peerId} style={styles.videoTile}>
+                    <View style={styles.videoContent}>
+                      <VideoView stream={remote.stream} />
+                    </View>
+                    <Text style={styles.participantName}>
+                      {participants.find(p => p.user_id === remote.peerId)?.username || 'User'}
+                    </Text>
+                  </View>
+                ))}
 
-              {(Platform.OS !== 'web' || !localStream) && participants.slice(0, 4).map((participant) => (
-                <View key={participant.id} style={styles.videoTile}>
-                  <View style={styles.videoPlaceholder}>
-                    <VideoIcon size={40} color="#444" />
-                    <Text style={styles.participantName}>{participant.username}</Text>
+                {(Platform.OS !== 'web' || !localStream) && participants.slice(0, 4).map((participant) => (
+                  <View key={participant.id} style={styles.videoTile}>
+                    <View style={styles.videoPlaceholder}>
+                      <VideoIcon size={40} color="#444" />
+                      <Text style={styles.participantName}>{participant.username}</Text>
+                    </View>
+                    <View style={styles.participantControls}>
+                      {!participant.is_video_on && <VideoOff size={16} color="#ef4444" />}
+                      {!participant.is_audio_on && <MicOff size={16} color="#ef4444" />}
+                    </View>
                   </View>
-                  <View style={styles.participantControls}>
-                    {!participant.is_video_on && <VideoOff size={16} color="#ef4444" />}
-                    {!participant.is_audio_on && <MicOff size={16} color="#ef4444" />}
-                  </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            </ScrollView>
 
             <View style={styles.controls}>
               <TouchableOpacity
@@ -1140,20 +1146,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  videoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 10,
+  videoScroll: {
     marginBottom: 16,
   },
+  videoGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+  },
   videoTile: {
-    width: Platform.OS === 'web' ? '23%' : '48%',
-    aspectRatio: 16 / 9,
+    width: 320,
+    height: 180,
     position: 'relative',
     backgroundColor: '#000',
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  videoContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   videoPlaceholder: {
     flex: 1,
