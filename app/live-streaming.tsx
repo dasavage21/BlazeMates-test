@@ -286,17 +286,21 @@ export default function LiveStreamingScreen() {
   }, [showStreamModal, selectedStream, currentUserId, localStream, isStreamer, startConnection]);
 
   useEffect(() => {
-    if (Platform.OS === 'web' && showStreamModal && selectedStream && currentUserId && !isStreamer && !localStream) {
+    if (Platform.OS === 'web' && showStreamModal && selectedStream && currentUserId && !isStreamer && remoteStreams.length === 0) {
       console.log('[LiveStreaming] Viewer connecting in view-only mode...');
+      const connectViewer = async () => {
+        await startConnection(true);
+        console.log('[LiveStreaming] Signaling ready, connecting to streamer:', selectedStream.streamer_id);
+        setTimeout(() => {
+          connectToPeer(selectedStream.streamer_id);
+        }, 1000);
+      };
+
       setTimeout(() => {
-        startConnection(true).then(() => {
-          setTimeout(() => {
-            connectToPeer(selectedStream.streamer_id);
-          }, 500);
-        });
-      }, 300);
+        connectViewer();
+      }, 500);
     }
-  }, [showStreamModal, selectedStream, currentUserId, isStreamer, localStream, startConnection, connectToPeer]);
+  }, [showStreamModal, selectedStream, currentUserId, isStreamer]);
 
   if (loading) {
     return (
@@ -511,8 +515,14 @@ export default function LiveStreamingScreen() {
                 <Video size={80} color="#333" />
                 <Text style={styles.videoPlaceholderText}>
                   {Platform.OS !== 'web' ? 'Web browser required for video' :
-                   isConnecting ? 'Connecting...' : 'Video Stream'}
+                   isConnecting ? 'Connecting to stream...' :
+                   !isStreamer ? 'Waiting for streamer...' : 'Video Stream'}
                 </Text>
+                {Platform.OS === 'web' && !isStreamer && (
+                  <Text style={styles.debugText}>
+                    Streamer ID: {selectedStream?.streamer_id?.slice(0, 8)}...
+                  </Text>
+                )}
               </View>
             )}
 
@@ -856,6 +866,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#555',
     marginTop: 16,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
   },
   chatContainer: {
     height: 220,

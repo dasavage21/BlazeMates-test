@@ -96,19 +96,25 @@ export class WebRTCManager {
     onRemoteStream: (peerId: string, stream: MediaStream) => void,
     onPeerDisconnected: (peerId: string) => void
   ) {
-    console.log('[WebRTCManager] Setting up signaling channel for circle:', this.circleId);
+    console.log('[WebRTCManager] Setting up signaling channel for stream:', this.circleId, 'user:', this.userId);
 
     const channel = supabase
-      .channel(`circle:${this.circleId}:webrtc`)
+      .channel(`stream:${this.circleId}:webrtc`, {
+        config: {
+          broadcast: { self: false },
+        },
+      })
       .on('broadcast', { event: 'offer' }, async ({ payload }) => {
-        console.log('[WebRTCManager] Received offer from:', payload.from, 'to:', payload.to);
+        console.log('[WebRTCManager] Received offer from:', payload.from, 'to:', payload.to, 'my ID:', this.userId);
         if (payload.to === this.userId) {
+          console.log('[WebRTCManager] Processing offer...');
           await this.handleOffer(payload.from, payload.offer, onRemoteStream);
         }
       })
       .on('broadcast', { event: 'answer' }, async ({ payload }) => {
-        console.log('[WebRTCManager] Received answer from:', payload.from, 'to:', payload.to);
+        console.log('[WebRTCManager] Received answer from:', payload.from, 'to:', payload.to, 'my ID:', this.userId);
         if (payload.to === this.userId) {
+          console.log('[WebRTCManager] Processing answer...');
           await this.handleAnswer(payload.from, payload.answer);
         }
       })
@@ -145,15 +151,20 @@ export class WebRTCManager {
       return;
     }
 
+    console.log('[WebRTCManager] Connecting to peer:', peerId, 'from:', this.userId);
     const peerConnection = new RTCPeerConnection(this.config);
 
     if (this.localStream) {
+      console.log('[WebRTCManager] Adding local stream tracks to peer connection');
       this.localStream.getTracks().forEach((track) => {
         peerConnection.addTrack(track, this.localStream!);
       });
+    } else {
+      console.log('[WebRTCManager] No local stream (viewer mode)');
     }
 
     peerConnection.ontrack = (event) => {
+      console.log('[WebRTCManager] Received remote track from:', peerId);
       if (event.streams && event.streams[0]) {
         onRemoteStream(peerId, event.streams[0]);
       }
@@ -161,11 +172,13 @@ export class WebRTCManager {
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('[WebRTCManager] Sending ICE candidate to:', peerId);
         this.sendIceCandidate(peerId, event.candidate);
       }
     };
 
     peerConnection.onconnectionstatechange = () => {
+      console.log('[WebRTCManager] Connection state with', peerId, ':', peerConnection.connectionState);
       if (peerConnection.connectionState === 'failed' ||
           peerConnection.connectionState === 'disconnected' ||
           peerConnection.connectionState === 'closed') {
@@ -175,8 +188,10 @@ export class WebRTCManager {
 
     this.peerConnections.set(peerId, { peerId, connection: peerConnection });
 
+    console.log('[WebRTCManager] Creating offer for:', peerId);
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
+    console.log('[WebRTCManager] Sending offer to:', peerId);
     await this.sendOffer(peerId, offer);
   }
 
@@ -189,15 +204,20 @@ export class WebRTCManager {
       return;
     }
 
+    console.log('[WebRTCManager] Handling offer from:', peerId);
     const peerConnection = new RTCPeerConnection(this.config);
 
     if (this.localStream) {
+      console.log('[WebRTCManager] Adding local stream to answer');
       this.localStream.getTracks().forEach((track) => {
         peerConnection.addTrack(track, this.localStream!);
       });
+    } else {
+      console.log('[WebRTCManager] No local stream when handling offer (this is the streamer)');
     }
 
     peerConnection.ontrack = (event) => {
+      console.log('[WebRTCManager] Received remote track in handleOffer from:', peerId);
       if (event.streams && event.streams[0]) {
         onRemoteStream(peerId, event.streams[0]);
       }
@@ -205,11 +225,13 @@ export class WebRTCManager {
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('[WebRTCManager] Sending ICE candidate (from handleOffer) to:', peerId);
         this.sendIceCandidate(peerId, event.candidate);
       }
     };
 
     peerConnection.onconnectionstatechange = () => {
+      console.log('[WebRTCManager] Connection state (from handleOffer) with', peerId, ':', peerConnection.connectionState);
       if (peerConnection.connectionState === 'failed' ||
           peerConnection.connectionState === 'disconnected' ||
           peerConnection.connectionState === 'closed') {
@@ -219,9 +241,11 @@ export class WebRTCManager {
 
     this.peerConnections.set(peerId, { peerId, connection: peerConnection });
 
+    console.log('[WebRTCManager] Setting remote description and creating answer for:', peerId);
     await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
+    console.log('[WebRTCManager] Sending answer to:', peerId);
     await this.sendAnswer(peerId, answer);
   }
 
@@ -240,19 +264,23 @@ export class WebRTCManager {
   }
 
   private async sendOffer(peerId: string, offer: RTCSessionDescriptionInit) {
+    console.log('[WebRTCManager] Broadcasting offer from', this.userId, 'to', peerId);
     await this.signalChannel?.send({
       type: 'broadcast',
       event: 'offer',
       payload: { from: this.userId, to: peerId, offer },
     });
+    console.log('[WebRTCManager] Offer broadcast complete');
   }
 
   private async sendAnswer(peerId: string, answer: RTCSessionDescriptionInit) {
+    console.log('[WebRTCManager] Broadcasting answer from', this.userId, 'to', peerId);
     await this.signalChannel?.send({
       type: 'broadcast',
       event: 'answer',
       payload: { from: this.userId, to: peerId, answer },
     });
+    console.log('[WebRTCManager] Answer broadcast complete');
   }
 
   private async sendIceCandidate(peerId: string, candidate: RTCIceCandidateInit) {
