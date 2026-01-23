@@ -188,10 +188,20 @@ export class WebRTCManager {
 
     peerConnection.oniceconnectionstatechange = () => {
       console.log('[WebRTCManager] ICE connection state with', peerId, ':', peerConnection.iceConnectionState);
+      if (peerConnection.iceConnectionState === 'failed') {
+        console.error('[WebRTCManager] ICE connection failed for:', peerId);
+      }
     };
 
     peerConnection.onicegatheringstatechange = () => {
       console.log('[WebRTCManager] ICE gathering state with', peerId, ':', peerConnection.iceGatheringState);
+      if (peerConnection.iceGatheringState === 'complete') {
+        console.log('[WebRTCManager] ICE gathering completed for:', peerId);
+      }
+    };
+
+    peerConnection.onsignalingstatechange = () => {
+      console.log('[WebRTCManager] Signaling state with', peerId, ':', peerConnection.signalingState);
     };
 
     this.peerConnections.set(peerId, { peerId, connection: peerConnection });
@@ -249,10 +259,20 @@ export class WebRTCManager {
 
     peerConnection.oniceconnectionstatechange = () => {
       console.log('[WebRTCManager] ICE connection state (from handleOffer) with', peerId, ':', peerConnection.iceConnectionState);
+      if (peerConnection.iceConnectionState === 'failed') {
+        console.error('[WebRTCManager] ICE connection failed (from handleOffer) for:', peerId);
+      }
     };
 
     peerConnection.onicegatheringstatechange = () => {
       console.log('[WebRTCManager] ICE gathering state (from handleOffer) with', peerId, ':', peerConnection.iceGatheringState);
+      if (peerConnection.iceGatheringState === 'complete') {
+        console.log('[WebRTCManager] ICE gathering completed (from handleOffer) for:', peerId);
+      }
+    };
+
+    peerConnection.onsignalingstatechange = () => {
+      console.log('[WebRTCManager] Signaling state (from handleOffer) with', peerId, ':', peerConnection.signalingState);
     };
 
     this.peerConnections.set(peerId, { peerId, connection: peerConnection });
@@ -278,11 +298,15 @@ export class WebRTCManager {
   }
 
   private async handleIceCandidate(peerId: string, candidate: RTCIceCandidateInit) {
-    console.log('[WebRTCManager] Handling ICE candidate from:', peerId);
+    console.log('[WebRTCManager] Handling ICE candidate from:', peerId, 'candidate:', candidate.candidate?.substring(0, 50) + '...');
     const peer = this.peerConnections.get(peerId);
     if (peer) {
-      await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
-      console.log('[WebRTCManager] ICE candidate added');
+      try {
+        await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log('[WebRTCManager] ICE candidate added successfully');
+      } catch (error) {
+        console.error('[WebRTCManager] Error adding ICE candidate:', error);
+      }
     } else {
       console.error('[WebRTCManager] No peer connection found for ICE candidate from:', peerId);
     }
@@ -309,11 +333,13 @@ export class WebRTCManager {
   }
 
   private async sendIceCandidate(peerId: string, candidate: RTCIceCandidateInit) {
+    console.log('[WebRTCManager] Broadcasting ICE candidate from', this.userId, 'to', peerId, 'candidate:', candidate.candidate?.substring(0, 50) + '...');
     await this.signalChannel?.send({
       type: 'broadcast',
       event: 'ice-candidate',
       payload: { from: this.userId, to: peerId, candidate },
     });
+    console.log('[WebRTCManager] ICE candidate broadcast complete');
   }
 
   toggleVideo(enabled: boolean) {
