@@ -160,7 +160,10 @@ export class WebRTCManager {
         peerConnection.addTrack(track, this.localStream!);
       });
     } else {
-      console.log('[WebRTCManager] No local stream (viewer mode)');
+      console.log('[WebRTCManager] No local stream (viewer mode) - adding transceivers to receive media');
+      // Add transceivers to receive audio and video from the remote peer
+      peerConnection.addTransceiver('video', { direction: 'recvonly' });
+      peerConnection.addTransceiver('audio', { direction: 'recvonly' });
     }
 
     peerConnection.ontrack = (event) => {
