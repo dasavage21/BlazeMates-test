@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert, Platform, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { VideoIcon, Users, MessageCircle, ArrowLeft, Plus, X, Video, Mic, MicOff, VideoOff } from 'lucide-react-native';
+import { Video as VideoIcon, Users, MessageCircle, ArrowLeft, Plus, X, Video, Mic, MicOff, VideoOff } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../supabaseClient';
 import { useWebRTC } from '../hooks/useWebRTC';
