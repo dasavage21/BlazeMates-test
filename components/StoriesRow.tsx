@@ -37,7 +37,7 @@ export default function StoriesRow() {
   const [userStories, setUserStories] = useState<UserStory[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [hasOwnStory, setHasOwnStory] = useState(false);
-  const [ownStoryUserId, setOwnStoryUserId] = useState<string | null>(null);
+  const [ownStoryData, setOwnStoryData] = useState<UserStory | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function StoriesRow() {
         });
 
       setHasOwnStory(!!ownStory);
-      setOwnStoryUserId(user.id);
+      setOwnStoryData(ownStory || null);
       setUserStories(othersStories);
     } catch (error) {
       console.error('Error fetching stories:', error);
@@ -172,19 +172,19 @@ export default function StoriesRow() {
           </Text>
         </TouchableOpacity>
 
-        {hasOwnStory && (
+        {hasOwnStory && ownStoryData && (
           <TouchableOpacity
             style={styles.storyItem}
-            onPress={() => handleViewStory(ownStoryUserId!)}
+            onPress={() => handleViewStory(ownStoryData.user_id)}
           >
             <View style={styles.storyAvatarContainer}>
               <LinearGradient
                 colors={['#4CAF50', '#45a049', '#4CAF50']}
                 style={styles.storyGradient}
               >
-                {userStories.find(us => us.user_id === ownStoryUserId)?.avatar_url ? (
+                {ownStoryData.avatar_url ? (
                   <Image
-                    source={{ uri: userStories.find(us => us.user_id === ownStoryUserId)?.avatar_url! }}
+                    source={{ uri: ownStoryData.avatar_url }}
                     style={styles.storyAvatar}
                   />
                 ) : (
