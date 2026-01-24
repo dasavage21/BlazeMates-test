@@ -22,6 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
 import { MessageCircle, Plus, Send, X, MoreVertical, Trash2, AlertTriangle, Ban, Flame, Wind, Laugh, Sparkles } from "lucide-react-native";
+import StoriesRow from "../components/StoriesRow";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -939,6 +940,8 @@ export default function FeedScreen() {
 
           <View style={styles.feedContainer}>
             <Text style={styles.pageTitle}>Community Feed</Text>
+
+            <StoriesRow />
 
             {trendingTags.length > 0 && (
               <View style={styles.trendingSection}>
