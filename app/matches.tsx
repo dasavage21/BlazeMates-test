@@ -182,12 +182,14 @@ export default function ConnectionsScreen() {
                 onPress={() => handleConnectionPress(item.id)}
               >
                 <View style={styles.imageContainer}>
-                  <Image
-                    source={{
-                      uri: item.image_url || "https://via.placeholder.com/80",
-                    }}
-                    style={styles.connectionImage}
-                  />
+                  {item.image_url ? (
+                    <Image
+                      source={{ uri: item.image_url }}
+                      style={styles.connectionImage}
+                    />
+                  ) : (
+                    <View style={[styles.connectionImage, styles.defaultAvatar]} />
+                  )}
                   {isActive && <View style={styles.activeIndicator} />}
                 </View>
                 <View style={styles.connectionInfo}>
@@ -333,5 +335,8 @@ const styles = StyleSheet.create({
     color: "#7FFF9F",
     textAlign: "center",
     lineHeight: 24,
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

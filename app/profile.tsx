@@ -315,10 +315,14 @@ export default function ProfileScreen() {
             styles.levelRing,
             { borderColor: getLevelColor(blazeLevel) }
           ]}>
-            <Image
-              source={{ uri: profileImage || "https://via.placeholder.com/250" }}
-              style={styles.avatar}
-            />
+            {profileImage ? (
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={[styles.avatar, styles.defaultAvatar]} />
+            )}
           </View>
           {age !== null && age >= 21 && (
             <View style={styles.verifiedBadge}>
@@ -798,5 +802,8 @@ const styles = StyleSheet.create({
     color: "#00FF7F",
     fontWeight: "600",
     fontSize: 15,
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

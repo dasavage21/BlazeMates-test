@@ -106,10 +106,14 @@ export default function FollowersScreen() {
       style={styles.userItem}
       onPress={() => router.push({ pathname: "/profile", params: { userId: item.id } })}
     >
-      <Image
-        source={{ uri: item.image_url || "https://via.placeholder.com/60" }}
-        style={styles.userAvatar}
-      />
+      {item.image_url ? (
+        <Image
+          source={{ uri: item.image_url }}
+          style={styles.userAvatar}
+        />
+      ) : (
+        <View style={[styles.userAvatar, styles.defaultAvatar]} />
+      )}
       <View style={styles.userInfo}>
         <Text style={styles.userName}>{item.name}</Text>
         {item.bio && <Text style={styles.userBio} numberOfLines={1}>{item.bio}</Text>}
@@ -284,5 +288,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center",
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

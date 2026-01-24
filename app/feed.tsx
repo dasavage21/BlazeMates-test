@@ -78,12 +78,11 @@ type Comment = {
 
 export default function FeedScreen() {
   const router = useRouter();
-  const PLACEHOLDER_50 = "https://via.placeholder.com/50";
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState(PLACEHOLDER_50);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -1015,10 +1014,14 @@ export default function FeedScreen() {
                       onPress={() => router.push(`/profile?userId=${post.user_id}`)}
                     >
                       <View style={styles.avatarContainer}>
-                        <Image
-                          source={{ uri: post.user_image || "https://via.placeholder.com/40" }}
-                          style={styles.postAvatar}
-                        />
+                        {post.user_image ? (
+                          <Image
+                            source={{ uri: post.user_image }}
+                            style={styles.postAvatar}
+                          />
+                        ) : (
+                          <View style={[styles.postAvatar, styles.defaultAvatar]} />
+                        )}
                         {isUserOnline(post.user_last_active) && (
                           <View style={styles.onlineIndicator} />
                         )}
@@ -1219,10 +1222,14 @@ export default function FeedScreen() {
               ) : (
                 comments.map((comment) => (
                   <View key={comment.id} style={styles.commentItem}>
-                    <Image
-                      source={{ uri: comment.user_image || "https://via.placeholder.com/40" }}
-                      style={styles.commentAvatar}
-                    />
+                    {comment.user_image ? (
+                      <Image
+                        source={{ uri: comment.user_image }}
+                        style={styles.commentAvatar}
+                      />
+                    ) : (
+                      <View style={[styles.commentAvatar, styles.defaultAvatar]} />
+                    )}
                     <View style={styles.commentContent}>
                       <View style={styles.commentHeader}>
                         <Text style={styles.commentUserName}>{comment.user_name}</Text>
@@ -1893,5 +1900,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#00FF7F",
     letterSpacing: 0.2,
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

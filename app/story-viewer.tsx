@@ -205,12 +205,14 @@ export default function StoryViewer() {
 
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Image
-            source={{
-              uri: currentStory.user?.avatar_url || 'https://via.placeholder.com/40',
-            }}
-            style={styles.avatar}
-          />
+          {currentStory.user?.avatar_url ? (
+            <Image
+              source={{ uri: currentStory.user.avatar_url }}
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={[styles.avatar, styles.defaultAvatar]} />
+          )}
           <Text style={styles.username}>{currentStory.user?.username}</Text>
           <Text style={styles.timestamp}>
             {getTimeAgo(currentStory.created_at)}
@@ -321,5 +323,8 @@ const styles = StyleSheet.create({
   tapArea: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

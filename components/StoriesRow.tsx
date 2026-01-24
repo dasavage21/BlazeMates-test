@@ -166,10 +166,14 @@ export default function StoriesRow() {
                 colors={['#4CAF50', '#45a049', '#4CAF50']}
                 style={styles.storyGradient}
               >
-                <Image
-                  source={{ uri: userStories.find(us => us.user_id === ownStoryUserId)?.avatar_url || 'https://via.placeholder.com/60' }}
-                  style={styles.storyAvatar}
-                />
+                {userStories.find(us => us.user_id === ownStoryUserId)?.avatar_url ? (
+                  <Image
+                    source={{ uri: userStories.find(us => us.user_id === ownStoryUserId)?.avatar_url! }}
+                    style={styles.storyAvatar}
+                  />
+                ) : (
+                  <View style={[styles.storyAvatar, styles.defaultAvatar]} />
+                )}
               </LinearGradient>
             ) : (
               <View style={styles.createStoryAvatar}>
@@ -193,20 +197,28 @@ export default function StoriesRow() {
             <View style={styles.storyAvatarContainer}>
               {userStory.has_viewed ? (
                 <View style={styles.viewedStoryBorder}>
-                  <Image
-                    source={{ uri: userStory.avatar_url || 'https://via.placeholder.com/60' }}
-                    style={styles.storyAvatar}
-                  />
+                  {userStory.avatar_url ? (
+                    <Image
+                      source={{ uri: userStory.avatar_url }}
+                      style={styles.storyAvatar}
+                    />
+                  ) : (
+                    <View style={[styles.storyAvatar, styles.defaultAvatar]} />
+                  )}
                 </View>
               ) : (
                 <LinearGradient
                   colors={['#4CAF50', '#45a049', '#4CAF50']}
                   style={styles.storyGradient}
                 >
-                  <Image
-                    source={{ uri: userStory.avatar_url || 'https://via.placeholder.com/60' }}
-                    style={styles.storyAvatar}
-                  />
+                  {userStory.avatar_url ? (
+                    <Image
+                      source={{ uri: userStory.avatar_url }}
+                      style={styles.storyAvatar}
+                    />
+                  ) : (
+                    <View style={[styles.storyAvatar, styles.defaultAvatar]} />
+                  )}
                 </LinearGradient>
               )}
             </View>
@@ -293,5 +305,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     width: '100%',
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });
