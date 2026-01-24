@@ -19,13 +19,15 @@ export default function CreateStory() {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const pickImage = async () => {
     try {
+      setError(null);
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please allow access to your photos');
+        setError('Please allow access to your photos');
         return;
       }
 
@@ -41,16 +43,17 @@ export default function CreateStory() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      setError('Failed to pick image. Please try again.');
     }
   };
 
   const takePhoto = async () => {
     try {
+      setError(null);
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please allow camera access');
+        setError('Please allow camera access');
         return;
       }
 
@@ -65,7 +68,7 @@ export default function CreateStory() {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      setError('Failed to take photo. Please try again.');
     }
   };
 
@@ -73,10 +76,15 @@ export default function CreateStory() {
     if (!selectedImage) return;
 
     setUploading(true);
+    setError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) {
+        setError('You must be logged in to post stories');
+        setUploading(false);
+        return;
+      }
 
       const response = await fetch(selectedImage);
       const blob = await response.blob();
@@ -90,7 +98,10 @@ export default function CreateStory() {
           upsert: false,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('stories')
@@ -103,12 +114,15 @@ export default function CreateStory() {
           image_url: publicUrl,
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Database insert error:', insertError);
+        throw new Error(`Failed to save story: ${insertError.message}`);
+      }
 
       router.back();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading story:', error);
-      Alert.alert('Error', 'Failed to post story. Please try again.');
+      setError(error.message || 'Failed to post story. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -150,6 +164,11 @@ export default function CreateStory() {
 
           <View style={styles.infoContainer}>
             <Text style={styles.infoText}>Stories disappear after 24 hours</Text>
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
           </View>
         </>
       ) : (
@@ -186,6 +205,18 @@ export default function CreateStory() {
             <View style={styles.uploadingOverlay}>
               <ActivityIndicator size="large" color="#fff" />
               <Text style={styles.uploadingText}>Posting your story...</Text>
+            </View>
+          )}
+
+          {error && (
+            <View style={styles.errorOverlay}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.dismissButton}
+                onPress={() => setError(null)}
+              >
+                <Text style={styles.dismissButtonText}>Dismiss</Text>
+              </TouchableOpacity>
             </View>
           )}
         </>
@@ -298,5 +329,39 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
+  },
+  errorContainer: {
+    marginTop: 16,
+    backgroundColor: '#ffebee',
+    padding: 16,
+    borderRadius: 8,
+    width: '100%',
+  },
+  errorText: {
+    color: '#c62828',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  errorOverlay: {
+    position: 'absolute',
+    bottom: 40,
+    left: 16,
+    right: 16,
+    backgroundColor: '#c62828',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 12,
+  },
+  dismissButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  dismissButtonText: {
+    color: '#c62828',
+    fontWeight: '600',
   },
 });
