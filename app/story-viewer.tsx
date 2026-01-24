@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../supabaseClient';
-import { X } from 'lucide-react-native';
+import { X, Trash2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
@@ -38,6 +38,8 @@ export default function StoryViewer() {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [isOwnStory, setIsOwnStory] = useState(false);
   const progressInterval = useRef<NodeJS.Timeout>();
   const autoAdvanceTimeout = useRef<NodeJS.Timeout>();
 
@@ -61,6 +63,9 @@ export default function StoryViewer() {
 
   const fetchStories = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsOwnStory(user?.id === userId);
+
       const { data, error } = await supabase
         .from('stories')
         .select(`
@@ -153,6 +158,44 @@ export default function StoryViewer() {
     }
   };
 
+  const handleDeleteStory = async () => {
+    if (!isOwnStory || deleting) return;
+
+    setDeleting(true);
+    try {
+      const currentStory = stories[currentIndex];
+
+      const fileName = currentStory.image_url.split('/stories/')[1];
+      if (fileName) {
+        await supabase.storage
+          .from('stories')
+          .remove([fileName]);
+      }
+
+      const { error } = await supabase
+        .from('stories')
+        .delete()
+        .eq('id', currentStory.id);
+
+      if (error) throw error;
+
+      const updatedStories = stories.filter((_, index) => index !== currentIndex);
+
+      if (updatedStories.length === 0) {
+        router.back();
+      } else {
+        setStories(updatedStories);
+        if (currentIndex >= updatedStories.length) {
+          setCurrentIndex(updatedStories.length - 1);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting story:', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -219,9 +262,24 @@ export default function StoryViewer() {
           </Text>
         </View>
 
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={28} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          {isOwnStory && (
+            <TouchableOpacity
+              onPress={handleDeleteStory}
+              style={styles.deleteButton}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Trash2 size={24} color="#fff" />
+              )}
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+            <X size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Pressable
@@ -316,6 +374,16 @@ const styles = StyleSheet.create({
   timestamp: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 13,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteButton: {
+    padding: 8,
+    backgroundColor: 'rgba(244, 67, 54, 0.8)',
+    borderRadius: 20,
   },
   closeButton: {
     padding: 8,

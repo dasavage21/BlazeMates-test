@@ -158,10 +158,26 @@ export default function StoriesRow() {
       >
         <TouchableOpacity
           style={styles.storyItem}
-          onPress={hasOwnStory ? () => handleViewStory(ownStoryUserId!) : handleCreateStory}
+          onPress={handleCreateStory}
         >
-          <View style={[styles.storyAvatarContainer, !hasOwnStory && styles.createStoryBorder]}>
-            {hasOwnStory ? (
+          <View style={[styles.storyAvatarContainer, styles.createStoryBorder]}>
+            <View style={styles.createStoryAvatar}>
+              <View style={styles.plusIconContainer}>
+                <Plus size={20} color="#fff" />
+              </View>
+            </View>
+          </View>
+          <Text style={styles.storyUsername} numberOfLines={1}>
+            Add story
+          </Text>
+        </TouchableOpacity>
+
+        {hasOwnStory && (
+          <TouchableOpacity
+            style={styles.storyItem}
+            onPress={() => handleViewStory(ownStoryUserId!)}
+          >
+            <View style={styles.storyAvatarContainer}>
               <LinearGradient
                 colors={['#4CAF50', '#45a049', '#4CAF50']}
                 style={styles.storyGradient}
@@ -175,18 +191,12 @@ export default function StoriesRow() {
                   <View style={[styles.storyAvatar, styles.defaultAvatar]} />
                 )}
               </LinearGradient>
-            ) : (
-              <View style={styles.createStoryAvatar}>
-                <View style={styles.plusIconContainer}>
-                  <Plus size={20} color="#fff" />
-                </View>
-              </View>
-            )}
-          </View>
-          <Text style={styles.storyUsername} numberOfLines={1}>
-            {hasOwnStory ? 'Your story' : 'Add story'}
-          </Text>
-        </TouchableOpacity>
+            </View>
+            <Text style={styles.storyUsername} numberOfLines={1}>
+              Your story
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {userStories.map((userStory) => (
           <TouchableOpacity
