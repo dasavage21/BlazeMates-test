@@ -126,15 +126,15 @@ export default function FeedScreen() {
 
       const pending = await AsyncStorage.getItem("pendingAvatarUri");
       if (pending) {
-        setProfilePhoto(pending || PLACEHOLDER_50);
+        setProfilePhoto(pending);
         return;
       }
 
-      setProfilePhoto(PLACEHOLDER_50);
+      setProfilePhoto(null);
     } catch {
-      setProfilePhoto(PLACEHOLDER_50);
+      setProfilePhoto(null);
     }
-  }, [PLACEHOLDER_50]);
+  }, []);
 
   const loadTrendingTags = useCallback(async () => {
     try {
@@ -905,11 +905,15 @@ export default function FeedScreen() {
 
             <View style={styles.navCenter}>
               <TouchableOpacity onPress={() => router.push("/profile")}>
-                <Image
-                  key={profilePhoto}
-                  source={{ uri: profilePhoto || PLACEHOLDER_50 }}
-                  style={styles.navProfilePic}
-                />
+                {profilePhoto ? (
+                  <Image
+                    key={profilePhoto}
+                    source={{ uri: profilePhoto }}
+                    style={styles.navProfilePic}
+                  />
+                ) : (
+                  <View style={[styles.navProfilePic, styles.defaultAvatar]} />
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/events")}>
                 <Text style={styles.navLink}>
