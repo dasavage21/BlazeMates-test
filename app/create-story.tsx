@@ -315,11 +315,18 @@ const styles = StyleSheet.create({
   optionButton: {
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 8px 16px rgba(76, 175, 80, 0.3)',
+      },
+      default: {
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+        elevation: 8,
+      },
+    }),
   },
   optionGradient: {
     paddingVertical: 32,
