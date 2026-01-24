@@ -149,10 +149,6 @@ export default function StoriesRow() {
     );
   }
 
-  if (!hasOwnStory && userStories.length === 0) {
-    return null;
-  }
-
   return (
     <View style={styles.container}>
       <ScrollView
