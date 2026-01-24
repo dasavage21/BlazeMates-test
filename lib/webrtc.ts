@@ -38,6 +38,12 @@ export class WebRTCManager {
       return null;
     }
 
+    if (this.localStream) {
+      console.log('[WebRTCManager] Local stream already exists, stopping old tracks before creating new one');
+      this.localStream.getTracks().forEach((track) => track.stop());
+      this.localStream = null;
+    }
+
     try {
       console.log('[WebRTCManager] Requesting media devices...', { video: videoEnabled, audio: audioEnabled });
 

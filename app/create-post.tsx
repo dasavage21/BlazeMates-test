@@ -140,12 +140,15 @@ export default function CreatePostScreen() {
 
       let fileData: Blob | File;
 
-      if (Platform.OS === "web") {
+      try {
         const response = await fetch(uri);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
         fileData = await response.blob();
-      } else {
-        const response = await fetch(uri);
-        fileData = await response.blob();
+      } catch (fetchError) {
+        console.error('Error fetching image blob:', fetchError);
+        throw new Error('Failed to prepare image for upload. Please try again.');
       }
 
       const { data: uploadData, error: uploadError } = await supabase.storage

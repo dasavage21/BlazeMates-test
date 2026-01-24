@@ -89,6 +89,10 @@ export default function CreateAccountScreen() {
       Alert.alert("Must be 21+", "BlazeMates is only for 21 and older.");
       return;
     }
+    if (ageNum > 120) {
+      Alert.alert("Invalid age", "Please enter a valid age.");
+      return;
+    }
 
     setBusy(true);
     try {

@@ -234,7 +234,7 @@ export default function ChatScreen() {
         (payload) => {
           if (!payload.new || typeof payload.new !== 'object') return;
           const newMessage = payload.new as Message;
-          if (!newMessage.id || !newMessage.content) return;
+          if (!newMessage.id || !newMessage.content || !newMessage.content.trim()) return;
 
           setMessages((prev) => [...prev, newMessage]);
 

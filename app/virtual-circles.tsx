@@ -73,8 +73,12 @@ export default function VirtualCirclesScreen() {
   } = useWebRTC(selectedCircle?.id || null, currentUserId);
 
   const loadCircles = useCallback(async () => {
+    let isMounted = true;
+
     try {
       const { data: authData } = await supabase.auth.getUser();
+      if (!isMounted) return;
+
       const userId = authData?.user?.id;
       setCurrentUserId(userId || null);
 
@@ -87,6 +91,7 @@ export default function VirtualCirclesScreen() {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
+      if (!isMounted) return;
       if (error) throw error;
 
       const circlesWithCounts = await Promise.all(
@@ -112,12 +117,20 @@ export default function VirtualCirclesScreen() {
         })
       );
 
-      setCircles(circlesWithCounts);
+      if (isMounted) {
+        setCircles(circlesWithCounts);
+      }
     } catch (error) {
       console.error('Error loading circles:', error);
     } finally {
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const loadParticipants = useCallback(async (circleId: string) => {
@@ -214,7 +227,11 @@ export default function VirtualCirclesScreen() {
       }, () => {
         loadParticipants(selectedCircle.id);
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('Error subscribing to participants channel:', err);
+        }
+      });
 
     const chatChannel = supabase
       .channel(`circle_chat_${selectedCircle.id}`)
@@ -226,7 +243,11 @@ export default function VirtualCirclesScreen() {
       }, () => {
         loadChatMessages(selectedCircle.id);
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('Error subscribing to chat channel:', err);
+        }
+      });
 
     return () => {
       participantsChannel.unsubscribe();
@@ -526,11 +547,21 @@ export default function VirtualCirclesScreen() {
       toggleWebRTCVideo();
     }
 
-    await supabase
-      .from('circle_participants')
-      .update({ is_video_on: newState })
-      .eq('circle_id', selectedCircle.id)
-      .eq('user_id', currentUserId);
+    try {
+      const { error } = await supabase
+        .from('circle_participants')
+        .update({ is_video_on: newState })
+        .eq('circle_id', selectedCircle.id)
+        .eq('user_id', currentUserId);
+
+      if (error) {
+        console.error('Error updating video state:', error);
+        setIsVideoOn(!newState);
+      }
+    } catch (error) {
+      console.error('Error toggling video:', error);
+      setIsVideoOn(!newState);
+    }
   };
 
   const toggleAudio = async () => {
@@ -543,11 +574,21 @@ export default function VirtualCirclesScreen() {
       toggleWebRTCAudio();
     }
 
-    await supabase
-      .from('circle_participants')
-      .update({ is_audio_on: newState })
-      .eq('circle_id', selectedCircle.id)
-      .eq('user_id', currentUserId);
+    try {
+      const { error } = await supabase
+        .from('circle_participants')
+        .update({ is_audio_on: newState })
+        .eq('circle_id', selectedCircle.id)
+        .eq('user_id', currentUserId);
+
+      if (error) {
+        console.error('Error updating audio state:', error);
+        setIsAudioOn(!newState);
+      }
+    } catch (error) {
+      console.error('Error toggling audio:', error);
+      setIsAudioOn(!newState);
+    }
   };
 
   useEffect(() => {

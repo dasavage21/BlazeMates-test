@@ -542,6 +542,8 @@ export default function FeedScreen() {
     if (!commentText.trim() || !selectedPostId) return;
 
     setSubmittingComment(true);
+    const previousPosts = [...posts];
+
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
@@ -566,7 +568,7 @@ export default function FeedScreen() {
       if (error) {
         console.error("Error submitting comment:", error);
         // Revert optimistic update on error
-        loadPosts();
+        setPosts(previousPosts);
         return;
       }
 
@@ -576,13 +578,15 @@ export default function FeedScreen() {
     } catch (error) {
       console.error("Error submitting comment:", error);
       // Revert on error
-      loadPosts();
+      setPosts(previousPosts);
     } finally {
       setSubmittingComment(false);
     }
   };
 
   const handleQuickReply = async (postId: string, text: string) => {
+    const previousPosts = [...posts];
+
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
@@ -607,13 +611,13 @@ export default function FeedScreen() {
       if (error) {
         console.error("Error submitting quick reply:", error);
         // Revert optimistic update on error
-        loadPosts();
+        setPosts(previousPosts);
         return;
       }
     } catch (error) {
       console.error("Error submitting quick reply:", error);
       // Revert on error
-      loadPosts();
+      setPosts(previousPosts);
     }
   };
 
