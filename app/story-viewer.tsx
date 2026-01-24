@@ -66,23 +66,32 @@ export default function StoryViewer() {
       const { data: { user } } = await supabase.auth.getUser();
       setIsOwnStory(user?.id === userId);
 
-      const { data, error } = await supabase
+      const { data: storiesData, error } = await supabase
         .from('stories')
-        .select(`
-          *,
-          user:users(username, avatar_url)
-        `)
+        .select('*')
         .eq('user_id', userId)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        setStories(data);
-      } else {
+      if (!storiesData || storiesData.length === 0) {
         router.back();
+        return;
       }
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('username, avatar_url')
+        .eq('id', userId)
+        .single();
+
+      const storiesWithUser = storiesData.map(story => ({
+        ...story,
+        user: userData || { username: 'Unknown', avatar_url: null }
+      }));
+
+      setStories(storiesWithUser);
     } catch (error) {
       console.error('Error fetching stories:', error);
       router.back();

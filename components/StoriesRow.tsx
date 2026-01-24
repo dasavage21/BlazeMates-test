@@ -76,13 +76,21 @@ export default function StoriesRow() {
           id,
           user_id,
           image_url,
-          created_at,
-          user:users(username, avatar_url)
+          created_at
         `)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      const uniqueUserIds = [...new Set(stories?.map(s => s.user_id) || [])];
+
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, username, avatar_url')
+        .in('id', uniqueUserIds);
+
+      const usersMap = new Map(usersData?.map(u => [u.id, u]) || []);
 
       const { data: views } = await supabase
         .from('story_views')
@@ -93,10 +101,11 @@ export default function StoriesRow() {
 
       const grouped = stories?.reduce((acc: { [key: string]: UserStory }, story) => {
         if (!acc[story.user_id]) {
+          const userData = usersMap.get(story.user_id);
           acc[story.user_id] = {
             user_id: story.user_id,
-            username: story.user?.username || 'Unknown',
-            avatar_url: story.user?.avatar_url || null,
+            username: userData?.username || 'Unknown',
+            avatar_url: userData?.avatar_url || null,
             stories: [],
             has_viewed: true,
           };
