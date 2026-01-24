@@ -11,29 +11,33 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Sparkles } from 'lucide-react-native';
 
-const CURRENT_VERSION = '1.5.0';
+const CURRENT_VERSION = '1.6.0';
 const VERSION_KEY = 'app_version_seen';
 
 const UPDATES = [
   {
+    title: 'Instagram-Style Stories',
+    description: 'Share moments that disappear after 24 hours! Create photo stories, view friends\' stories with progress indicators, and tap to navigate through multiple stories.',
+  },
+  {
+    title: 'Stories Profile Pictures',
+    description: 'Your profile picture now displays correctly in story circles. See who posted each story at a glance with proper avatar sync.',
+  },
+  {
     title: 'Live Video Broadcasting',
-    description: 'Live Streams now supports real-time video and audio broadcasting! Start a stream with your camera and microphone, and viewers can watch your live feed instantly.',
+    description: 'Stream live video to your community! Start broadcasts with camera and microphone, see live viewer counts, and engage with your audience in real-time.',
   },
   {
     title: 'Virtual Circles Video Chat',
-    description: 'Virtual Circles now features real-time video chat! See and hear all participants in group sessions with WebRTC peer-to-peer connections.',
+    description: 'Join group video sessions with multiple participants. Real-time video chat powered by WebRTC for seamless peer-to-peer connections.',
   },
   {
-    title: 'Camera & Audio Controls',
-    description: 'Toggle your video and audio on/off during streams and circles. Enjoy full control over your broadcast with easy-to-use controls.',
+    title: 'Enhanced Feed Experience',
+    description: 'Improved post reactions, trending hashtags, and Blaze Moments that disappear after 5 minutes. Engage with content in new ways!',
   },
   {
-    title: 'Web Browser Support',
-    description: 'Video features are available on web browsers. Access Live Streams and Virtual Circles through your browser for the best experience.',
-  },
-  {
-    title: 'Smart Error Handling',
-    description: 'Automatic fallback to audio-only mode if your camera is in use. Clear error messages and retry functionality for a smooth experience.',
+    title: 'Follower System',
+    description: 'Follow your favorite community members and build your network. See follower counts and manage your connections easily.',
   },
 ];
 
