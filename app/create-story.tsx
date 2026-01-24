@@ -131,46 +131,76 @@ export default function CreateStory() {
   return (
     <View style={styles.container}>
       {!selectedImage ? (
-        <>
+        <LinearGradient
+          colors={['#0a0a0a', '#1a1a1a', '#0a0a0a']}
+          style={styles.backgroundGradient}
+        >
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-              <X size={28} color="#000" />
+              <X size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Create Story</Text>
-            <View style={{ width: 28 }} />
+            <View style={{ width: 24 }} />
           </View>
 
-          <View style={styles.optionsContainer}>
-            <TouchableOpacity style={styles.optionButton} onPress={takePhoto}>
-              <LinearGradient
-                colors={['#4CAF50', '#45a049']}
-                style={styles.optionGradient}
-              >
-                <Camera size={40} color="#fff" />
-                <Text style={styles.optionText}>Take Photo</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+          <View style={styles.contentWrapper}>
+            <View style={styles.titleSection}>
+              <Text style={styles.mainTitle}>Share Your Moment</Text>
+              <Text style={styles.subtitle}>Choose how you want to create your story</Text>
+            </View>
 
-            <TouchableOpacity style={styles.optionButton} onPress={pickImage}>
-              <LinearGradient
-                colors={['#2196F3', '#1976D2']}
-                style={styles.optionGradient}
+            <View style={styles.optionsContainer}>
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={takePhoto}
+                activeOpacity={0.8}
               >
-                <ImageIcon size={40} color="#fff" />
-                <Text style={styles.optionText}>Choose from Gallery</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+                <LinearGradient
+                  colors={['#4CAF50', '#45a049', '#388E3C']}
+                  style={styles.optionGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <View style={styles.iconContainer}>
+                    <Camera size={32} color="#fff" strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.optionText}>Take Photo</Text>
+                  <Text style={styles.optionSubtext}>Use your camera</Text>
+                </LinearGradient>
+              </TouchableOpacity>
 
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>Stories disappear after 24 hours</Text>
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={pickImage}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#2196F3', '#1976D2', '#1565C0']}
+                  style={styles.optionGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <View style={styles.iconContainer}>
+                    <ImageIcon size={32} color="#fff" strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.optionText}>Choose from Gallery</Text>
+                  <Text style={styles.optionSubtext}>Pick from your photos</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.infoContainer}>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoText}>Stories disappear after 24 hours</Text>
               </View>
-            )}
+              {error && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
+            </View>
           </View>
-        </>
+        </LinearGradient>
       ) : (
         <>
           <Image source={{ uri: selectedImage }} style={styles.previewImage} />
@@ -228,62 +258,115 @@ export default function CreateStory() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#0a0a0a',
+  },
+  backgroundGradient: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingBottom: 20,
   },
   closeButton: {
     padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
-  optionsContainer: {
+  contentWrapper: {
     flex: 1,
     justifyContent: 'center',
+    paddingHorizontal: 24,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  titleSection: {
     alignItems: 'center',
-    gap: 24,
-    paddingHorizontal: 32,
+    marginBottom: 48,
+  },
+  mainTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  optionsContainer: {
+    gap: 20,
+    marginBottom: 32,
   },
   optionButton: {
-    width: '100%',
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
   optionGradient: {
-    paddingVertical: 40,
-    paddingHorizontal: 32,
+    paddingVertical: 32,
+    paddingHorizontal: 28,
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    borderRadius: 20,
+  },
+  iconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   optionText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  optionSubtext: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   infoContainer: {
-    padding: 24,
     alignItems: 'center',
+    gap: 16,
+  },
+  infoBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   infoText: {
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
     textAlign: 'center',
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
   previewImage: {
     flex: 1,
@@ -331,17 +414,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   errorContainer: {
-    marginTop: 16,
-    backgroundColor: '#ffebee',
+    backgroundColor: 'rgba(244, 67, 54, 0.15)',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 67, 54, 0.3)',
   },
   errorText: {
-    color: '#c62828',
+    color: '#ff6b6b',
     fontSize: 14,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   errorOverlay: {
     position: 'absolute',
