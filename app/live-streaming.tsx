@@ -404,7 +404,7 @@ export default function LiveStreamingScreen() {
                       styles.categoryOption,
                       category === cat.value && styles.categoryOptionActive,
                     ]}
-                    onPress={() => setCategory(cat.value as any)}
+                    onPress={() => setCategory(cat.value as 'smoke_session' | 'grow_update' | 'general')}
                   >
                     <Text
                       style={[

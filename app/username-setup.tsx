@@ -76,9 +76,15 @@ export default function UsernameSetupScreen() {
         return;
       }
 
-      const existingProfile = JSON.parse(
-        (await AsyncStorage.getItem('userProfile')) || '{}'
-      );
+      const profileStr = await AsyncStorage.getItem('userProfile');
+      let existingProfile = {};
+      if (profileStr) {
+        try {
+          existingProfile = JSON.parse(profileStr);
+        } catch (e) {
+          console.warn('Failed to parse userProfile in username-setup', e);
+        }
+      }
       existingProfile.username = trimmedUsername;
       await AsyncStorage.setItem('userProfile', JSON.stringify(existingProfile));
 

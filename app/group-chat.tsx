@@ -105,7 +105,7 @@ export default function GroupChatScreen() {
         },
         async (payload) => {
           if (!payload.new || typeof payload.new !== 'object') return;
-          const newMessage = payload.new as any;
+          const newMessage = payload.new as Record<string, unknown>;
           if (!newMessage.id || !newMessage.content || !newMessage.sender_id) return;
 
           const { data: userData } = await supabase

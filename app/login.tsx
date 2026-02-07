@@ -58,7 +58,11 @@ export default function LoginScreen() {
   });
 
   useEffect(() => {
-    fetchSiteStatus().then(setSiteStatus);
+    fetchSiteStatus()
+      .then(setSiteStatus)
+      .catch((err) => {
+        console.warn('Failed to fetch site status:', err);
+      });
   }, []);
 
   const hydrateProfileCache = async () => {

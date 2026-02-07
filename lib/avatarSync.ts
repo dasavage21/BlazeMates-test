@@ -17,10 +17,10 @@ export async function syncPendingAvatarIfAuthed() {
     if (!user) return; // still logged out; keep it queued
 
     const file = {
-      uri: pendingUri, // e.g. file:///data/user/.../camera.jpg
+      uri: pendingUri,
       name: "avatar.jpg",
       type: "image/jpeg",
-    } as any;
+    };
 
     const path = `${user.id}/avatar.jpg`; // not "avatars/<uid>/..."
 
@@ -38,11 +38,14 @@ export async function syncPendingAvatarIfAuthed() {
     }
 
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const publicUrl = pub.publicUrl;
+    if (!pub?.publicUrl) {
+      console.warn("Failed to get public URL for avatar");
+      return;
+    }
 
     const { error: dbErr } = await supabase
       .from("users")
-      .update({ image_url: publicUrl })
+      .update({ image_url: pub.publicUrl })
       .eq("id", user.id);
 
     if (dbErr) {
@@ -50,10 +53,16 @@ export async function syncPendingAvatarIfAuthed() {
       return;
     }
 
-    const profile = JSON.parse(
-      (await AsyncStorage.getItem("userProfile")) || "{}"
-    );
-    profile.profileImage = publicUrl;
+    const profileStr = await AsyncStorage.getItem("userProfile");
+    let profile = {};
+    if (profileStr) {
+      try {
+        profile = JSON.parse(profileStr);
+      } catch (e) {
+        console.warn("Failed to parse userProfile in avatarSync", e);
+      }
+    }
+    profile.profileImage = pub.publicUrl;
     await AsyncStorage.setItem("userProfile", JSON.stringify(profile));
 
     await AsyncStorage.removeItem(PENDING_KEY);

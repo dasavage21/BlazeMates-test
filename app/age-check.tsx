@@ -49,7 +49,14 @@ export default function AgeCheck() {
       await AsyncStorage.setItem("userAge", ageNum.toString());
 
       const existingRaw = await AsyncStorage.getItem("userProfile");
-      const existing = existingRaw ? JSON.parse(existingRaw) : {};
+      let existing = {};
+      if (existingRaw) {
+        try {
+          existing = JSON.parse(existingRaw);
+        } catch (e) {
+          console.warn('Failed to parse userProfile in age-check', e);
+        }
+      }
       await AsyncStorage.setItem(
         "userProfile",
         JSON.stringify({ ...existing, age: ageNum })

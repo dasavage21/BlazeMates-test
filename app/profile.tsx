@@ -170,7 +170,7 @@ export default function ProfileScreen() {
         },
         (payload) => {
           if (!payload.new || typeof payload.new !== 'object') return;
-          const updated = payload.new as any;
+          const updated = payload.new as Record<string, unknown>;
           if (typeof updated.follower_count === 'number') {
             setFollowerCount(updated.follower_count);
           }
@@ -206,9 +206,9 @@ export default function ProfileScreen() {
           filter: `follower_id=eq.${currentUserId}`,
         },
         async (payload) => {
-          if (payload.eventType === "INSERT" && (payload.new as any).followed_id === viewingUserId) {
+          if (payload.eventType === "INSERT" && payload.new && typeof payload.new === 'object' && 'followed_id' in payload.new && payload.new.followed_id === viewingUserId) {
             setIsFollowing(true);
-          } else if (payload.eventType === "DELETE" && (payload.old as any).followed_id === viewingUserId) {
+          } else if (payload.eventType === "DELETE" && payload.old && typeof payload.old === 'object' && 'followed_id' in payload.old && payload.old.followed_id === viewingUserId) {
             setIsFollowing(false);
           }
         }
