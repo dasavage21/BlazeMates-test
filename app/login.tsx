@@ -22,7 +22,7 @@ async function syncPendingAvatarIfAuthed() {
       uri: pending,
       name: 'avatar.jpg',
       type: 'image/jpeg',
-    } as any;
+    };
     const path = `avatars/${user.id}/avatar.jpg`;
     const { error: upErr } = await supabase.storage
       .from('avatars')
@@ -30,12 +30,21 @@ async function syncPendingAvatarIfAuthed() {
     if (upErr) throw upErr;
 
     const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-    const publicUrl = pub.publicUrl;
-    await mergeUserRow(supabase, user.id, { image_url: publicUrl });
-    const existing = JSON.parse(
-      (await AsyncStorage.getItem('userProfile')) || '{}'
-    );
-    existing.profileImage = publicUrl;
+    if (!pub?.publicUrl) {
+      throw new Error('Failed to get public URL for avatar in login');
+    }
+    await mergeUserRow(supabase, user.id, { image_url: pub.publicUrl });
+
+    const profileStr = await AsyncStorage.getItem('userProfile');
+    let existing = {};
+    if (profileStr) {
+      try {
+        existing = JSON.parse(profileStr);
+      } catch (e) {
+        console.warn('Failed to parse userProfile in login syncPendingAvatar', e);
+      }
+    }
+    existing.profileImage = pub.publicUrl;
     await AsyncStorage.setItem('userProfile', JSON.stringify(existing));
     await AsyncStorage.removeItem('pendingAvatarUri');
   } catch (error) {

@@ -74,9 +74,15 @@ export default function ProfileEditScreen() {
       if (authErr) throw authErr;
       const user = authData?.user;
       if (!user) {
-        const existing = JSON.parse(
-          (await AsyncStorage.getItem(PROFILE_KEY)) || "{}"
-        );
+        const profileStr = await AsyncStorage.getItem(PROFILE_KEY);
+        let existing = {};
+        if (profileStr) {
+          try {
+            existing = JSON.parse(profileStr);
+          } catch (e) {
+            console.warn('Failed to parse profile in uploadAvatarAndSave', e);
+          }
+        }
         await AsyncStorage.setItem(
           PROFILE_KEY,
           JSON.stringify({ ...existing, profileImage: localUri })
@@ -132,18 +138,26 @@ export default function ProfileEditScreen() {
       if (uploadErr) throw uploadErr;
 
       const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-      const publicUrl = pub.publicUrl;
+      if (!pub?.publicUrl) {
+        throw new Error('Failed to get public URL for avatar');
+      }
 
       const { error: dbErr } = await supabase
         .from("users")
-        .update({ image_url: publicUrl })
+        .update({ image_url: pub.publicUrl })
         .eq("id", user.id);
       if (dbErr) throw dbErr;
 
-      const displayUrl = `${publicUrl}?t=${Date.now()}`;
-      const existing = JSON.parse(
-        (await AsyncStorage.getItem(PROFILE_KEY)) || "{}"
-      );
+      const displayUrl = `${pub.publicUrl}?t=${Date.now()}`;
+      const profileStr2 = await AsyncStorage.getItem(PROFILE_KEY);
+      let existing = {};
+      if (profileStr2) {
+        try {
+          existing = JSON.parse(profileStr2);
+        } catch (e) {
+          console.warn('Failed to parse profile after upload', e);
+        }
+      }
       await AsyncStorage.setItem(
         PROFILE_KEY,
         JSON.stringify({ ...existing, profileImage: displayUrl })
@@ -256,6 +270,28 @@ export default function ProfileEditScreen() {
           } else {
             const stored = await AsyncStorage.getItem("userProfile");
             if (stored) {
+              try {
+                const data = JSON.parse(stored);
+                setName(data.name ?? "");
+                setBio(data.bio ?? "");
+                setFavoriteStrain(data.favoriteStrain ?? data.strain ?? "");
+                setPreferredStrains(data.preferredStrains ?? []);
+                setConsumptionMethods(data.consumptionMethods ?? []);
+                setExperienceLevel(data.experienceLevel ?? "Beginner");
+                setCultivationInterest(data.cultivationInterest ?? false);
+                setFavoriteActivities(data.favoriteActivities ?? []);
+                setSessionPreferences(data.sessionPreferences ?? []);
+                setInterests(data.interests ?? []);
+                setProfileImage(data.profileImage ?? null);
+              } catch (e) {
+                console.warn('Failed to parse stored profile (logged in)', e);
+              }
+            }
+          }
+        } else {
+          const stored = await AsyncStorage.getItem("userProfile");
+          if (stored) {
+            try {
               const data = JSON.parse(stored);
               setName(data.name ?? "");
               setBio(data.bio ?? "");
@@ -268,23 +304,9 @@ export default function ProfileEditScreen() {
               setSessionPreferences(data.sessionPreferences ?? []);
               setInterests(data.interests ?? []);
               setProfileImage(data.profileImage ?? null);
+            } catch (e) {
+              console.warn('Failed to parse stored profile (not logged in)', e);
             }
-          }
-        } else {
-          const stored = await AsyncStorage.getItem("userProfile");
-          if (stored) {
-            const data = JSON.parse(stored);
-            setName(data.name ?? "");
-            setBio(data.bio ?? "");
-            setFavoriteStrain(data.favoriteStrain ?? data.strain ?? "");
-            setPreferredStrains(data.preferredStrains ?? []);
-            setConsumptionMethods(data.consumptionMethods ?? []);
-            setExperienceLevel(data.experienceLevel ?? "Beginner");
-            setCultivationInterest(data.cultivationInterest ?? false);
-            setFavoriteActivities(data.favoriteActivities ?? []);
-            setSessionPreferences(data.sessionPreferences ?? []);
-            setInterests(data.interests ?? []);
-            setProfileImage(data.profileImage ?? null);
           }
         }
 
@@ -327,8 +349,12 @@ export default function ProfileEditScreen() {
       (async () => {
         const stored = await AsyncStorage.getItem("userProfile");
         if (stored) {
-          const data = JSON.parse(stored);
-          setProfileImage(data.profileImage ?? null);
+          try {
+            const data = JSON.parse(stored);
+            setProfileImage(data.profileImage ?? null);
+          } catch (e) {
+            console.warn('Failed to parse profile in useFocusEffect', e);
+          }
         }
       })();
     }, [])

@@ -115,7 +115,14 @@ export default function FeedScreen() {
       }
 
       const stored = await AsyncStorage.getItem("userProfile");
-      const parsed = stored ? JSON.parse(stored) : null;
+      let parsed = null;
+      if (stored) {
+        try {
+          parsed = JSON.parse(stored);
+        } catch (e) {
+          console.warn('Failed to parse userProfile in feed', e);
+        }
+      }
       if (parsed?.profileImage) {
         const ts = (await AsyncStorage.getItem("avatarVersion")) || "";
         setProfilePhoto(

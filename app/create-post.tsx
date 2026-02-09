@@ -167,6 +167,11 @@ export default function CreatePostScreen() {
         .from("post-images")
         .getPublicUrl(uploadData.path);
 
+      if (!urlData?.publicUrl) {
+        console.error('Failed to get public URL for post image');
+        return null;
+      }
+
       return urlData.publicUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
