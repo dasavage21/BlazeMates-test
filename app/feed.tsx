@@ -21,6 +21,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../supabaseClient";
 import { updateUserActivity } from "../lib/activityTracker";
+import { useAgeGate } from "../hooks/useAgeGate";
 import { MessageCircle, Plus, Send, X, MoveVertical as MoreVertical, Trash2, TriangleAlert as AlertTriangle, Ban, Flame, Wind, Laugh, Sparkles } from "lucide-react-native";
 import StoriesRow from "../components/StoriesRow";
 
@@ -78,6 +79,7 @@ type Comment = {
 
 export default function FeedScreen() {
   const router = useRouter();
+  useAgeGate();
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);

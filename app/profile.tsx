@@ -16,12 +16,14 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../supabaseClient";
+import { useAgeGate } from "../hooks/useAgeGate";
 import { SubscriptionBadge } from "../components/SubscriptionBadge";
 import { BlazeLevelBadge, getLevelColor } from "../components/BlazeLevelBadge";
 import { MessageCircle, UserPlus, UserMinus } from "lucide-react-native";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  useAgeGate();
   const params = useLocalSearchParams();
   const viewingUserId = params.userId as string | undefined;
   const refreshKey = params.refresh as string | undefined;

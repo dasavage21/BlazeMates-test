@@ -1,10 +1,55 @@
 // Ac 2025 Benjamin Hawk. All rights reserved.
 
 import { Linking, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { supabase } from "../supabaseClient";
 
 const SUPPORT_EMAIL = "hawkcade21@gmail.com";
+const MIN_AGE = 21;
 
 export default function UnderageBlocked() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAgeStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.replace("/welcome");
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("users")
+          .select("age")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile?.age && profile.age >= MIN_AGE) {
+          router.replace("/feed");
+        }
+      } catch (error) {
+        console.error("Error checking age status:", error);
+      }
+    };
+
+    checkAgeStatus();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" || event === "USER_DELETED") {
+        router.replace("/welcome");
+      } else if (event === "SIGNED_IN") {
+        checkAgeStatus();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Access Restricted</Text>
