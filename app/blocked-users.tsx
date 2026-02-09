@@ -1,10 +1,12 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Platform,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -24,14 +26,53 @@ export default function BlockedUsersScreen() {
   const router = useRouter();
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadBlockedUsers();
   }, []);
 
-  const loadBlockedUsers = async () => {
+  useFocusEffect(
+    useCallback(() => {
+      loadBlockedUsers();
+    }, [])
+  );
+
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel("blocked-users-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "blocks",
+          filter: `blocker_id=eq.${currentUserId}`,
+        },
+        () => {
+          loadBlockedUsers();
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) {
+          console.error("Realtime subscription error:", err);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
+
+  const loadBlockedUsers = async (isRefreshing = false) => {
     try {
+      if (!isRefreshing) {
+        setLoading(true);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.replace("/login");
@@ -82,9 +123,18 @@ export default function BlockedUsersScreen() {
     } catch (error) {
       console.error("Error loading blocked users:", error);
     } finally {
-      setLoading(false);
+      if (!isRefreshing) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadBlockedUsers(true);
+  }, []);
 
   const handleUnblock = async (blockId: string, userName: string) => {
     const confirmUnblock = async () => {
@@ -185,21 +235,28 @@ export default function BlockedUsersScreen() {
         <Text style={styles.header}>Blocked Users</Text>
       </View>
 
-      {blockedUsers.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>You haven't blocked anyone</Text>
-          <Text style={styles.emptySubtext}>
-            Blocked users won't be able to see your posts and you won't see theirs
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={blockedUsers}
-          renderItem={renderBlockedUser}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-        />
-      )}
+      <FlatList
+        data={blockedUsers}
+        renderItem={renderBlockedUser}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={blockedUsers.length === 0 ? styles.emptyListContainer : styles.listContainer}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>You haven't blocked anyone</Text>
+            <Text style={styles.emptySubtext}>
+              Blocked users won't be able to see your posts and you won't see theirs
+            </Text>
+          </View>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#00FF7F"]}
+            tintColor="#00FF7F"
+          />
+        }
+      />
     </View>
   );
 }
@@ -235,6 +292,9 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: 20,
+  },
+  emptyListContainer: {
+    flex: 1,
   },
   userCard: {
     backgroundColor: "#1f1f1f",
