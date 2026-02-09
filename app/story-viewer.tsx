@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../supabaseClient';
+import { useAgeGate } from '../hooks/useAgeGate';
 import { X, Trash2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -33,6 +34,8 @@ interface Story {
 export default function StoryViewer() {
   const params = useLocalSearchParams();
   const router = useRouter();
+  useAgeGate();
+
   const [stories, setStories] = useState<Story[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -84,7 +87,7 @@ export default function StoryViewer() {
         .from('users')
         .select('username, avatar_url')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       const storiesWithUser = storiesData.map(story => ({
         ...story,

@@ -12,11 +12,13 @@ import {
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../supabaseClient';
+import { useAgeGate } from '../hooks/useAgeGate';
 import { Camera, Image as ImageIcon, X, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function CreateStory() {
   const router = useRouter();
+  useAgeGate();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
